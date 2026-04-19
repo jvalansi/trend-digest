@@ -1,59 +1,67 @@
 # Trend Digest
 
-A system that discovers trending topics across the web, curates them against a personal interest profile, and delivers them in configurable formats.
+A system that discovers trending topics across the web, curates them against a personal interest profile, and delivers them to Slack daily.
 
 ---
 
 ## Pipeline
 
 ```
-Source Discovery → Curation & Scoring → Delivery
+aggregate.py | curate.py | deliver.py
 ```
 
-### Phase 1 — Source Discovery
+### Phase 1 — Fetch & Aggregate (`aggregate.py`)
 
-Rather than hardcoding sources heuristically, we use traffic data to discover the most popular content publishers per category.
+Runs all fetchers in parallel, merges output, groups near-duplicate stories, and scores each item:
 
-**Step 1 — Discover top sites per category**
-
-Use **Cloudflare Radar API** to get the top-ranked domains per category:
-- `GET /radar/ranking/top?rankingType=popular&limit=50`
-- Categories: News & Media, Technology, Science, Finance, Politics
-- Run periodically (weekly or monthly) to keep source list fresh
-
-Also use `trending_rise` to catch domains with sudden traffic spikes — a leading indicator.
-
-**Step 2 — Route each domain to the right fetcher**
-
-Known platforms → dedicated API/feed (see source files below).
-Unknown publishers → auto-discover RSS (`/feed`, `/rss`, `/atom.xml`, etc.).
-
-**Step 3 — Normalize to common format**
-```json
-{ "title": "...", "summary": "...", "url": "...", "source": "...", "category": "...", "fetched_at": "..." }
+```
+score = (engagement_z + cross_source_bonus) * authority * recency
 ```
 
-### Phase 2 — Curation & Scoring
+- **Engagement** — normalized z-score via Welford running stats (per source), stored in `data/engagement_stats.json`
+- **Cross-source bonus** — `log(1 + mentions - 1)`: if multiple sources cover the same story, score rises
+- **Authority** — per-source weight (MIT Tech Review = 1.2, HN = 1.3, ZDNet = 0.7, etc.)
+- **Recency** — exponential decay, score halves every 12h
 
-Use Claude to:
-1. Deduplicate overlapping stories across sources
-2. Score each topic against the interest profile below
-3. Select top N topics per day (e.g. 5–10)
+### Phase 2 — Curate (`curate.py`)
 
-### Phase 3 — Delivery
+Sends top N items to Claude with the interest profile. Claude scores each item 0–1 for relevance. Final score:
 
-Options (not mutually exclusive):
-- Slack post (to `#proj-trend-digest`)
-- Newsletter / email
-- Video (ElevenLabs TTS + Pexels b-roll + moviepy)
-- Audio / podcast
-- Web page
+```
+final_score = engagement_score * (0.3 + 0.7 * relevance)
+```
+
+Interest profile: AI/ML, geopolitics, science, startups, finance, self-improvement.
+
+### Phase 3 — Deliver (`deliver.py`)
+
+Claude generates a one-sentence description per item. Posts to `#proj-trend-digest` as a formatted Slack message.
 
 ---
 
-## Interest Profile & Sources
+## Fetchers
 
-Each interest area has its own source file:
+| Fetcher | Source | Engagement Signal | Notes |
+|---|---|---|---|
+| `fetchers/rss.py` | 8 tech RSS feeds | Cross-source mentions + recency | feedparser |
+| `fetchers/hn.py` | Hacker News top/new/best | HN score | Firebase REST API, no auth |
+| `fetchers/youtube.py` | 6 curated channels | View count | playlistItems (1 unit/channel), 24h cache |
+| `fetchers/github.py` | GitHub Trending | Stars today | HTML scrape |
+
+All fetchers output the same normalized format:
+```json
+{ "title", "summary", "url", "source", "category", "engagement", "fetched_at", "published_at" }
+```
+
+### `fetchers/stats.py`
+
+Shared Welford running-stats module. Maintains per-source mean/variance in `data/engagement_stats.json`, updated on every fetch. Used by all fetchers to produce a comparable engagement z-score.
+
+---
+
+## Sources
+
+Per-interest source lists (RSS feeds, subreddits, channels):
 
 | Interest | Sources |
 |---|---|
@@ -67,21 +75,25 @@ Each interest area has its own source file:
 
 ---
 
-## Implementation Order
+## Setup
 
-1. Source discovery — Cloudflare Radar top sites per category → filter publishers → find RSS feeds
-2. Headline fetcher — pull latest headlines from discovered RSS feeds, output ranked list
-3. Curation layer — Claude scoring against interest profile
-4. Script generator — Claude writes narration
-5. TTS — ElevenLabs API
-6. Video assembly — moviepy + Pexels b-roll
-7. Scheduler — daily cron job
-8. Slack delivery — post to channel
+```bash
+pip install feedparser
+export SLACK_BOT_TOKEN=...
+export YOUTUBE_API_KEY=...
+```
+
+Run the full pipeline:
+```bash
+python aggregate.py | python curate.py | python deliver.py
+```
 
 ---
 
-## Notes
+## Next Steps
 
-- Cloudflare Radar API token available (free tier)
-- Reddit tool at `/home/ubuntu/reddit-tool/`
-- Validation tool (HN, Google Trends, Product Hunt, Reddit) at `/home/ubuntu/validation-tool/`
+- [ ] **Daily cron** — schedule the pipeline to run once per day
+- [ ] **Reddit** — blocked from AWS IPs; needs proxy (`REDDIT_PROXY_URL` in `.env`) or API approval
+- [ ] **Dev.to / Bluesky / Stack Overflow** — free APIs, ready to add fetchers
+- [ ] **Other interest areas** — fetchers currently only cover tech; add science, finance, geopolitics sources
+- [ ] **Delivery formats** — currently Slack only; newsletter, web page, or audio are future options
