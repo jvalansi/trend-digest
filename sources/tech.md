@@ -6,23 +6,23 @@ Investigation based on the Stack Overflow 2025 Developer Survey (65k+ respondent
 
 ## Platform Usage & API Availability
 
-| Platform | Developer Usage | API |
-|---|---|---|
-| Stack Overflow | 84% | ✅ Public API, no auth |
-| GitHub | 67% | ✅ Public API, no auth |
-| YouTube | 61% | ✅ API key configured |
-| Reddit | 54% | ⚠️ AWS IPs blocked; needs proxy or credentials |
-| Stack Exchange | 47% | ✅ Same API as Stack Overflow |
-| Discord | 39% | ⚠️ API is for server bots, not public content feeds |
-| LinkedIn | 37% | ❌ Very restricted |
-| Medium | 29% | ❌ No public API |
-| Hacker News | 20% | ✅ Free, no auth — Firebase REST API |
-| X / Twitter | 17% | ⚠️ API available but expensive |
-| Slack (public) | 16% | ❌ No public content API |
-| Dev.to | 11% | ✅ Free public API, no auth |
-| Bluesky | 11% | ✅ AT Protocol, no auth for public feeds |
-| Twitch | 9% | ⚠️ API exists but not relevant for tech news |
-| Substack | 7% | ⚠️ No official API; RSS feeds available per publication |
+| Platform | Developer Usage | API | Status |
+|---|---|---|---|
+| Stack Overflow | 84% | ✅ Public API, no auth | Not yet fetched |
+| GitHub | 67% | ✅ Public API, no auth | ✅ `fetchers/github.py` |
+| YouTube | 61% | ✅ API key configured | ✅ `fetchers/youtube.py` |
+| Reddit | 54% | ⚠️ AWS IPs blocked; needs proxy or credentials | Pending |
+| Stack Exchange | 47% | ✅ Same API as Stack Overflow | Not yet fetched |
+| Discord | 39% | ⚠️ API is for server bots, not public content feeds | N/A |
+| LinkedIn | 37% | ❌ Very restricted | N/A |
+| Medium | 29% | ❌ No public API | N/A |
+| Hacker News | 20% | ✅ Free, no auth — Firebase REST API | ✅ `fetchers/hn.py` |
+| X / Twitter | 17% | ⚠️ API available but expensive | Pending |
+| Slack (public) | 16% | ❌ No public content API | N/A |
+| Dev.to | 11% | ✅ Free public API, no auth | Not yet fetched |
+| Bluesky | 11% | ✅ AT Protocol, no auth for public feeds | Not yet fetched |
+| Twitch | 9% | ⚠️ API exists but not relevant for tech news | N/A |
+| Substack | 7% | ⚠️ No official API; RSS feeds available per publication | N/A |
 
 Key insight: YouTube and Reddit both significantly outrank Hacker News among developers. HN is high-quality but niche (~20%).
 
@@ -33,7 +33,7 @@ PRAW-based tool at `/home/ubuntu/reddit-tool/` — needs `REDDIT_CLIENT_ID` + `R
 
 ---
 
-## RSS Feeds
+## RSS Feeds (implemented in `fetchers/rss.py`)
 
 | Source | Feed |
 |---|---|
@@ -46,6 +46,17 @@ PRAW-based tool at `/home/ubuntu/reddit-tool/` — needs `REDDIT_CLIENT_ID` + `R
 | Engadget | `https://www.engadget.com/rss.xml` |
 | ZDNet | `https://www.zdnet.com/news/rss.xml` |
 
-## Reddit Subreddits
+## YouTube Channels (implemented in `fetchers/youtube.py`)
+
+| Channel | ID |
+|---|---|
+| Fireship | `UCsBjURrPoezykLs9EqgamOA` |
+| Linus Tech Tips | `UCXuqSBlHAE6Xw-yeJA0Tunw` |
+| Theo (t3.gg) | `UCbmNph6atAoGfqLoCL_duAg` |
+| freeCodeCamp | `UC8butISFwT-Wl7EV0hUK0BQ` |
+| ThePrimeagen | `UCddiUEpeqJcYeBxX1IVBKvQ` |
+| ByteByteGo | `UCo8bcnLyZH8tBIH9V1mLgqQ` |
+
+## Reddit Subreddits (pending)
 
 `r/technology`, `r/programming`, `r/webdev`, `r/compsci`
