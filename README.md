@@ -65,13 +65,13 @@ Per-interest source lists (RSS feeds, subreddits, channels):
 
 | Interest | Sources |
 |---|---|
-| Tech | [sources/tech.md](sources/tech.md) |
-| AI / ML | [sources/ai-ml.md](sources/ai-ml.md) |
-| Science | [sources/science.md](sources/science.md) |
-| Finance | [sources/finance.md](sources/finance.md) |
-| Geopolitics | [sources/geopolitics.md](sources/geopolitics.md) |
-| Startups | [sources/startups.md](sources/startups.md) |
-| Self-improvement | [sources/self-improvement.md](sources/self-improvement.md) |
+| Tech | [docs/sources/tech.md](docs/sources/tech.md) |
+| AI / ML | [docs/sources/ai-ml.md](docs/sources/ai-ml.md) |
+| Science | [docs/sources/science.md](docs/sources/science.md) |
+| Finance | [docs/sources/finance.md](docs/sources/finance.md) |
+| Geopolitics | [docs/sources/geopolitics.md](docs/sources/geopolitics.md) |
+| Startups | [docs/sources/startups.md](docs/sources/startups.md) |
+| Self-improvement | [docs/sources/self-improvement.md](docs/sources/self-improvement.md) |
 
 ---
 
@@ -85,7 +85,7 @@ export YOUTUBE_API_KEY=...
 
 Run the full pipeline:
 ```bash
-python aggregate.py | python curate.py | python deliver.py
+python src/aggregate.py | python src/curate.py | python src/deliver.py
 ```
 
 ---
