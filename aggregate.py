@@ -1,22 +1,42 @@
 #!/usr/bin/env python3
 """
-Aggregator — runs all fetchers, merges output, deduplicates, and ranks by engagement.
+Aggregator — runs all fetchers, merges output, scores, and ranks.
+
+Scoring for RSS items (which have no native engagement signal):
+  - Cross-source mentions: each additional source covering the same story adds weight
+  - Source authority: baseline weight per domain based on traffic rank
+  - Recency decay: score halves every 12 hours
 
 Usage:
   python aggregate.py [--limit N] [--output FILE]
 
-Output: JSON array of top N deduplicated items, sorted by engagement.
+Output: JSON array of top N items, sorted by final score.
 """
 
 import argparse
 import json
+import math
 import os
 import subprocess
 import sys
 from datetime import datetime, timezone
 
-FETCHERS_DIR = os.path.join(os.path.dirname(__file__), "fetchers")
 PYTHON = sys.executable
+
+# Authority weights by source name (higher = more authoritative)
+SOURCE_AUTHORITY = {
+    "The Verge":       1.0,
+    "TechCrunch":      1.0,
+    "Ars Technica":    1.1,
+    "Wired":           0.9,
+    "MIT Tech Review": 1.2,
+    "VentureBeat":     0.8,
+    "Engadget":        0.8,
+    "ZDNet":           0.7,
+    "Hacker News":     1.3,
+    "GitHub Trending": 1.1,
+}
+DEFAULT_AUTHORITY = 0.8
 
 FETCHERS = [
     {"cmd": ["python", "fetchers/rss.py", "--limit", "20"]},
@@ -40,21 +60,76 @@ def run_fetcher(cmd: list[str]) -> list[dict]:
     return json.loads(result.stdout)
 
 
-def deduplicate(items: list[dict]) -> list[dict]:
-    """Remove near-duplicate items by comparing lowercased title words."""
-    seen = []
-    unique = []
+def title_words(title: str) -> set[str]:
+    stopwords = {"a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or", "is", "are", "was"}
+    return {w for w in title.lower().split() if w not in stopwords and len(w) > 2}
+
+
+def similarity(a: set, b: set) -> float:
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
+def recency_score(published_at: str | None) -> float:
+    """Returns a multiplier in (0, 1] based on age. Halves every 12h."""
+    if not published_at:
+        return 0.5
+    try:
+        pub = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+        age_hours = (datetime.now(timezone.utc) - pub).total_seconds() / 3600
+        return math.exp(-age_hours * math.log(2) / 12)
+    except Exception:
+        return 0.5
+
+
+def merge_and_score(items: list[dict]) -> list[dict]:
+    """
+    Group near-duplicate items, merge them into one, and compute a final score:
+      score = (engagement_z + cross_source_bonus) * authority * recency
+    """
+    groups: list[list[dict]] = []
+    group_words: list[set] = []
+
     for item in items:
-        words = set(item["title"].lower().split())
-        # Consider duplicate if >60% of words overlap with an existing item
-        is_dup = any(
-            len(words & s) / max(len(words | s), 1) > 0.6
-            for s in seen
-        )
-        if not is_dup:
-            seen.append(words)
-            unique.append(item)
-    return unique
+        words = title_words(item["title"])
+        matched = None
+        for i, gw in enumerate(group_words):
+            if similarity(words, gw) > 0.55:
+                matched = i
+                break
+        if matched is not None:
+            groups[matched].append(item)
+            group_words[matched] |= words
+        else:
+            groups.append([item])
+            group_words.append(words)
+
+    results = []
+    for group in groups:
+        # Pick the item with the longest summary as canonical
+        canonical = max(group, key=lambda x: len(x.get("summary", "")))
+        canonical = dict(canonical)
+
+        sources = list({i["source"] for i in group})
+        canonical["sources"] = sources
+        canonical["mention_count"] = len(group)
+
+        # Cross-source bonus: log scale so 2 sources ≠ 2x score
+        cross_bonus = math.log1p(len(group) - 1)
+
+        # Authority: max authority among sources that covered it
+        authority = max(SOURCE_AUTHORITY.get(s, DEFAULT_AUTHORITY) for s in sources)
+
+        # Recency
+        recency = recency_score(canonical.get("published_at"))
+
+        base_engagement = canonical.get("engagement", 0.0)
+        canonical["score"] = round((base_engagement + cross_bonus) * authority * recency, 4)
+
+        results.append(canonical)
+
+    return results
 
 
 def main():
@@ -70,11 +145,11 @@ def main():
         all_items.extend(items)
         print(f"  Subtotal: {len(all_items)} items", file=sys.stderr)
 
-    print(f"\nTotal before dedup: {len(all_items)}", file=sys.stderr)
-    unique = deduplicate(all_items)
-    print(f"After dedup: {len(unique)}", file=sys.stderr)
+    print(f"\nTotal raw items: {len(all_items)}", file=sys.stderr)
+    scored = merge_and_score(all_items)
+    print(f"After merging: {len(scored)} unique stories", file=sys.stderr)
 
-    ranked = sorted(unique, key=lambda x: x.get("engagement", 0), reverse=True)
+    ranked = sorted(scored, key=lambda x: x["score"], reverse=True)
     top = ranked[:args.limit]
 
     output = json.dumps(top, indent=2, ensure_ascii=False)
