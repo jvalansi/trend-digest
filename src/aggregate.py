@@ -39,17 +39,17 @@ SOURCE_AUTHORITY = {
 DEFAULT_AUTHORITY = 0.8
 
 FETCHERS = [
-    {"cmd": ["python", "fetchers/rss.py", "--limit", "20"]},
-    {"cmd": ["python", "fetchers/hn.py", "--feed", "top", "--limit", "30"]},
-    {"cmd": ["python", "fetchers/youtube.py", "--limit", "5"]},
-    {"cmd": ["python", "fetchers/github.py", "--limit", "25"]},
+    {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20"]},
+    {"cmd": ["python", "src/fetchers/hn.py", "--feed", "top", "--limit", "30"]},
+    {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "5"]},
+    {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"]},
 ]
 
 
 def run_fetcher(cmd: list[str]) -> list[dict]:
     result = subprocess.run(
         [PYTHON if c == "python" else c for c in cmd],
-        capture_output=True, text=True, cwd=os.path.dirname(__file__)
+        capture_output=True, text=True, cwd=os.path.join(os.path.dirname(__file__), "..")
     )
     if result.stderr:
         for line in result.stderr.strip().splitlines():

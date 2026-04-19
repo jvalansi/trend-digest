@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from stats import score_items
 
 BASE = "https://www.googleapis.com/youtube/v3"
-CACHE_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "youtube_cache.json")
+CACHE_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "data", "youtube_cache.json")
 
 DEFAULT_CHANNELS = [
     {"id": "UCsBjURrPoezykLs9EqgamOA", "name": "Fireship"},

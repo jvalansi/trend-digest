@@ -8,7 +8,7 @@ import json
 import math
 import os
 
-STATS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "engagement_stats.json")
+STATS_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "data", "engagement_stats.json")
 
 
 def _load() -> dict:
