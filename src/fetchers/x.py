@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-X (Twitter) fetcher — uses Grok (xAI API) to retrieve trending topics from X.
+X (Twitter) fetcher — uses Grok via xAI Responses API with x_search tool for real-time posts.
 
 Requires: XAI_API_KEY env var
 
 Usage:
-  python fetchers/x.py [--limit N]
+  python fetchers/x.py [--limit N] [--category CATEGORY]
 
 Output: JSON array of normalized items to stdout.
 """
@@ -13,34 +13,39 @@ Output: JSON array of normalized items to stdout.
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.request
 from datetime import datetime, timezone
 
-API_URL = "https://api.x.ai/v1/chat/completions"
-MODEL = "grok-3"
+API_URL = "https://api.x.ai/v1/responses"
+MODEL = "grok-4.20-reasoning"
 
 
-def fetch_trending(limit: int) -> list[dict]:
+def fetch_trending(limit: int, category: str = "tech") -> list[dict]:
     api_key = os.environ.get("XAI_API_KEY")
     if not api_key:
         print("  ERROR: XAI_API_KEY not set", file=sys.stderr)
         return []
 
-    prompt = f"""Return the top {limit} trending topics on X (Twitter) right now.
-For each topic, provide:
-- title: the topic or headline (concise)
-- summary: 1-2 sentence description of what's being discussed
-- url: a relevant x.com search or trending URL (use https://x.com/search?q=TOPIC&f=live)
-- category: one of: tech, politics, sports, entertainment, science, finance, world, other
-
-Respond with a JSON array only, no other text. Example format:
-[{{"title": "...", "summary": "...", "url": "...", "category": "..."}}]"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    prompt = (
+        f"Search X right now and return the top {limit} most viral or trending posts "
+        f"in {category} today ({today}). "
+        f"For each post return a JSON object with these fields: "
+        f"title (post text verbatim or close paraphrase), "
+        f"summary (1-2 sentences on why it's trending), "
+        f"url (direct https://x.com/USERNAME/status/ID link), "
+        f"author (@handle), likes (integer), retweets (integer), "
+        f"category (one of: tech, politics, sports, entertainment, science, finance, world, other). "
+        f"Use real post IDs from your live X search. "
+        f"Respond with a JSON array only — no markdown, no extra text."
+    )
 
     payload = json.dumps({
         "model": MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0,
+        "input": [{"role": "user", "content": prompt}],
+        "tools": [{"type": "x_search"}],
     }).encode()
 
     req = urllib.request.Request(
@@ -51,26 +56,34 @@ Respond with a JSON array only, no other text. Example format:
             "Content-Type": "application/json",
         },
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=60) as resp:
         data = json.loads(resp.read())
 
-    content = data["choices"][0]["message"]["content"].strip()
+    # Extract text from message output block
+    text = ""
+    for item in data.get("output", []):
+        if item.get("type") == "message":
+            for c in item.get("content", []):
+                text += c.get("text", "")
+
+    text = text.strip()
     # Strip markdown code fences if present
-    if content.startswith("```"):
-        content = content.split("```")[1]
-        if content.startswith("json"):
-            content = content[4:]
-    return json.loads(content)
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    return json.loads(text)
 
 
 def normalize(item: dict) -> dict:
+    likes = item.get("likes", 0) or 0
+    retweets = item.get("retweets", 0) or 0
     return {
         "title": item.get("title", "").strip(),
         "summary": item.get("summary", "").strip(),
         "url": item.get("url", "https://x.com/explore"),
         "source": "X (via Grok)",
         "category": item.get("category", "other"),
-        "score": 0,
+        "author": item.get("author", ""),
+        "score": likes + retweets * 2,
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "published_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -78,18 +91,19 @@ def normalize(item: dict) -> dict:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=20, help="Number of trending topics (default: 20)")
+    parser.add_argument("--limit", type=int, default=20, help="Number of posts to fetch (default: 20)")
+    parser.add_argument("--category", default="tech", help="Category to search (default: tech)")
     args = parser.parse_args()
 
-    print(f"  Fetching {args.limit} trending X topics via Grok...", file=sys.stderr)
+    print(f"  Fetching {args.limit} trending X posts via Grok ({args.category})...", file=sys.stderr)
     try:
-        raw = fetch_trending(args.limit)
+        raw = fetch_trending(args.limit, args.category)
     except Exception as e:
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
     results = [normalize(item) for item in raw if item.get("title")]
-    print(f"  Got {len(results)} topics", file=sys.stderr)
+    print(f"  Got {len(results)} posts", file=sys.stderr)
     print(json.dumps(results, indent=2, ensure_ascii=False))
 
 
