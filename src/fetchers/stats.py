@@ -51,11 +51,13 @@ def update_and_score(source: str, raw_value: float) -> float:
 
 
 def score_items(items: list[dict], source: str, raw_field: str) -> list[dict]:
-    """Add normalized 'engagement' score to each item and remove raw engagement fields."""
-    raw_fields = {"score", "comments", "stars", "stars_today"}
+    """Add raw and normalized engagement scores to each item."""
+    drop_fields = {"score", "comments", "stars", "stars_today"} - {raw_field}
     for item in items:
         raw = item.get(raw_field, 0) or 0
+        item["engagement_raw"] = float(raw)
         item["engagement"] = update_and_score(source, float(raw))
-        for f in raw_fields:
+        for f in drop_fields:
             item.pop(f, None)
+        item.pop(raw_field, None)
     return items
