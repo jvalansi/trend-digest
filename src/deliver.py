@@ -50,7 +50,12 @@ def format_item(i: int, item: dict, description: str) -> str:
     title = item["title"]
     url = item["url"]
     desc_str = f"\n   {description}" if description else ""
-    return f"{i}. *<{url}|{title}>*{desc_str}\n   _{source_str}_"
+    raw = item.get("engagement_raw")
+    eng = item.get("engagement")
+    engagement_str = ""
+    if raw is not None and eng is not None:
+        engagement_str = f" · {int(raw)} pts · z={eng:+.2f}"
+    return f"{i}. *<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}_"
 
 
 def post_to_slack(text: str, token: str, channel: str) -> None:
