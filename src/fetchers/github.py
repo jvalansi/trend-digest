@@ -115,10 +115,11 @@ def main():
         print(f"  Fetching recently updated popular repos...", file=sys.stderr)
         results = fetch_releases(args.language, args.limit)
 
-    # Use stars_today as engagement signal (velocity), fall back to total stars
+    source_name = f"GitHub Trending ({args.since})"
     for item in results:
+        item["source"] = source_name
         item["score"] = item.pop("stars_today") or item.pop("stars") or 0
-    results = score_items(results, "GitHub Trending", "score")
+    results = score_items(results, source_name, "score")
 
     print(f"  Got {len(results)} repos", file=sys.stderr)
     print(json.dumps(results, indent=2, ensure_ascii=False))

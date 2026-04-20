@@ -34,7 +34,8 @@ SOURCE_AUTHORITY = {
     "Engadget":        0.8,
     "ZDNet":           0.7,
     "Hacker News":     1.3,
-    "GitHub Trending": 0.7,
+    "GitHub Trending (daily)":  0.7,
+    "GitHub Trending (weekly)": 0.6,
     "X (via Grok)":    0.9,
 }
 DEFAULT_AUTHORITY = 0.8
