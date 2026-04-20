@@ -34,7 +34,8 @@ SOURCE_AUTHORITY = {
     "Engadget":        0.8,
     "ZDNet":           0.7,
     "Hacker News":     1.3,
-    "GitHub Trending": 1.1,
+    "GitHub Trending": 0.7,
+    "X (via Grok)":    0.9,
 }
 DEFAULT_AUTHORITY = 0.8
 
@@ -117,8 +118,8 @@ def merge_and_score(items: list[dict]) -> list[dict]:
         canonical["sources"] = sources
         canonical["mention_count"] = len(group)
 
-        # Cross-source bonus: log scale so 2 sources ≠ 2x score
-        cross_bonus = math.log1p(len(group) - 1)
+        # Cross-source bonus: based on unique sources, not total mentions
+        cross_bonus = math.log1p(len(sources) - 1)
 
         # Authority: max authority among sources that covered it
         authority = max(SOURCE_AUTHORITY.get(s, DEFAULT_AUTHORITY) for s in sources)
