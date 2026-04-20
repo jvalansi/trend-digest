@@ -17,6 +17,7 @@ import re
 import sys
 import urllib.request
 from datetime import datetime, timezone
+from stats import score_items
 
 API_URL = "https://api.x.ai/v1/responses"
 MODEL = "grok-4.20-reasoning"
@@ -36,7 +37,7 @@ def fetch_trending(limit: int, category: str = "tech") -> list[dict]:
         f"title (post text verbatim or close paraphrase), "
         f"summary (1-2 sentences on why it's trending), "
         f"url (direct https://x.com/USERNAME/status/ID link), "
-        f"author (@handle), likes (integer), retweets (integer), "
+        f"author (@handle), likes (integer), retweets (integer), replies (integer), views (integer), "
         f"category (one of: tech, politics, sports, entertainment, science, finance, world, other). "
         f"Use real post IDs from your live X search. "
         f"Respond with a JSON array only — no markdown, no extra text."
@@ -76,6 +77,10 @@ def fetch_trending(limit: int, category: str = "tech") -> list[dict]:
 def normalize(item: dict) -> dict:
     likes = item.get("likes", 0) or 0
     retweets = item.get("retweets", 0) or 0
+    replies = item.get("replies", 0) or 0
+    views = item.get("views", 0) or 0
+    # Composite engagement: weighted sum across all signals
+    score = likes + retweets * 2 + replies + views // 100
     return {
         "title": item.get("title", "").strip(),
         "summary": item.get("summary", "").strip(),
@@ -83,7 +88,7 @@ def normalize(item: dict) -> dict:
         "source": "X (via Grok)",
         "category": item.get("category", "other"),
         "author": item.get("author", ""),
-        "score": likes + retweets * 2,
+        "score": score,
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "published_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -103,6 +108,7 @@ def main():
         sys.exit(1)
 
     results = [normalize(item) for item in raw if item.get("title")]
+    results = score_items(results, "X (via Grok)", "score")
     print(f"  Got {len(results)} posts", file=sys.stderr)
     print(json.dumps(results, indent=2, ensure_ascii=False))
 
