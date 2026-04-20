@@ -44,7 +44,7 @@ def generate_descriptions(items: list[dict]) -> list[str]:
     return [desc_map.get(i, "") for i in range(len(items))]
 
 
-def format_item(i: int, item: dict, description: str) -> str:
+def format_item(item: dict, description: str) -> str:
     sources = item.get("sources", [item["source"]])
     source_str = " · ".join(sources)
     title = item["title"]
@@ -55,11 +55,15 @@ def format_item(i: int, item: dict, description: str) -> str:
     engagement_str = ""
     if raw is not None and eng is not None:
         engagement_str = f" · {int(raw)} pts · z={eng:+.2f}"
-    return f"{i}. *<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}_"
+    return f"*<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}_"
 
 
-def post_to_slack(text: str, token: str, channel: str) -> None:
-    payload = json.dumps({"channel": channel, "text": text, "unfurl_links": False}).encode()
+def post_to_slack(text: str, token: str, channel: str, thread_ts: str | None = None, unfurl: bool = False) -> str:
+    """Post a message and return its ts."""
+    body: dict = {"channel": channel, "text": text, "unfurl_links": unfurl, "unfurl_media": unfurl}
+    if thread_ts:
+        body["thread_ts"] = thread_ts
+    payload = json.dumps(body).encode()
     req = urllib.request.Request(
         "https://slack.com/api/chat.postMessage",
         data=payload,
@@ -71,6 +75,7 @@ def post_to_slack(text: str, token: str, channel: str) -> None:
     if not result.get("ok"):
         print(f"Slack error: {result.get('error')}", file=sys.stderr)
         sys.exit(1)
+    return result["ts"]
 
 
 def main():
@@ -91,16 +96,14 @@ def main():
 
     from datetime import datetime, timezone
     date_str = datetime.now(timezone.utc).strftime("%A, %B %-d")
-    lines = [f"*Trend Digest — {date_str}*\n"]
     print("Generating descriptions...", file=sys.stderr)
     descriptions = generate_descriptions(items)
-    for i, (item, desc) in enumerate(zip(items, descriptions), 1):
-        lines.append(format_item(i, item, desc))
-
-    message = "\n\n".join(lines)
+    formatted = [format_item(item, desc) for item, desc in zip(items, descriptions)]
 
     if args.dry_run:
-        print(message)
+        print(f"*Trend Digest — {date_str}* ({len(items)} items)")
+        for msg in formatted:
+            print("\n---\n" + msg)
         return
 
     token = os.environ.get("SLACK_BOT_TOKEN")
@@ -108,7 +111,9 @@ def main():
         print("ERROR: SLACK_BOT_TOKEN not set", file=sys.stderr)
         sys.exit(1)
 
-    post_to_slack(message, token, SLACK_CHANNEL)
+    thread_ts = post_to_slack(f"*Trend Digest — {date_str}* ({len(items)} items)", token, SLACK_CHANNEL)
+    for msg in formatted:
+        post_to_slack(msg, token, SLACK_CHANNEL, thread_ts=thread_ts, unfurl=True)
     print(f"Posted {len(items)} items to #{SLACK_CHANNEL}", file=sys.stderr)
 
 
