@@ -43,6 +43,7 @@ FETCHERS = [
     {"cmd": ["python", "src/fetchers/hn.py", "--feed", "top", "--limit", "30"]},
     {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "5"]},
     {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"]},
+    {"cmd": ["python", "src/fetchers/github.py", "--limit", "25", "--since", "weekly"]},
     {"cmd": ["python", "src/fetchers/x.py", "--limit", "10"]},
 ]
 
@@ -151,6 +152,7 @@ def main():
     print(f"After merging: {len(scored)} unique stories", file=sys.stderr)
 
     ranked = sorted(scored, key=lambda x: x["score"], reverse=True)
+    ranked = [x for x in ranked if x["score"] > 0]
     top = ranked[:args.limit]
 
     output = json.dumps(top, indent=2, ensure_ascii=False)
