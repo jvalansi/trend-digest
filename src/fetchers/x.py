@@ -57,7 +57,7 @@ def fetch_trending(limit: int, category: str = "tech") -> list[dict]:
             "Content-Type": "application/json",
         },
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    with urllib.request.urlopen(req, timeout=120) as resp:
         data = json.loads(resp.read())
 
     # Extract text from message output block
@@ -96,7 +96,7 @@ def normalize(item: dict) -> dict:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=20, help="Number of posts to fetch (default: 20)")
+    parser.add_argument("--limit", type=int, default=10, help="Number of posts to fetch (default: 10)")
     parser.add_argument("--category", default="tech", help="Category to search (default: tech)")
     args = parser.parse_args()
 

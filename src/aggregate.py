@@ -43,7 +43,7 @@ FETCHERS = [
     {"cmd": ["python", "src/fetchers/hn.py", "--feed", "top", "--limit", "30"]},
     {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "5"]},
     {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"]},
-    {"cmd": ["python", "src/fetchers/x.py", "--limit", "20"]},
+    {"cmd": ["python", "src/fetchers/x.py", "--limit", "10"]},
 ]
 
 
