@@ -65,20 +65,32 @@ Note: Non-English sources are included — Claude translates titles/summaries du
 
 ## Trending Signals
 
-Sources for engagement/trending signal, not article content.
+Based on Similarweb global top 50. Every platform assessed for a usable trending API.
 
-| Source | Global Rank | API | Notes | Status |
+| Global Rank | Domain | Trending Signal | API | Status |
 |---|---|---|---|---|
-| Google Trends | #1 | `https://trends.google.com/trends/api/dailytrends` | Search interest 0–100; no auth | Planned |
-| X / Twitter | #6 | Twitter API v2 | Paid ($100/month minimum) | Keep in mind |
-| Reddit | #7 | `r/news`, `r/worldnews`, `r/politics` hot posts | AWS IPs blocked; use `REDDIT_PROXY_URL` | Planned |
-| Bing Trends | #8 | `https://www.bing.com/trends/api/dailytrends` | Unofficial, no auth | Planned |
-| Wikipedia Pageviews | #10 | `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/{date}` | Most-read articles; strong breaking news signal | Planned |
-| TikTok | #11 | None | No public trending API | N/A |
-| Baidu | #18 | Baidu Index API | Chinese coverage; needs account | Keep in mind |
-| Pinterest | #22 | Pinterest Trends API | Visual trends; needs app approval | Keep in mind |
-| Snapchat | — | `https://trends.snap.com/api/v1/topicTrends` | No auth required; skews younger | Planned |
-| Spotify | — | Spotify Web API — podcast charts | Needs OAuth; good for news podcasts | Keep in mind |
+| #1 | google.com | Google Trends — search interest 0–100 | `https://trends.google.com/trends/api/dailytrends` — no auth | Planned |
+| #2 | youtube.com | Trending videos | YouTube Data API — key in `.env` | ✅ `fetchers/youtube.py` |
+| #3 | facebook.com | — | Trending shut down 2018; API restricted | N/A |
+| #4 | instagram.com | — | No public trending API | N/A |
+| #5 | chatgpt.com | — | No trending signal | N/A |
+| #6 | x.com | Trending topics | Twitter API v2 — paid ($100/month) | Keep in mind |
+| #7 | reddit.com | Hot posts (`r/news`, `r/worldnews`, `r/politics`) | AWS IPs blocked; use `REDDIT_PROXY_URL` | Planned |
+| #8 | bing.com | Bing Trends — search interest | `https://www.bing.com/trends/api/dailytrends` — unofficial, no auth | Planned |
+| #9 | whatsapp.com | — | Private messaging; no public signal | N/A |
+| #10 | wikipedia.org | Most-read articles — strong breaking news signal | `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/{date}` — no auth | Planned |
+| #11 | tiktok.com | — | No public trending API | N/A |
+| #14 | yandex.ru | Yandex Trends | Yandex Wordstat API — Russia-focused | Keep in mind |
+| #16 | amazon.com | Movers & Shakers / Best Sellers | `https://www.amazon.com/gp/movers-and-shakers` — scrapeable | Keep in mind |
+| #18 | baidu.com | Baidu Hot Search | Baidu Index API — China-focused; needs account | Keep in mind |
+| #21 | netflix.com | Netflix Top 10 charts | `https://www.netflix.com/tudum/top10` — unofficial JSON | Keep in mind |
+| #22 | pinterest.com | Pinterest Trends | Pinterest Trends API — needs app approval | Keep in mind |
+| #26 | bilibili.com | Trending videos | `https://api.bilibili.com/x/web-interface/ranking/v2` — no auth; China-focused | Keep in mind |
+| #33 | twitch.tv | Trending streams/games | Twitch API — free, needs client ID | Keep in mind |
+| #38 | spotify.com | Podcast & music charts | Spotify Web API — needs OAuth | Keep in mind |
+| #42 | t.me | Telegram public channels | No official trending API | N/A |
+| #44 | duckduckgo.com | — | Privacy-focused; no trends by design | N/A |
+| #48 | github.com | Trending repos | HTML scrape | ✅ `fetchers/github.py` |
 
 ---
 
