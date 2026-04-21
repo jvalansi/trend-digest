@@ -72,6 +72,7 @@ Per-interest source lists (RSS feeds, subreddits, channels):
 | Geopolitics | [docs/sources/geopolitics.md](docs/sources/geopolitics.md) |
 | Startups | [docs/sources/startups.md](docs/sources/startups.md) |
 | Self-improvement | [docs/sources/self-improvement.md](docs/sources/self-improvement.md) |
+| News | [docs/sources/news.md](docs/sources/news.md) |
 
 ---
 
