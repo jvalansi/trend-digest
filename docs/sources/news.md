@@ -1,40 +1,67 @@
 # News Sources
 
-Investigation based on Cloudflare Radar top 100 global domains (by DNS traffic, April 2026), supplemented by domain-level bucket rankings for known news sites.
+Investigation based on the [Wikipedia List of Most-Visited Websites](https://en.wikipedia.org/wiki/List_of_most-visited_websites) (Similarweb, March 2026), which measures actual human page visits. Cloudflare Radar (DNS query volume) was considered but rejected — it inflates infrastructure/CDN domains and is not representative of human traffic.
 
 ---
 
-## News & Media in the Global Top 100
+## Most-Visited Websites (Top 50, Similarweb March 2026)
 
-Only 3 domains in the top 100 are categorized as "News & Media":
+Full list for reference. News/media relevant entries highlighted.
 
-| Rank | Domain | Notes |
+| Rank | Domain | Site |
 |---|---|---|
-| #34 | yahoo.com | Aggregator, not original reporting |
-| #46 | msn.com | Aggregator, not original reporting |
-| #95 | qq.com | Chinese platform (Tencent) |
-
-Major news publishers (CNN, NYT, BBC, etc.) appear in the top 1,000–5,000 but Cloudflare only gives bucket-level precision below rank 100.
+| 1 | google.com | Google Search |
+| 2 | youtube.com | YouTube |
+| 3 | facebook.com | Facebook |
+| 4 | instagram.com | Instagram |
+| 5 | chatgpt.com | ChatGPT |
+| **6** | **x.com** | **X / Twitter** |
+| **7** | **reddit.com** | **Reddit** |
+| 8 | bing.com | Microsoft Bing |
+| 9 | whatsapp.com | WhatsApp |
+| **10** | **wikipedia.org** | **Wikipedia** |
+| 11 | tiktok.com | TikTok |
+| 12 | yahoo.co.jp | Yahoo Japan |
+| **13** | **yahoo.com** | **Yahoo!** |
+| 14 | yandex.ru | Yandex |
+| 15 | gemini.google.com | Google Gemini |
+| 16 | amazon.com | Amazon |
+| 17 | linkedin.com | LinkedIn |
+| **18** | **baidu.com** | **Baidu** |
+| 19 | bet.br | BET.br |
+| 20 | naver.com | Naver |
+| 21 | netflix.com | Netflix |
+| 22 | pinterest.com | Pinterest |
+| 23 | live.com | Microsoft Live |
+| 25 | dzen.ru | Dzen News (Russia) |
+| 26 | bilibili.com | Bilibili (China) |
+| 33 | twitch.tv | Twitch |
+| **35** | **weather.com** | **The Weather Channel** |
+| 36 | vk.com | VK (Russia) |
+| **37** | **globo.com** | **Globo (Brazil)** |
+| **39** | **news.yahoo.co.jp** | **Yahoo! News Japan** |
+| **43** | **nytimes.com** | **The New York Times** |
 
 ---
 
 ## News RSS Sources
 
-Ranked by Cloudflare bucket. Within each bucket, order is not significant.
+Selected from the most-visited list, filtered for original news reporting with working RSS feeds.
 
-| Bucket | Domain | RSS Feed | Notes |
+| Rank | Domain | RSS Feed | Notes |
 |---|---|---|---|
-| Top 100 | google.com | `https://news.google.com/rss` | Aggregates top stories across all publishers |
-| Top 1,000 | cnn.com | `http://rss.cnn.com/rss/edition.rss` | |
-| Top 1,000 | foxnews.com | `https://moxie.foxnews.com/google-publisher/latest.xml` | |
-| Top 1,000 | nytimes.com | `https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml` | |
-| Top 2,000 | bbc.com | `http://feeds.bbci.co.uk/news/rss.xml` | |
-| Top 2,000 | wsj.com | `https://feeds.a.dj.com/rss/RSSWorldNews.xml` | Paywalled articles; summaries come through |
-| Top 5,000 | reuters.com | `https://feeds.reuters.com/reuters/topNews` | Wire service, high volume |
-| Top 5,000 | theguardian.com | `https://www.theguardian.com/world/rss` | |
-| Top 5,000 | washingtonpost.com | `https://feeds.washingtonpost.com/rss/world` | |
-| Top 5,000 | bloomberg.com | `https://feeds.bloomberg.com/markets/news.rss` | |
-| Top 5,000 | apnews.com | `https://rsshub.app/apnews/topics/apf-topnews` | No official RSS; RSSHub proxy |
+| 1 | google.com | `https://news.google.com/rss` | Google News — aggregates top stories across all publishers |
+| 13 | yahoo.com | `https://news.yahoo.com/rss` | Aggregator; high traffic |
+| 43 | nytimes.com | `https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml` | |
+| — | cnn.com | `http://rss.cnn.com/rss/edition.rss` | Top 1,000 Cloudflare |
+| — | bbc.com | `http://feeds.bbci.co.uk/news/rss.xml` | Top 2,000 Cloudflare |
+| — | reuters.com | `https://feeds.reuters.com/reuters/topNews` | Wire service |
+| — | theguardian.com | `https://www.theguardian.com/world/rss` | |
+| — | washingtonpost.com | `https://feeds.washingtonpost.com/rss/world` | |
+| — | bloomberg.com | `https://feeds.bloomberg.com/markets/news.rss` | |
+| — | apnews.com | `https://rsshub.app/apnews/topics/apf-topnews` | No official RSS; RSSHub proxy |
+| — | foxnews.com | `https://moxie.foxnews.com/google-publisher/latest.xml` | |
+| — | wsj.com | `https://feeds.a.dj.com/rss/RSSWorldNews.xml` | Paywalled; summaries come through |
 
 ---
 
@@ -42,31 +69,29 @@ Ranked by Cloudflare bucket. Within each bucket, order is not significant.
 
 Sources for engagement/trending signal, not article content.
 
-| Source | API | Notes | Status |
-|---|---|---|---|
-| Google Trends | `https://trends.google.com/trends/api/dailytrends` | Search interest score 0–100; no auth | Planned: `fetchers/trends_google.py` |
-| Bing Trends | `https://www.bing.com/trends/api/dailytrends` | Unofficial but works without auth | Planned: `fetchers/trends_bing.py` |
-| Reddit | `r/news`, `r/worldnews`, `r/politics` hot posts | AWS IPs blocked; use `REDDIT_PROXY_URL` from `.env` | Planned |
-| X / Twitter | Twitter API v2 trending topics | Paid ($100/month minimum) | Keep in mind |
-| Snapchat Trends | `https://trends.snap.com/api/v1/topicTrends` | No auth required; skews younger demographic | Planned |
-| Wikipedia Pageviews | `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/{date}` | Most-read articles; strong breaking news signal | Planned |
-| Spotify | Spotify Web API — podcast charts | Needs OAuth; good for news podcast signal (NPR, BBC, NYT The Daily) | Keep in mind |
-| Baidu | Baidu Index API | Chinese coverage; needs account | Keep in mind |
-| Pinterest | Pinterest Trends API | Visual trends; needs app approval | Keep in mind |
+| Source | Rank | API | Notes | Status |
+|---|---|---|---|---|
+| Google Trends | #1 | `https://trends.google.com/trends/api/dailytrends` | Search interest 0–100; no auth | Planned |
+| X / Twitter | #6 | Twitter API v2 | Paid ($100/month minimum) | Keep in mind |
+| Reddit | #7 | `r/news`, `r/worldnews`, `r/politics` hot posts | AWS IPs blocked; use `REDDIT_PROXY_URL` from `.env` | Planned |
+| Bing Trends | #8 | `https://www.bing.com/trends/api/dailytrends` | Unofficial, no auth | Planned |
+| Wikipedia Pageviews | #10 | `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/{date}` | Most-read articles; strong breaking news signal | Planned |
+| TikTok | #11 | None | No public trending API | N/A |
+| Baidu | #18 | Baidu Index API | Chinese coverage; needs account | Keep in mind |
+| Pinterest | #22 | Pinterest Trends API | Visual trends; needs app approval | Keep in mind |
+| Snapchat | — | `https://trends.snap.com/api/v1/topicTrends` | No auth required; skews younger | Planned |
+| Spotify | — | Spotify Web API — podcast charts | Needs OAuth; good for news podcasts | Keep in mind |
 
 ---
 
-## Notable Non-News Domains in Top 100
+## Notable Platforms — API Status
 
-For reference — domains explored during source selection that are not news but potentially relevant:
-
-| Domain | Rank | Reason noted |
-|---|---|---|
-| youtube.com | #15 | Already in `fetchers/youtube.py` |
-| wikipedia.org | #51 | Reference/context; pageviews used as trending signal |
-| spotify.com | #38 | Podcast charts as news signal (future) |
-| baidu.com | #49 | Chinese search/news (future) |
-| snapchat.com | #61 | Trends API available |
-| pinterest.com | #93 | Trends API available |
-| linkedin.com | #68 | API too restricted for content access |
-| tiktokv.com | #31 | No public trending API |
+| Platform | Rank | News Relevance | API Access |
+|---|---|---|---|
+| YouTube | #2 | News channels, trending videos | ✅ Already in `fetchers/youtube.py` |
+| Facebook | #3 | News sharing | ❌ Trending shut down 2018; API restricted |
+| Instagram | #4 | Visual news | ❌ No public trending API |
+| LinkedIn | #17 | Business/professional news | ❌ Very restricted |
+| TikTok | #11 | Trending topics | ❌ No public API |
+| Globo | #37 | Brazilian news (Portuguese) | ✅ RSS available |
+| Yandex | #14 | Russian news | ⚠️ Restricted outside Russia |
