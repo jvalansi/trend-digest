@@ -100,6 +100,7 @@ def main():
     parser.add_argument("--mode", default="tech", choices=["tech", "news"], help="Interest profile (default: tech)")
     parser.add_argument("--top", type=int, default=50, help="Max items to curate (default: 50)")
     parser.add_argument("--input", help="Read items from FILE instead of stdin")
+    parser.add_argument("--output", help="Write output to FILE instead of stdout")
     args = parser.parse_args()
 
     if args.input:
@@ -116,7 +117,12 @@ def main():
     items = sorted(items, key=lambda x: x.get("score", 0), reverse=True)
     print(f"  Curation done.", file=sys.stderr)
 
-    print(json.dumps(items, indent=2, ensure_ascii=False))
+    output = json.dumps(items, indent=2, ensure_ascii=False)
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write(output)
+    else:
+        print(output)
 
 
 if __name__ == "__main__":

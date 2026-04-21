@@ -69,19 +69,23 @@ SOURCE_AUTHORITY = {
 }
 DEFAULT_AUTHORITY = 0.8
 
-FETCHERS = [
-    {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "tech"]},
-    {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "news"]},
-    {"cmd": ["python", "src/fetchers/trends_google.py", "--limit", "20"]},
-    {"cmd": ["python", "src/fetchers/trends_wikipedia.py", "--limit", "20"]},
-    {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25"]},
-    {"cmd": ["python", "src/fetchers/trends_bilibili.py", "--limit", "20"]},
-    {"cmd": ["python", "src/fetchers/hn.py", "--feed", "top", "--limit", "30"]},
-    {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "5"]},
-    {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"]},
-    {"cmd": ["python", "src/fetchers/github.py", "--limit", "25", "--since", "weekly"]},
-    {"cmd": ["python", "src/fetchers/x.py", "--limit", "10"]},
-]
+FETCHERS = {
+    "tech": [
+        {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "tech"]},
+        {"cmd": ["python", "src/fetchers/hn.py", "--feed", "top", "--limit", "30"]},
+        {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "5"]},
+        {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"]},
+        {"cmd": ["python", "src/fetchers/github.py", "--limit", "25", "--since", "weekly"]},
+        {"cmd": ["python", "src/fetchers/x.py", "--limit", "10"]},
+    ],
+    "news": [
+        {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "news"]},
+        {"cmd": ["python", "src/fetchers/trends_google.py", "--limit", "20"]},
+        {"cmd": ["python", "src/fetchers/trends_wikipedia.py", "--limit", "20"]},
+        {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25"]},
+        {"cmd": ["python", "src/fetchers/trends_bilibili.py", "--limit", "20"]},
+    ],
+}
 
 
 def run_fetcher(cmd: list[str]) -> list[dict]:
@@ -189,10 +193,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=20, help="Top N items to return (default: 20)")
     parser.add_argument("--output", help="Write output to FILE instead of stdout")
+    parser.add_argument("--mode", default="tech", choices=["tech", "news"], help="Digest mode (default: tech)")
     args = parser.parse_args()
 
+    fetchers = FETCHERS[args.mode]
     all_items = []
-    for fetcher in FETCHERS:
+    for fetcher in fetchers:
         print(f"\n[{fetcher['cmd'][1]}]", file=sys.stderr)
         items = run_fetcher(fetcher["cmd"])
         all_items.extend(items)
