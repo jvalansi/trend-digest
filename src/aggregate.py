@@ -37,11 +37,28 @@ SOURCE_AUTHORITY = {
     "GitHub Trending (daily)":  0.7,
     "GitHub Trending (weekly)": 0.6,
     "X (via Grok)":    0.9,
+    # News sources — authority weighted by Similarweb rank
+    "Yahoo Japan":     1.1,
+    "Yahoo News":      1.0,
+    "Globo":           0.9,
+    "New York Times":  1.2,
+    "BBC News":        1.2,
+    "CNN":             1.1,
+    "MSN News":        0.8,
+    "QQ News":         0.9,
+    "The Guardian":    1.1,
+    "Times of India":  0.9,
+    "Google News":     1.0,
+    "Fox News":        1.0,
+    "UOL":             0.8,
+    "Infobae":         0.8,
+    "Naver News":      0.9,
 }
 DEFAULT_AUTHORITY = 0.8
 
 FETCHERS = [
-    {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20"]},
+    {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "tech"]},
+    {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "news"]},
     {"cmd": ["python", "src/fetchers/hn.py", "--feed", "top", "--limit", "30"]},
     {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "5"]},
     {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"]},

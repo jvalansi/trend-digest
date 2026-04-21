@@ -26,6 +26,19 @@ DEFAULT_FEEDS = [
     {"source": "VentureBeat",     "url": "https://venturebeat.com/feed/",                        "category": "tech"},
     {"source": "Engadget",        "url": "https://www.engadget.com/rss.xml",                     "category": "tech"},
     {"source": "ZDNet",           "url": "https://www.zdnet.com/news/rss.xml",                   "category": "tech"},
+
+    # News feeds — top 15 by Similarweb traffic (news & media category, March 2026)
+    {"source": "Yahoo Japan",     "url": "https://news.yahoo.co.jp/rss/topics/top-picks.xml",                "category": "news"},
+    {"source": "Globo",           "url": "https://g1.globo.com/rss/g1/",                                     "category": "news"},
+    {"source": "New York Times",  "url": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",       "category": "news"},
+    {"source": "BBC News",        "url": "http://feeds.bbci.co.uk/news/rss.xml",                             "category": "news"},
+    {"source": "CNN",             "url": "http://rss.cnn.com/rss/edition.rss",                               "category": "news"},
+    {"source": "The Guardian",    "url": "https://www.theguardian.com/world/rss",                            "category": "news"},
+    {"source": "Times of India",  "url": "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",      "category": "news"},
+    {"source": "Google News",     "url": "https://news.google.com/rss",                                      "category": "news"},
+    {"source": "Fox News",        "url": "https://moxie.foxnews.com/google-publisher/latest.xml",            "category": "news"},
+    {"source": "UOL",             "url": "https://rss.uol.com.br/feed/noticias.xml",                        "category": "news"},
+    {"source": "Infobae",         "url": "https://www.infobae.com/arc/outboundfeeds/rss/",                  "category": "news"},
 ]
 
 

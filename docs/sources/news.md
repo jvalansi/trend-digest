@@ -6,7 +6,31 @@ Note: Non-English sources are included — Claude translates titles/summaries du
 
 ---
 
-## Top 50 News & Media Sites (Similarweb)
+## Active RSS Sources (Top 15)
+
+Selected from the Similarweb top 50, skipping duplicates and sites with no RSS.
+
+| # | Domain | Language | RSS Feed | Notes |
+|---|---|---|---|---|
+| 1 | yahoo.co.jp | Japanese | `https://news.yahoo.co.jp/rss/topics/top-picks.xml` | ✅ Working |
+| 2 | yahoo.com | English | — | ❌ Rate-limited (429) |
+| 3 | globo.com | Portuguese | `https://g1.globo.com/rss/g1/` | ✅ Working |
+| 4 | nytimes.com | English | `https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml` | ✅ Working |
+| 5 | bbc.com | English | `http://feeds.bbci.co.uk/news/rss.xml` | ✅ Working |
+| 6 | cnn.com | English | `http://rss.cnn.com/rss/edition.rss` | ✅ Working |
+| 7 | msn.com | English | — | ❌ No RSS (redirects to HTML) |
+| 8 | qq.com | Chinese | — | ❌ No RSS (501) |
+| 9 | theguardian.com | English | `https://www.theguardian.com/world/rss` | ✅ Working |
+| 10 | indiatimes.com | English | `https://timesofindia.indiatimes.com/rssfeedstopstories.cms` | ✅ Working |
+| 11 | news.google.com | Multi | `https://news.google.com/rss` | ✅ Working |
+| 12 | foxnews.com | English | `https://moxie.foxnews.com/google-publisher/latest.xml` | ✅ Working |
+| 13 | uol.com.br | Portuguese | `https://rss.uol.com.br/feed/noticias.xml` | ✅ Working |
+| 14 | infobae.com | Spanish | `https://www.infobae.com/arc/outboundfeeds/rss/` | ✅ Working |
+| 15 | news.naver.com | Korean | — | ❌ No RSS (redirects to HTML) |
+
+---
+
+## Full Top 50 News & Media Sites (Similarweb)
 
 | # | Domain | Language | RSS Feed | Notes |
 |---|---|---|---|---|
