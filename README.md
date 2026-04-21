@@ -7,7 +7,11 @@ A system that discovers trending topics across the web, curates them against a p
 ## Pipeline
 
 ```
-aggregate.py | curate.py | deliver.py
+# Tech digest
+aggregate.py | curate.py --mode tech | deliver.py --mode tech
+
+# News digest
+aggregate.py | curate.py --mode news | deliver.py --mode news
 ```
 
 ### Phase 1 — Fetch & Aggregate (`aggregate.py`)

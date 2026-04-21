@@ -16,13 +16,18 @@ import sys
 import urllib.request
 
 SLACK_CHANNEL = os.environ.get("TREND_DIGEST_CHANNEL", "proj-trend-digest")
+NEWS_CHANNEL = os.environ.get("NEWS_DIGEST_CHANNEL", "proj-news-digest")
 CLAUDE_PATH = os.environ.get("CLAUDE_PATH", "/home/ubuntu/.local/bin/claude")
 
 
-def generate_descriptions(items: list[dict]) -> list[str]:
+def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
     """Ask Claude to write a one-sentence description for each item."""
     compact = [
-        {"index": i, "title": item["title"], "summary": item.get("summary", "")[:300]}
+        {
+            "index": i,
+            "title": item.get("title_en") or item["title"],
+            "summary": item.get("summary", "")[:300],
+        }
         for i, item in enumerate(items)
     ]
     prompt = (
@@ -47,7 +52,7 @@ def generate_descriptions(items: list[dict]) -> list[str]:
 def format_item(item: dict, description: str) -> str:
     sources = item.get("sources", [item["source"]])
     source_str = " · ".join(sources)
-    title = item["title"]
+    title = item.get("title_en") or item["title"]
     url = item["url"]
     desc_str = f"\n   {description}" if description else ""
     raw = item.get("engagement_raw")
@@ -82,6 +87,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="Read items from FILE instead of stdin")
     parser.add_argument("--dry-run", action="store_true", help="Print message without posting")
+    parser.add_argument("--mode", default="tech", choices=["tech", "news"], help="Digest mode (default: tech)")
+    parser.add_argument("--channel", help="Slack channel override")
     args = parser.parse_args()
 
     if args.input:
@@ -96,12 +103,15 @@ def main():
 
     from datetime import datetime, timezone
     date_str = datetime.now(timezone.utc).strftime("%A, %B %-d")
+    label = "News Digest" if args.mode == "news" else "Trend Digest"
+    channel = args.channel or (NEWS_CHANNEL if args.mode == "news" else SLACK_CHANNEL)
+
     print("Generating descriptions...", file=sys.stderr)
-    descriptions = generate_descriptions(items)
+    descriptions = generate_descriptions(items, args.mode)
     formatted = [format_item(item, desc) for item, desc in zip(items, descriptions)]
 
     if args.dry_run:
-        print(f"*Trend Digest — {date_str}* ({len(items)} items)")
+        print(f"*{label} — {date_str}* ({len(items)} items)")
         for msg in formatted:
             print("\n---\n" + msg)
         return
@@ -111,10 +121,10 @@ def main():
         print("ERROR: SLACK_BOT_TOKEN not set", file=sys.stderr)
         sys.exit(1)
 
-    thread_ts = post_to_slack(f"*Trend Digest — {date_str}* ({len(items)} items)", token, SLACK_CHANNEL)
+    thread_ts = post_to_slack(f"*{label} — {date_str}* ({len(items)} items)", token, channel)
     for msg in formatted:
-        post_to_slack(msg, token, SLACK_CHANNEL, thread_ts=thread_ts, unfurl=True)
-    print(f"Posted {len(items)} items to #{SLACK_CHANNEL}", file=sys.stderr)
+        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True)
+    print(f"Posted {len(items)} items to #{channel}", file=sys.stderr)
 
 
 if __name__ == "__main__":
