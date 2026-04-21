@@ -138,7 +138,7 @@ def merge_and_score(items: list[dict]) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=50, help="Top N items to return (default: 50)")
+    parser.add_argument("--limit", type=int, default=20, help="Top N items to return (default: 20)")
     parser.add_argument("--output", help="Write output to FILE instead of stdout")
     args = parser.parse_args()
 

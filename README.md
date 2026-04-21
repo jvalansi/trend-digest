@@ -85,7 +85,7 @@ export YOUTUBE_API_KEY=...
 
 Run the full pipeline:
 ```bash
-python src/aggregate.py | python src/curate.py | python src/deliver.py
+python src/aggregate.py | python src/deliver.py
 ```
 
 ---

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Delivery — formats curated items and posts to Slack.
+Delivery — formats aggregated items and posts to Slack.
 
 Usage:
-  python aggregate.py | python curate.py | python deliver.py
+  python aggregate.py | python deliver.py
   python deliver.py --input FILE
   python deliver.py --input FILE --dry-run
 """
