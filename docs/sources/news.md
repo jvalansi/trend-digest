@@ -46,6 +46,8 @@ Sources for engagement/trending signal, not article content.
 |---|---|---|---|
 | Google Trends | `https://trends.google.com/trends/api/dailytrends` | Search interest score 0–100; no auth | Planned: `fetchers/trends_google.py` |
 | Bing Trends | `https://www.bing.com/trends/api/dailytrends` | Unofficial but works without auth | Planned: `fetchers/trends_bing.py` |
+| Reddit | `r/news`, `r/worldnews`, `r/politics` hot posts | AWS IPs blocked; use `REDDIT_PROXY_URL` from `.env` | Planned |
+| X / Twitter | Twitter API v2 trending topics | Paid ($100/month minimum) | Keep in mind |
 | Snapchat Trends | `https://trends.snap.com/api/v1/topicTrends` | No auth required; skews younger demographic | Planned |
 | Wikipedia Pageviews | `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/{date}` | Most-read articles; strong breaking news signal | Planned |
 | Spotify | Spotify Web API — podcast charts | Needs OAuth; good for news podcast signal (NPR, BBC, NYT The Daily) | Keep in mind |
