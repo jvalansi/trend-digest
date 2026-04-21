@@ -53,8 +53,12 @@ SOURCE_AUTHORITY = {
     "UOL":             0.8,
     "Infobae":         0.8,
     "Naver News":      0.9,
-    "Google Trends":   1.1,
+    "Google Trends":      1.1,
     "Wikipedia Trending": 1.0,
+    "Reddit r/news":      1.1,
+    "Reddit r/worldnews": 1.1,
+    "Reddit r/politics":  1.0,
+    "Bilibili Trending":  0.9,
 }
 DEFAULT_AUTHORITY = 0.8
 
@@ -63,6 +67,8 @@ FETCHERS = [
     {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "news"]},
     {"cmd": ["python", "src/fetchers/trends_google.py", "--limit", "20"]},
     {"cmd": ["python", "src/fetchers/trends_wikipedia.py", "--limit", "20"]},
+    {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25"]},
+    {"cmd": ["python", "src/fetchers/trends_bilibili.py", "--limit", "20"]},
     {"cmd": ["python", "src/fetchers/hn.py", "--feed", "top", "--limit", "30"]},
     {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "5"]},
     {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"]},
