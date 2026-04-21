@@ -21,6 +21,13 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
+try:
+    from deep_translator import GoogleTranslator
+    from langdetect import detect, LangDetectException
+    TRANSLATION_AVAILABLE = True
+except ImportError:
+    TRANSLATION_AVAILABLE = False
+
 PYTHON = sys.executable
 
 # Authority weights by source name (higher = more authoritative)
@@ -91,6 +98,18 @@ def run_fetcher(cmd: list[str]) -> list[dict]:
     return json.loads(result.stdout)
 
 
+def translate_to_english(text: str) -> str:
+    """Translate text to English if not already English. Returns original on failure."""
+    if not TRANSLATION_AVAILABLE or not text:
+        return text
+    try:
+        if detect(text) == "en":
+            return text
+        return GoogleTranslator(source="auto", target="en").translate(text) or text
+    except Exception:
+        return text
+
+
 def title_words(title: str) -> set[str]:
     stopwords = {"a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or", "is", "are", "was"}
     return {w for w in title.lower().split() if w not in stopwords and len(w) > 2}
@@ -123,7 +142,10 @@ def merge_and_score(items: list[dict]) -> list[dict]:
     group_words: list[set] = []
 
     for item in items:
-        words = title_words(item["title"])
+        title_en = translate_to_english(item["title"])
+        if title_en != item["title"]:
+            item["title_en"] = title_en
+        words = title_words(title_en)
         matched = None
         for i, gw in enumerate(group_words):
             if similarity(words, gw) > 0.55:
