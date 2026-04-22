@@ -84,11 +84,12 @@ def main():
     for sub in SUBREDDITS:
         try:
             items = fetch_subreddit(sub, args.limit, proxy)
-            items = score_items(items, f"Reddit r/{sub}", "score")
             all_items.extend(items)
             print(f"  Reddit r/{sub}: {len(items)} items", file=sys.stderr)
         except Exception as e:
             print(f"  Reddit r/{sub}: ERROR — {e}", file=sys.stderr)
+
+    all_items = score_items(all_items, "Reddit", "score")
 
     print(json.dumps(all_items, indent=2, ensure_ascii=False))
 

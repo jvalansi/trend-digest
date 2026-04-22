@@ -62,9 +62,7 @@ SOURCE_AUTHORITY = {
     "Naver News":      0.9,
     "Google Trends":      1.1,
     "Wikipedia Trending": 1.0,
-    "Reddit r/news":      1.1,
-    "Reddit r/worldnews": 1.1,
-    "Reddit r/politics":  1.0,
+    "Reddit":             1.1,
     "Bilibili Trending":  0.9,
 }
 DEFAULT_AUTHORITY = 0.8
