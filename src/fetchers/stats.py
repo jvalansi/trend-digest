@@ -10,6 +10,10 @@ import os
 
 STATS_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "data", "engagement_stats.json")
 
+# TODO: historical z-scores (against running mean/variance) are a good signal —
+# they'd let a story that's unusually viral for its source float higher.
+# Consider blending: engagement = alpha * within_batch_z + (1-alpha) * historical_z
+
 
 def _load() -> dict:
     try:
@@ -25,39 +29,42 @@ def _save(stats: dict) -> None:
         json.dump(stats, f, indent=2)
 
 
-def update_and_score(source: str, raw_value: float) -> float:
-    """Update running stats for source and return normalized z-score clamped to [-3, 3]."""
+def _update_stats(source: str, raw_value: float) -> None:
+    """Update running historical stats for source (Welford's algorithm)."""
     stats = _load()
-
     if source not in stats:
         stats[source] = {"n": 0, "mean": 0.0, "M2": 0.0}
-
     s = stats[source]
     s["n"] += 1
     delta = raw_value - s["mean"]
     s["mean"] += delta / s["n"]
-    delta2 = raw_value - s["mean"]
-    s["M2"] += delta * delta2
-
+    s["M2"] += delta * (raw_value - s["mean"])
     _save(stats)
-
-    if s["n"] < 2:
-        return 0.0
-
-    variance = s["M2"] / (s["n"] - 1)
-    std = math.sqrt(variance) if variance > 0 else 1.0
-    z = (raw_value - s["mean"]) / std
-    return max(-3.0, min(3.0, round(z, 3)))
 
 
 def score_items(items: list[dict], source: str, raw_field: str) -> list[dict]:
-    """Add raw and normalized engagement scores to each item."""
+    """Normalize engagement within the current batch (z-score), update historical stats."""
     drop_fields = {"score", "comments", "stars", "stars_today"} - {raw_field}
-    for item in items:
-        raw = item.get(raw_field, 0) or 0
-        item["engagement_raw"] = float(raw)
-        item["engagement"] = update_and_score(source, float(raw))
+
+    raws = [float(item.get(raw_field, 0) or 0) for item in items]
+
+    for raw in raws:
+        _update_stats(source, raw)
+
+    # Within-batch z-score so all sources compete on equal footing
+    if len(raws) >= 2:
+        mean = sum(raws) / len(raws)
+        variance = sum((r - mean) ** 2 for r in raws) / (len(raws) - 1)
+        std = math.sqrt(variance) if variance > 0 else 1.0
+    else:
+        mean, std = 0.0, 1.0
+
+    for item, raw in zip(items, raws):
+        z = (raw - mean) / std if std > 0 else 0.0
+        item["engagement_raw"] = raw
+        item["engagement"] = max(-3.0, min(3.0, round(z, 3)))
         for f in drop_fields:
             item.pop(f, None)
         item.pop(raw_field, None)
+
     return items
