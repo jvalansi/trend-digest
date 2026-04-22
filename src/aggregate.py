@@ -17,6 +17,7 @@ import argparse
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -113,8 +114,12 @@ def translate_to_english(text: str) -> str:
 
 
 def title_words(title: str) -> set[str]:
-    stopwords = {"a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or", "is", "are", "was"}
-    return {w for w in title.lower().split() if w not in stopwords and len(w) > 2}
+    stopwords = {"a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or", "is", "are", "was", "were",
+                 "has", "have", "been", "will", "would", "could", "should", "that", "this", "with", "from", "by",
+                 "as", "its", "it", "be", "after", "says", "say", "over", "new", "amid", "than"}
+    # Match on capitalized words (named entities) for cross-outlet dedup
+    entities = {w.lower() for w in re.findall(r'\b[A-Z][a-zA-Z]{2,}\b', title) if w.lower() not in stopwords}
+    return entities if entities else {w for w in title.lower().split() if w not in stopwords and len(w) > 2}
 
 
 def similarity(a: set, b: set) -> float:
@@ -150,7 +155,7 @@ def merge_and_score(items: list[dict]) -> list[dict]:
         words = title_words(title_en)
         matched = None
         for i, gw in enumerate(group_words):
-            if similarity(words, gw) > 0.55:
+            if similarity(words, gw) > 0.25:
                 matched = i
                 break
         if matched is not None:
