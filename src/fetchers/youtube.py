@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-YouTube fetcher — pulls latest videos from curated channels via playlistItems API.
+YouTube fetcher — pulls trending videos by category via videos.list?chart=mostPopular.
 
-Uses uploads playlist (1 unit/channel) instead of search (100 units/channel).
-Results are cached for 24h to avoid re-fetching within the same day.
+Category IDs: 25 = News & Politics, 28 = Science & Technology
+Results are cached for 6h to avoid burning quota.
 
 Usage:
-  python fetchers/youtube.py [--limit N] [--no-cache]
+  python fetchers/youtube.py [--limit N] [--category tech|news] [--no-cache]
 
 Output: JSON array of normalized items to stdout.
 """
@@ -23,14 +23,10 @@ from stats import score_items
 BASE = "https://www.googleapis.com/youtube/v3"
 CACHE_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "data", "youtube_cache.json")
 
-DEFAULT_CHANNELS = [
-    {"id": "UCsBjURrPoezykLs9EqgamOA", "name": "Fireship"},
-    {"id": "UCXuqSBlHAE6Xw-yeJA0Tunw",  "name": "Linus Tech Tips"},
-    {"id": "UCbmNph6atAoGfqLoCL_duAg",  "name": "Theo (t3.gg)"},
-    {"id": "UC8butISFwT-Wl7EV0hUK0BQ",  "name": "freeCodeCamp"},
-    {"id": "UCddiUEpeqJcYeBxX1IVBKvQ",  "name": "ThePrimeagen"},
-    {"id": "UCo8bcnLyZH8tBIH9V1mLgqQ",  "name": "ByteByteGo"},
-]
+CATEGORY_IDS = {
+    "tech": "28",   # Science & Technology
+    "news": "25",   # News & Politics
+}
 
 
 def api_get(endpoint: str, params: dict) -> dict:
@@ -59,98 +55,66 @@ def save_cache(cache: dict) -> None:
 
 
 def cache_valid(entry: dict) -> bool:
-    """Cache is valid if fetched today (UTC)."""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    return entry.get("date") == today
+    """Cache valid for 6h."""
+    try:
+        fetched = datetime.fromisoformat(entry["fetched_at"])
+        age_hours = (datetime.now(timezone.utc) - fetched).total_seconds() / 3600
+        return age_hours < 6
+    except Exception:
+        return False
 
 
-def get_uploads_playlist_id(channel_id: str) -> str | None:
-    """Get the uploads playlist ID for a channel (costs 1 unit)."""
-    data = api_get("channels", {"part": "contentDetails", "id": channel_id})
-    items = data.get("items", [])
-    if not items:
-        return None
-    return items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
-
-
-def fetch_playlist_items(playlist_id: str, limit: int) -> list[str]:
-    """Fetch video IDs from uploads playlist (costs 1 unit)."""
-    data = api_get("playlistItems", {
-        "part": "contentDetails",
-        "playlistId": playlist_id,
-        "maxResults": min(limit, 50),
-    })
-    return [item["contentDetails"]["videoId"] for item in data.get("items", [])]
-
-
-def fetch_video_details(video_ids: list[str]) -> list[dict]:
-    """Fetch snippet + statistics for a list of video IDs (costs 1 unit per 50)."""
+def fetch_trending(category: str, limit: int) -> list[dict]:
+    cat_id = CATEGORY_IDS[category]
     data = api_get("videos", {
         "part": "snippet,statistics",
-        "id": ",".join(video_ids),
-        "maxResults": 50,
+        "chart": "mostPopular",
+        "videoCategoryId": cat_id,
+        "maxResults": min(limit, 50),
+        "regionCode": "US",
     })
-    return data.get("items", [])
-
-
-def normalize(item: dict, channel_name: str) -> dict:
-    snippet = item.get("snippet", {})
-    stats = item.get("statistics", {})
-    return {
-        "title": snippet.get("title", "").strip(),
-        "summary": snippet.get("description", "")[:500],
-        "url": f"https://www.youtube.com/watch?v={item['id']}",
-        "source": f"YouTube / {channel_name}",
-        "category": "tech",
-        "thumbnail": snippet.get("thumbnails", {}).get("medium", {}).get("url"),
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "published_at": snippet.get("publishedAt"),
-        "_view_count": int(stats.get("viewCount", 0) or 0),
-    }
-
-
-def fetch_channel(channel: dict, limit: int, cache: dict) -> list[dict]:
-    cid = channel["id"]
-
-    # Get uploads playlist ID (cached)
-    if cid not in cache or not cache_valid(cache.get(cid, {})):
-        playlist_id = get_uploads_playlist_id(cid)
-        if not playlist_id:
-            return []
-        video_ids = fetch_playlist_items(playlist_id, limit)
-        details = fetch_video_details(video_ids)
-        items = [normalize(v, channel["name"]) for v in details]
-        cache[cid] = {
-            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-            "items": items,
-        }
-        save_cache(cache)
-        return items
-    else:
-        print(f"  {channel['name']}: using cache", file=sys.stderr)
-        return cache[cid]["items"]
+    items = []
+    for v in data.get("items", []):
+        snippet = v.get("snippet", {})
+        stats = v.get("statistics", {})
+        items.append({
+            "title": snippet.get("title", "").strip(),
+            "summary": snippet.get("description", "")[:500],
+            "url": f"https://www.youtube.com/watch?v={v['id']}",
+            "source": "YouTube Trending",
+            "category": category,
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "published_at": snippet.get("publishedAt"),
+            "score": int(stats.get("viewCount", 0) or 0),
+        })
+    return items
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=5, help="Max videos per channel (default: 5)")
+    parser.add_argument("--limit", type=int, default=20, help="Number of videos (default: 20)")
+    parser.add_argument("--category", default="tech", choices=["tech", "news"], help="Category (default: tech)")
     parser.add_argument("--no-cache", action="store_true", help="Ignore cache and re-fetch")
     args = parser.parse_args()
 
+    cache_key = f"trending_{args.category}"
     cache = {} if args.no_cache else load_cache()
-    results = []
 
-    for channel in DEFAULT_CHANNELS:
+    if cache_key in cache and cache_valid(cache[cache_key]):
+        print(f"  YouTube Trending ({args.category}): using cache", file=sys.stderr)
+        results = cache[cache_key]["items"]
+    else:
+        print(f"  Fetching YouTube trending ({args.category})...", file=sys.stderr)
         try:
-            items = fetch_channel(channel, args.limit, cache)
-            results.extend(items)
-            print(f"  {channel['name']}: {len(items)} videos", file=sys.stderr)
+            results = fetch_trending(args.category, args.limit)
+            cache[cache_key] = {"fetched_at": datetime.now(timezone.utc).isoformat(), "items": results}
+            save_cache(cache)
         except Exception as e:
-            print(f"  {channel['name']}: ERROR — {e}", file=sys.stderr)
+            print(f"  ERROR: {e}", file=sys.stderr)
+            sys.exit(1)
 
-    for item in results:
-        item["score"] = item.pop("_view_count", 0)
-    results = score_items(results, "YouTube", "score")
+    results = score_items(results, f"YouTube Trending ({args.category})", "score")
+    print(f"  YouTube Trending ({args.category}): {len(results)} videos", file=sys.stderr)
     print(json.dumps(results, indent=2, ensure_ascii=False))
 
 

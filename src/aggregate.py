@@ -45,6 +45,7 @@ SOURCE_AUTHORITY = {
     "GitHub Trending (daily)":  0.7,
     "GitHub Trending (weekly)": 0.6,
     "X (via Grok)":    0.9,
+    "YouTube Trending": 1.0,
     # News sources — authority weighted by Similarweb rank
     "Yahoo Japan":     1.1,
     "Yahoo News":      1.0,
@@ -72,17 +73,21 @@ FETCHERS = {
     "tech": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "tech"]},
         {"cmd": ["python", "src/fetchers/hn.py", "--feed", "top", "--limit", "30"]},
-        {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "5"]},
+        {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "20", "--category", "tech"]},
         {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"]},
         {"cmd": ["python", "src/fetchers/github.py", "--limit", "25", "--since", "weekly"]},
-        {"cmd": ["python", "src/fetchers/x.py", "--limit", "10"]},
+        {"cmd": ["python", "src/fetchers/x.py", "--limit", "10", "--category", "tech"]},
+        {"cmd": ["python", "src/fetchers/trends_google.py", "--limit", "20"]},
+        {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "tech"]},
     ],
     "news": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "news"]},
         {"cmd": ["python", "src/fetchers/trends_google.py", "--limit", "20"]},
         {"cmd": ["python", "src/fetchers/trends_wikipedia.py", "--limit", "20"]},
-        {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25"]},
+        {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "news"]},
         {"cmd": ["python", "src/fetchers/trends_bilibili.py", "--limit", "20"]},
+        {"cmd": ["python", "src/fetchers/x.py", "--limit", "10", "--category", "news"]},
+        {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "20", "--category", "news"]},
     ],
 }
 

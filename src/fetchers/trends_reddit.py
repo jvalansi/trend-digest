@@ -19,7 +19,10 @@ from datetime import datetime, timezone
 
 from stats import score_items
 
-SUBREDDITS = ["news", "worldnews", "politics"]
+SUBREDDITS = {
+    "news": ["news", "worldnews", "politics"],
+    "tech": ["technology", "programming", "MachineLearning", "artificial", "netsec", "webdev"],
+}
 BASE = "https://www.reddit.com/r/{sub}/hot.json?limit={limit}"
 
 
@@ -72,6 +75,7 @@ def fetch_subreddit(sub: str, limit: int, proxy: str | None) -> list[dict]:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=25, help="Posts per subreddit (default: 25)")
+    parser.add_argument("--mode", default="news", choices=["news", "tech"], help="Subreddit set (default: news)")
     args = parser.parse_args()
 
     proxy = load_proxy()
@@ -81,7 +85,7 @@ def main():
         return
 
     all_items = []
-    for sub in SUBREDDITS:
+    for sub in SUBREDDITS[args.mode]:
         try:
             items = fetch_subreddit(sub, args.limit, proxy)
             all_items.extend(items)
