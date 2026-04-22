@@ -20,10 +20,10 @@ from datetime import datetime, timezone
 from stats import score_items
 
 SUBREDDITS = {
-    "news": ["news", "worldnews", "politics"],
-    "tech": ["technology", "programming", "MachineLearning", "artificial", "netsec", "webdev"],
+    "tech": ["technology", "programming", "learnprogramming", "compsci", "webdev", "MachineLearning"],
 }
-BASE = "https://www.reddit.com/r/{sub}/hot.json?limit={limit}"
+BASE_SUB = "https://www.reddit.com/r/{sub}/hot.json?limit={limit}"
+BASE_POPULAR = "https://www.reddit.com/r/popular.json?limit={limit}"
 
 
 def load_proxy() -> str | None:
@@ -39,16 +39,11 @@ def load_proxy() -> str | None:
     return os.environ.get("REDDIT_PROXY_URL")
 
 
-def fetch_subreddit(sub: str, limit: int, proxy: str | None) -> list[dict]:
-    url = BASE.format(sub=sub, limit=limit)
+def fetch_posts(url: str, limit: int, proxy: str | None) -> list[dict]:
     req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
-
-    if proxy:
-        opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler({"http": proxy, "https": proxy})
-        )
-    else:
-        opener = urllib.request.build_opener()
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({"http": proxy, "https": proxy})
+    ) if proxy else urllib.request.build_opener()
 
     with opener.open(req, timeout=15) as resp:
         data = json.loads(resp.read())
@@ -85,13 +80,23 @@ def main():
         return
 
     all_items = []
-    for sub in SUBREDDITS[args.mode]:
+    if args.mode == "news":
         try:
-            items = fetch_subreddit(sub, args.limit, proxy)
+            url = BASE_POPULAR.format(limit=args.limit)
+            items = fetch_posts(url, args.limit, proxy)
             all_items.extend(items)
-            print(f"  Reddit r/{sub}: {len(items)} items", file=sys.stderr)
+            print(f"  Reddit r/popular: {len(items)} items", file=sys.stderr)
         except Exception as e:
-            print(f"  Reddit r/{sub}: ERROR — {e}", file=sys.stderr)
+            print(f"  Reddit r/popular: ERROR — {e}", file=sys.stderr)
+    else:
+        for sub in SUBREDDITS[args.mode]:
+            try:
+                url = BASE_SUB.format(sub=sub, limit=args.limit)
+                items = fetch_posts(url, args.limit, proxy)
+                all_items.extend(items)
+                print(f"  Reddit r/{sub}: {len(items)} items", file=sys.stderr)
+            except Exception as e:
+                print(f"  Reddit r/{sub}: ERROR — {e}", file=sys.stderr)
 
     all_items = score_items(all_items, "Reddit", "score")
     all_items = sorted(all_items, key=lambda x: x["engagement"], reverse=True)[:20]
