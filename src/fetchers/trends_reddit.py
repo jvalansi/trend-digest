@@ -60,7 +60,7 @@ def fetch_subreddit(sub: str, limit: int, proxy: str | None) -> list[dict]:
             "title": post["title"].strip(),
             "summary": post.get("selftext", "")[:300].strip(),
             "url": post.get("url") or f"https://reddit.com{post['permalink']}",
-            "source": f"Reddit r/{sub}",
+            "source": "Reddit",
             "category": "news",
             "score": post.get("score", 0),
             "fetched_at": datetime.now(timezone.utc).isoformat(),
