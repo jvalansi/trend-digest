@@ -77,8 +77,8 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "tech"], "is_rss": True},
         {"cmd": ["python", "src/fetchers/hn.py", "--feed", "top", "--limit", "30"], "section": "Hacker News"},
         {"cmd": ["python", "src/fetchers/youtube.py", "--limit", "20", "--category", "tech"], "section": "YouTube Tech"},
-        {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"], "section": "GitHub (daily)"},
-        {"cmd": ["python", "src/fetchers/github.py", "--limit", "25", "--since", "weekly"], "section": "GitHub (weekly)"},
+        {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"], "section": "GitHub Trending"},
+        {"cmd": ["python", "src/fetchers/github.py", "--limit", "25", "--since", "weekly"], "section": "GitHub Trending"},
         {"cmd": ["python", "src/fetchers/x.py", "--limit", "10", "--category", "tech"], "section": "X Tech"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "tech"], "section": "Reddit Tech"},
     ],
@@ -200,6 +200,8 @@ def main():
     rss_items = []
     sections = {}
 
+    section_pools: dict[str, list[dict]] = {}
+
     for fetcher in fetchers:
         cmd = fetcher["cmd"]
         print(f"\n[{cmd[1]}]", file=sys.stderr)
@@ -210,12 +212,22 @@ def main():
             print(f"  RSS subtotal: {len(rss_items)} items", file=sys.stderr)
         else:
             section = fetcher["section"]
-            # Items are already sorted by native metric from the fetcher;
-            # take top section_limit directly.
-            top = items[:args.section_limit]
-            if top:
-                sections[section] = top
-            print(f"  {section}: {len(top)} items", file=sys.stderr)
+            section_pools.setdefault(section, []).extend(items)
+            print(f"  {section}: +{len(items)} items", file=sys.stderr)
+
+    for section, pool in section_pools.items():
+        # Dedup by URL, preserving order (highest-engagement first from each fetcher)
+        seen_urls = set()
+        unique = []
+        for item in pool:
+            url = item.get("url", "")
+            if url not in seen_urls:
+                seen_urls.add(url)
+                unique.append(item)
+        top = unique[:args.section_limit]
+        if top:
+            sections[section] = top
+        print(f"  {section}: {len(top)} unique items (from {len(pool)} pooled)", file=sys.stderr)
 
     print(f"\nRSS raw: {len(rss_items)} items", file=sys.stderr)
     rss_merged = merge_rss(rss_items)
