@@ -80,7 +80,6 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/github.py", "--limit", "25"], "section": "GitHub (daily)"},
         {"cmd": ["python", "src/fetchers/github.py", "--limit", "25", "--since", "weekly"], "section": "GitHub (weekly)"},
         {"cmd": ["python", "src/fetchers/x.py", "--limit", "10", "--category", "tech"], "section": "X Tech"},
-        {"cmd": ["python", "src/fetchers/trends_google.py", "--limit", "20"], "section": "Google Trends"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "tech"], "section": "Reddit Tech"},
     ],
     "news": [

@@ -15,6 +15,7 @@ cd "$SCRIPT_DIR"
 # Load env
 set -a
 source /home/ubuntu/.env 2>/dev/null || true
+source "$SCRIPT_DIR/.env" 2>/dev/null || true
 set +a
 
 echo "[$(date)] Starting $MODE digest..."
