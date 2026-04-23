@@ -190,7 +190,7 @@ def merge_rss(items: list[dict]) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=20, help="Top N RSS items (default: 20)")
+    parser.add_argument("--limit", type=int, default=5, help="Top N RSS items (default: 5)")
     parser.add_argument("--section-limit", type=int, default=5, help="Top N per non-RSS section (default: 5)")
     parser.add_argument("--output", help="Write output to FILE instead of stdout")
     parser.add_argument("--mode", default="tech", choices=["tech", "news"], help="Digest mode (default: tech)")
