@@ -98,26 +98,35 @@ def curate_batch(items: list[dict], mode: str) -> list[dict]:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", default="tech", choices=["tech", "news"], help="Interest profile (default: tech)")
-    parser.add_argument("--top", type=int, default=50, help="Max items to curate (default: 50)")
+    parser.add_argument("--top", type=int, default=50, help="Max RSS items to curate (default: 50)")
     parser.add_argument("--input", help="Read items from FILE instead of stdin")
     parser.add_argument("--output", help="Write output to FILE instead of stdout")
     args = parser.parse_args()
 
     if args.input:
         with open(args.input) as f:
-            items = json.load(f)
+            data = json.load(f)
     else:
-        items = json.load(sys.stdin)
+        data = json.load(sys.stdin)
 
-    # Only curate the top N by raw score to keep Claude prompt small
-    items = sorted(items, key=lambda x: x.get("score", 0), reverse=True)[:args.top]
+    # New sectioned format: {"rss": [...], "sections": {...}}
+    if isinstance(data, dict) and "rss" in data:
+        rss = sorted(data["rss"], key=lambda x: x.get("score", 0), reverse=True)[:args.top]
+        print(f"  Curating {len(rss)} RSS items (mode={args.mode})...", file=sys.stderr)
+        rss = curate_batch(rss, args.mode)
+        rss = sorted(rss, key=lambda x: x.get("score", 0), reverse=True)
+        print(f"  Curation done.", file=sys.stderr)
+        output_data = {"rss": rss, "sections": data.get("sections", {})}
+    else:
+        # Legacy flat list
+        items = sorted(data, key=lambda x: x.get("score", 0), reverse=True)[:args.top]
+        print(f"  Curating {len(items)} items (mode={args.mode})...", file=sys.stderr)
+        items = curate_batch(items, args.mode)
+        items = sorted(items, key=lambda x: x.get("score", 0), reverse=True)
+        print(f"  Curation done.", file=sys.stderr)
+        output_data = items
 
-    print(f"  Curating {len(items)} items (mode={args.mode})...", file=sys.stderr)
-    items = curate_batch(items, args.mode)
-    items = sorted(items, key=lambda x: x.get("score", 0), reverse=True)
-    print(f"  Curation done.", file=sys.stderr)
-
-    output = json.dumps(items, indent=2, ensure_ascii=False)
+    output = json.dumps(output_data, indent=2, ensure_ascii=False)
     if args.output:
         with open(args.output, "w") as f:
             f.write(output)

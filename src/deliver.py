@@ -83,6 +83,18 @@ def post_to_slack(text: str, token: str, channel: str, thread_ts: str | None = N
     return result["ts"]
 
 
+def format_section(name: str, items: list[dict]) -> str:
+    """Format a per-source section as a single Slack message block."""
+    lines = [f"*{name}*"]
+    for item in items:
+        title = item.get("title_en") or item["title"]
+        url = item["url"]
+        raw = item.get("engagement_raw")
+        metric = f" — {int(raw):,}" if raw else ""
+        lines.append(f"• <{url}|{title}>{metric}")
+    return "\n".join(lines)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="Read items from FILE instead of stdin")
@@ -93,26 +105,40 @@ def main():
 
     if args.input:
         with open(args.input) as f:
-            items = json.load(f)
+            data = json.load(f)
     else:
-        items = json.load(sys.stdin)
-
-    if not items:
-        print("No items to deliver.", file=sys.stderr)
-        return
+        data = json.load(sys.stdin)
 
     from datetime import datetime, timezone
     date_str = datetime.now(timezone.utc).strftime("%A, %B %-d")
     label = "News Digest" if args.mode == "news" else "Trend Digest"
     channel = args.channel or (NEWS_CHANNEL if args.mode == "news" else SLACK_CHANNEL)
 
+    # New sectioned format
+    if isinstance(data, dict) and "rss" in data:
+        items = data["rss"]
+        sections = data.get("sections", {})
+    else:
+        items = data
+        sections = {}
+
+    if not items and not sections:
+        print("No items to deliver.", file=sys.stderr)
+        return
+
     print("Generating descriptions...", file=sys.stderr)
     descriptions = generate_descriptions(items, args.mode)
-    formatted = [format_item(item, desc) for item, desc in zip(items, descriptions)]
+    formatted_rss = [format_item(item, desc) for item, desc in zip(items, descriptions)]
+    formatted_sections = [format_section(name, sec_items) for name, sec_items in sections.items()]
+
+    total = len(items) + sum(len(v) for v in sections.values())
+    header = f"*{label} — {date_str}* ({len(items)} stories" + (f" + {len(sections)} source digests)" if sections else ")")
 
     if args.dry_run:
-        print(f"*{label} — {date_str}* ({len(items)} items)")
-        for msg in formatted:
+        print(header)
+        for msg in formatted_rss:
+            print("\n---\n" + msg)
+        for msg in formatted_sections:
             print("\n---\n" + msg)
         return
 
@@ -121,10 +147,12 @@ def main():
         print("ERROR: SLACK_BOT_TOKEN not set", file=sys.stderr)
         sys.exit(1)
 
-    thread_ts = post_to_slack(f"*{label} — {date_str}* ({len(items)} items)", token, channel)
-    for msg in formatted:
+    thread_ts = post_to_slack(header, token, channel)
+    for msg in formatted_rss:
         post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True)
-    print(f"Posted {len(items)} items to #{channel}", file=sys.stderr)
+    for msg in formatted_sections:
+        post_to_slack(msg, token, channel, thread_ts=thread_ts)
+    print(f"Posted {len(items)} RSS + {len(sections)} sections to #{channel}", file=sys.stderr)
 
 
 if __name__ == "__main__":
