@@ -83,18 +83,6 @@ def post_to_slack(text: str, token: str, channel: str, thread_ts: str | None = N
     return result["ts"]
 
 
-def format_section(name: str, items: list[dict]) -> str:
-    """Format a per-source section as a single Slack message block."""
-    lines = [f"*{name}*"]
-    for item in items:
-        title = item.get("title_en") or item["title"]
-        url = item["url"]
-        raw = item.get("engagement_raw")
-        metric = f" — {int(raw):,}" if raw else ""
-        lines.append(f"• <{url}|{title}>{metric}")
-    return "\n".join(lines)
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="Read items from FILE instead of stdin")
@@ -116,29 +104,44 @@ def main():
 
     # New sectioned format
     if isinstance(data, dict) and "rss" in data:
-        items = data["rss"]
+        rss_items = data["rss"]
         sections = data.get("sections", {})
     else:
-        items = data
+        rss_items = data
         sections = {}
 
-    if not items and not sections:
+    # Flatten all items for description generation
+    section_items = [(name, item) for name, items in sections.items() for item in items]
+    all_items = rss_items + [item for _, item in section_items]
+
+    if not all_items:
         print("No items to deliver.", file=sys.stderr)
         return
 
     print("Generating descriptions...", file=sys.stderr)
-    descriptions = generate_descriptions(items, args.mode)
-    formatted_rss = [format_item(item, desc) for item, desc in zip(items, descriptions)]
-    formatted_sections = [format_section(name, sec_items) for name, sec_items in sections.items()]
+    descriptions = generate_descriptions(all_items, args.mode)
+    rss_descs = descriptions[:len(rss_items)]
+    section_descs = descriptions[len(rss_items):]
 
-    total = len(items) + sum(len(v) for v in sections.values())
-    header = f"*{label} — {date_str}* ({len(items)} stories" + (f" + {len(sections)} source digests)" if sections else ")")
+    formatted_rss = [format_item(item, desc) for item, desc in zip(rss_items, rss_descs)]
+
+    # Group section messages: header per section, then one message per item
+    section_messages = []
+    desc_idx = 0
+    for name, items in sections.items():
+        section_messages.append(f"*{name}*")
+        for item in items:
+            section_messages.append(format_item(item, section_descs[desc_idx]))
+            desc_idx += 1
+
+    total_items = len(rss_items) + len(section_items)
+    header = f"*{label} — {date_str}* ({total_items} items)"
 
     if args.dry_run:
         print(header)
         for msg in formatted_rss:
             print("\n---\n" + msg)
-        for msg in formatted_sections:
+        for msg in section_messages:
             print("\n---\n" + msg)
         return
 
@@ -150,9 +153,9 @@ def main():
     thread_ts = post_to_slack(header, token, channel)
     for msg in formatted_rss:
         post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True)
-    for msg in formatted_sections:
-        post_to_slack(msg, token, channel, thread_ts=thread_ts)
-    print(f"Posted {len(items)} RSS + {len(sections)} sections to #{channel}", file=sys.stderr)
+    for msg in section_messages:
+        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True)
+    print(f"Posted {total_items} items to #{channel}", file=sys.stderr)
 
 
 if __name__ == "__main__":
