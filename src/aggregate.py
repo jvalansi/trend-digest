@@ -47,6 +47,8 @@ SOURCE_AUTHORITY = {
     "GitHub Trending (daily)":  0.7,
     "GitHub Trending (weekly)": 0.6,
     "X (via Grok)":    0.9,
+    "HF Papers":       1.2,
+    "HF Models":       1.0,
     "YouTube Trending": 1.0,
     "Yahoo Japan":     1.1,
     "Yahoo News":      1.0,
@@ -81,6 +83,8 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/github.py", "--limit", "25", "--since", "weekly"], "section": "GitHub Trending"},
         {"cmd": ["python", "src/fetchers/x.py", "--limit", "10", "--category", "tech"], "section": "X Tech"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "tech"], "section": "Reddit Tech"},
+        {"cmd": ["python", "src/fetchers/hf_papers.py", "--limit", "20"], "section": "HF Papers"},
+        {"cmd": ["python", "src/fetchers/hf_models.py", "--limit", "15"], "section": "HF Models"},
     ],
     "news": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "news"], "is_rss": True},
