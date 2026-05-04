@@ -23,15 +23,16 @@ from stats import score_items
 NEWS_RSS = "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
 
 
-def fetch_headline(query: str) -> str:
+def fetch_headline(query: str) -> tuple[str, str]:
     try:
-        url = NEWS_RSS.format(query=urllib.parse.quote(query))
-        feed = feedparser.parse(url)
+        rss_url = NEWS_RSS.format(query=urllib.parse.quote(query))
+        feed = feedparser.parse(rss_url)
         if feed.entries:
-            return feed.entries[0].title
+            e = feed.entries[0]
+            return e.title, e.get("link", "")
     except Exception:
         pass
-    return ""
+    return "", ""
 
 
 def fetch(geo: str, limit: int) -> list[dict]:
@@ -103,7 +104,10 @@ def fetch(geo: str, limit: int) -> list[dict]:
         futures = {pool.submit(fetch_headline, item["title"]): i for i, item in enumerate(items)}
         for future in as_completed(futures):
             idx = futures[future]
-            items[idx]["summary"] = future.result()
+            headline, article_url = future.result()
+            items[idx]["summary"] = headline
+            if article_url:
+                items[idx]["url"] = article_url
 
     return items
 
