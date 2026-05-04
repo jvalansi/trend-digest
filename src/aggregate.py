@@ -88,7 +88,7 @@ FETCHERS = {
     ],
     "news": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "news"], "is_rss": True},
-        {"cmd": ["python", "src/fetchers/trends_google.py", "--limit", "20"], "section": "Google Trends"},
+        {"cmd": ["python", "src/fetchers/trends_google.py", "--limit", "20"], "section": "Google Trends", "section_limit": 10},
         {"cmd": ["python", "src/fetchers/trends_wikipedia.py", "--limit", "20"], "section": "Wikipedia Trending"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "news"], "section": "Reddit News"},
         {"cmd": ["python", "src/fetchers/trends_bilibili.py", "--limit", "20"], "section": "Bilibili Trending"},
@@ -206,6 +206,7 @@ def main():
 
     section_pools: dict[str, list[dict]] = {}
 
+    section_limits: dict[str, int] = {}
     for fetcher in fetchers:
         cmd = fetcher["cmd"]
         print(f"\n[{cmd[1]}]", file=sys.stderr)
@@ -217,6 +218,8 @@ def main():
         else:
             section = fetcher["section"]
             section_pools.setdefault(section, []).extend(items)
+            if "section_limit" in fetcher:
+                section_limits[section] = fetcher["section_limit"]
             print(f"  {section}: +{len(items)} items", file=sys.stderr)
 
     for section, pool in section_pools.items():
@@ -228,7 +231,7 @@ def main():
             if url not in seen_urls:
                 seen_urls.add(url)
                 unique.append(item)
-        top = unique[:args.section_limit]
+        top = unique[:section_limits.get(section, args.section_limit)]
         if top:
             sections[section] = top
         print(f"  {section}: {len(top)} unique items (from {len(pool)} pooled)", file=sys.stderr)
