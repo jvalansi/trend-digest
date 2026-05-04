@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Google Trends fetcher — pulls daily trending searches via the public RSS feed.
-
-Each trending topic includes related news articles and approximate traffic volume.
+Google Trends fetcher — scrapes trending searches via the internal batchexecute API
+using a headless browser to match what appears on trends.google.com/trending.
 
 Usage:
   python fetchers/trends_google.py [--geo GEO] [--limit N]
@@ -12,51 +11,79 @@ Output: JSON array of normalized items to stdout.
 
 import argparse
 import json
-import re
 import sys
-import urllib.request
+import urllib.parse
 from datetime import datetime, timezone
 
-import feedparser
 from stats import score_items
-
-FEED_URL = "https://trends.google.com/trending/rss?geo={geo}"
-
-
-def parse_traffic(approx: str) -> float:
-    """Convert '200000+' or '1000+' to a float."""
-    try:
-        return float(re.sub(r"[^\d]", "", approx))
-    except Exception:
-        return 0.0
 
 
 def fetch(geo: str, limit: int) -> list[dict]:
-    url = FEED_URL.format(geo=geo)
-    parsed = feedparser.parse(url)
+    from playwright.sync_api import sync_playwright
+
+    trend_data = {}
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+
+        def on_response(resp):
+            if "batchexecute" in resp.url and "i0OFE" in resp.url:
+                try:
+                    trend_data["body"] = resp.text()
+                except Exception:
+                    pass
+
+        page.on("response", on_response)
+        page.goto(
+            f"https://trends.google.com/trending?geo={geo}&hl=en-US",
+            wait_until="domcontentloaded",
+            timeout=30000,
+        )
+        page.wait_for_timeout(5000)
+        browser.close()
+
+    body = trend_data.get("body", "")
+    if not body:
+        return []
+
+    lines = body.splitlines()
+    # Response format: )]}'\n\n<size>\n<json>\n...
+    # The JSON line is at index 3
+    json_line = next((l for l in lines if l.startswith("[[")), "")
+    if not json_line:
+        return []
+
+    outer = json.loads(json_line)
+    inner = json.loads(outer[0][2])
+    trends = inner[1] or []
+
+    now = datetime.now(timezone.utc).isoformat()
     items = []
-    for entry in parsed.entries[:limit]:
-        traffic_tag = entry.get("ht_approx_traffic", "0")
-        traffic = parse_traffic(traffic_tag)
-
-        # Related news article — fields are flat on the entry
-        url_out = entry.get("ht_news_item_url", "")
-        summary = entry.get("ht_news_item_title", "")
-
-        published = None
-        if entry.get("published_parsed"):
-            published = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc).isoformat()
+    for t in trends[:limit]:
+        query = t[0]
+        traffic = t[6] if len(t) > 6 and t[6] else 0
+        timestamp = t[3][0] if len(t) > 3 and t[3] else None
+        published = (
+            datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
+            if timestamp
+            else None
+        )
+        related = t[9][:5] if len(t) > 9 and t[9] else []
+        summary = ", ".join(related) if related else ""
+        url = f"https://trends.google.com/trending?geo={geo}&q={urllib.parse.quote(query)}"
 
         items.append({
-            "title": entry.get("title", "").strip(),
+            "title": query,
             "summary": summary,
-            "url": url_out or f"https://trends.google.com/trending?geo={geo}",
+            "url": url,
             "source": "Google Trends",
             "category": "news",
-            "traffic": traffic,
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "traffic": float(traffic),
+            "fetched_at": now,
             "published_at": published,
         })
+
     return items
 
 
