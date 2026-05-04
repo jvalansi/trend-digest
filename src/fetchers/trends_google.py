@@ -13,9 +13,25 @@ import argparse
 import json
 import sys
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
+import feedparser
+
 from stats import score_items
+
+NEWS_RSS = "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+
+
+def fetch_headline(query: str) -> str:
+    try:
+        url = NEWS_RSS.format(query=urllib.parse.quote(query))
+        feed = feedparser.parse(url)
+        if feed.entries:
+            return feed.entries[0].title
+    except Exception:
+        pass
+    return ""
 
 
 def fetch(geo: str, limit: int) -> list[dict]:
@@ -69,13 +85,11 @@ def fetch(geo: str, limit: int) -> list[dict]:
             if timestamp
             else None
         )
-        related = t[9][:5] if len(t) > 9 and t[9] else []
-        summary = ", ".join(related) if related else ""
         url = f"https://trends.google.com/trending?geo={geo}&q={urllib.parse.quote(query)}"
 
         items.append({
             "title": query,
-            "summary": summary,
+            "summary": "",
             "url": url,
             "source": "Google Trends",
             "category": "news",
@@ -83,6 +97,13 @@ def fetch(geo: str, limit: int) -> list[dict]:
             "fetched_at": now,
             "published_at": published,
         })
+
+    # Fetch top news headline for each trend in parallel
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {pool.submit(fetch_headline, item["title"]): i for i, item in enumerate(items)}
+        for future in as_completed(futures):
+            idx = futures[future]
+            items[idx]["summary"] = future.result()
 
     return items
 
