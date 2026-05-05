@@ -99,7 +99,7 @@ def main():
 
     from datetime import datetime, timezone
     date_str = datetime.now(timezone.utc).strftime("%A, %B %-d")
-    label = "News Digest" if args.mode == "news" else "Trend Digest"
+    label = "News Digest" if args.mode == "news" else "Tech Digest"
     channel = args.channel or (NEWS_CHANNEL if args.mode == "news" else SLACK_CHANNEL)
 
     # New sectioned format
