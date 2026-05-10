@@ -21,6 +21,25 @@ except ImportError:
     print("  ERROR: yfinance not installed", file=sys.stderr)
     sys.exit(1)
 
+# High-volume mega ETFs included when sorting by raw volume.
+HIGH_VOLUME_ETFS = {
+    "SPY": "S&P 500",
+    "QQQ": "Nasdaq 100",
+    "IWM": "Russell 2000",
+    "VOO": "Vanguard S&P 500",
+    "VTI": "Total Stock Market",
+    "VEA": "Developed Markets ex-US",
+    "VWO": "Emerging Markets (Vanguard)",
+    "EFA": "MSCI EAFE",
+    "AGG": "US Aggregate Bond",
+    "LQD": "Investment Grade Corp Bonds",
+    "XLF": "Financials Sector",
+    "XLK": "Technology Sector",
+    "XLV": "Health Care Sector",
+    "ARKK": "ARK Innovation",
+    "DIA": "Dow Jones Industrial",
+}
+
 # Thematic/country/commodity ETFs with geopolitical signal value.
 # Excludes mega-funds (SPY, QQQ, IWM) that spike constantly for routine reasons.
 ETFS = {
@@ -100,40 +119,67 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=10, help="Top N ETFs to return (default: 10)")
     parser.add_argument("--min-ratio", type=float, default=1.5, help="Minimum volume ratio to include (default: 1.5)")
+    parser.add_argument("--sort", choices=["ratio", "volume"], default="ratio",
+                        help="Sort by anomaly ratio (default) or raw volume")
     args = parser.parse_args()
 
-    tickers = list(ETFS.keys())
+    if args.sort == "volume":
+        all_etfs = {**HIGH_VOLUME_ETFS, **ETFS}
+    else:
+        all_etfs = ETFS
+
+    tickers = list(all_etfs.keys())
     print(f"  Fetching volume data for {len(tickers)} ETFs...", file=sys.stderr)
 
     ratios = fetch_volume_ratios(tickers)
-    anomalies = [r for r in ratios if r["ratio"] >= args.min_ratio]
-    anomalies = sorted(anomalies, key=lambda x: x["ratio"], reverse=True)[:args.limit]
 
-    print(f"  Found {len(anomalies)} ETFs with ratio >= {args.min_ratio}x", file=sys.stderr)
+    if args.sort == "volume":
+        ranked = sorted(ratios, key=lambda x: x["today_volume"], reverse=True)[:args.limit]
+    else:
+        anomalies = [r for r in ratios if r["ratio"] >= args.min_ratio]
+        ranked = sorted(anomalies, key=lambda x: x["ratio"], reverse=True)[:args.limit]
+        print(f"  Found {len(anomalies)} ETFs with ratio >= {args.min_ratio}x", file=sys.stderr)
 
     now = datetime.now(timezone.utc).isoformat()
     output = []
-    for item in anomalies:
+    for item in ranked:
         ticker = item["ticker"]
-        label = ETFS.get(ticker, ticker)
+        label = all_etfs.get(ticker, ticker)
         ratio = item["ratio"]
         today_vol = item["today_volume"]
         avg_vol = item["avg_30d_volume"]
-        output.append({
-            "title": f"{ticker} ({label}) — {ratio:.1f}x normal volume",
-            "summary": (
-                f"Trading at {ratio:.1f}x its 30-day average volume today "
-                f"({today_vol:,} vs avg {avg_vol:,}). "
-                f"Unusual activity may signal geopolitical or macro movement."
-            ),
-            "url": f"https://finance.yahoo.com/quote/{ticker}",
-            "source": "ETF Volume",
-            "category": "finance",
-            "engagement": round(ratio, 2),
-            "engagement_raw": ratio,
-            "fetched_at": now,
-            "published_at": now,
-        })
+
+        if args.sort == "volume":
+            output.append({
+                "title": f"{ticker} ({label}) — {today_vol:,} shares",
+                "summary": (
+                    f"Traded {today_vol:,} shares today "
+                    f"(30-day avg: {avg_vol:,}, ratio: {ratio:.1f}x)."
+                ),
+                "url": f"https://finance.yahoo.com/quote/{ticker}",
+                "source": "ETF Volume",
+                "category": "finance",
+                "engagement": today_vol,
+                "engagement_raw": today_vol,
+                "fetched_at": now,
+                "published_at": now,
+            })
+        else:
+            output.append({
+                "title": f"{ticker} ({label}) — {ratio:.1f}x normal volume",
+                "summary": (
+                    f"Trading at {ratio:.1f}x its 30-day average volume today "
+                    f"({today_vol:,} vs avg {avg_vol:,}). "
+                    f"Unusual activity may signal geopolitical or macro movement."
+                ),
+                "url": f"https://finance.yahoo.com/quote/{ticker}",
+                "source": "ETF Volume",
+                "category": "finance",
+                "engagement": round(ratio, 2),
+                "engagement_raw": ratio,
+                "fetched_at": now,
+                "published_at": now,
+            })
 
     print(json.dumps(output, indent=2, ensure_ascii=False))
 

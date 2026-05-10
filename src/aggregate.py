@@ -96,6 +96,7 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "finance"], "is_rss": True},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "finance"], "section": "Reddit Finance"},
         {"cmd": ["python", "src/fetchers/x.py", "--limit", "10", "--category", "finance"], "section": "X Finance"},
+        {"cmd": ["python", "src/fetchers/etf_volume.py", "--limit", "5", "--sort", "volume"], "section": "Top ETFs by Volume"},
         {"cmd": ["python", "src/fetchers/etf_volume.py", "--limit", "10"], "section": "ETF Volume Anomalies"},
         {"cmd": ["python", "src/fetchers/polymarket.py", "--limit", "10"], "section": "Polymarket"},
     ],
