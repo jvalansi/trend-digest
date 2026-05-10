@@ -33,6 +33,15 @@ DEFAULT_FEEDS = [
     {"source": "MarketWatch",    "url": "https://feeds.content.dowjones.io/public/rss/mw_marketpulse",         "category": "finance"},
     {"source": "Reuters Business","url": "https://feeds.reuters.com/reuters/businessNews",                     "category": "finance"},
 
+    # Science feeds — top journals and preprint servers
+    {"source": "Nature",            "url": "https://www.nature.com/nature.rss",                                 "category": "science"},
+    {"source": "Science",           "url": "https://www.science.org/rss/news_current.xml",                     "category": "science"},
+    {"source": "New Scientist",     "url": "https://www.newscientist.com/feed/home/",                          "category": "science"},
+    {"source": "Scientific American","url": "https://rss.sciam.com/ScientificAmerican-Global",                 "category": "science"},
+    {"source": "Ars Technica Science","url": "https://feeds.arstechnica.com/arstechnica/science",              "category": "science"},
+    {"source": "bioRxiv",           "url": "https://connect.biorxiv.org/biorxiv_xml.php?subject=all",         "category": "science"},
+    {"source": "MIT Tech Review",   "url": "https://www.technologyreview.com/feed/",                           "category": "science"},
+
     # News feeds — top 15 by Similarweb traffic (news & media category, March 2026)
     {"source": "Yahoo Japan",     "url": "https://news.yahoo.co.jp/rss/topics/top-picks.xml",                "category": "news"},
     {"source": "Globo",           "url": "https://g1.globo.com/rss/g1/",                                     "category": "news"},

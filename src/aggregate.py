@@ -75,6 +75,15 @@ SOURCE_AUTHORITY = {
     "Reuters Business":   1.1,
     "ETF Volume":         1.3,
     "Polymarket":         1.2,
+    "Nature":             1.4,
+    "Science":            1.4,
+    "New Scientist":      1.1,
+    "Scientific American":1.1,
+    "Ars Technica Science":1.1,
+    "bioRxiv":            1.2,
+    "medRxiv":            1.1,
+    "Semantic Scholar":   1.0,
+    "Altmetric":          1.3,
 }
 DEFAULT_AUTHORITY = 0.8
 
@@ -91,6 +100,14 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "tech"], "section": "Reddit Tech"},
         {"cmd": ["python", "src/fetchers/hf_papers.py", "--limit", "20"], "section": "HF Papers"},
         {"cmd": ["python", "src/fetchers/hf_models.py", "--limit", "15"], "section": "HF Models"},
+    ],
+    "science": [
+        {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "science"], "is_rss": True},
+        {"cmd": ["python", "src/fetchers/semantic_scholar.py", "--limit", "20", "--mode", "science"], "section": "Semantic Scholar"},
+        {"cmd": ["python", "src/fetchers/biorxiv.py", "--limit", "20", "--server", "biorxiv"], "section": "bioRxiv Most-Read"},
+        {"cmd": ["python", "src/fetchers/biorxiv.py", "--limit", "10", "--server", "medrxiv"], "section": "medRxiv Most-Read"},
+        {"cmd": ["python", "src/fetchers/altmetric.py", "--limit", "20"], "section": "Altmetric"},
+        {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "science"], "section": "Reddit Science"},
     ],
     "finance": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "finance"], "is_rss": True},
@@ -210,7 +227,7 @@ def main():
     parser.add_argument("--limit", type=int, default=5, help="Top N RSS items (default: 5)")
     parser.add_argument("--section-limit", type=int, default=5, help="Top N per non-RSS section (default: 5)")
     parser.add_argument("--output", help="Write output to FILE instead of stdout")
-    parser.add_argument("--mode", default="tech", choices=["tech", "news", "finance"], help="Digest mode (default: tech)")
+    parser.add_argument("--mode", default="tech", choices=["tech", "news", "finance", "science"], help="Digest mode (default: tech)")
     args = parser.parse_args()
 
     fetchers = FETCHERS[args.mode]

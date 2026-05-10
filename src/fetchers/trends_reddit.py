@@ -20,8 +20,9 @@ from datetime import datetime, timezone
 from stats import score_items
 
 SUBREDDITS = {
-    "tech": ["technology", "programming", "learnprogramming", "compsci", "webdev", "MachineLearning"],
+    "tech": ["technology", "programming", "learnprogramming", "compsci", "webdev", "MachineLearning", "Futurology"],
     "finance": ["investing", "stocks", "wallstreetbets", "economics", "finance", "geopolitics"],
+    "science": ["science"],
 }
 BASE_SUB = "https://www.reddit.com/r/{sub}/hot.json?limit={limit}"
 BASE_POPULAR = "https://www.reddit.com/r/popular.json?limit={limit}"
@@ -71,7 +72,7 @@ def fetch_posts(url: str, limit: int, proxy: str | None) -> list[dict]:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=25, help="Posts per subreddit (default: 25)")
-    parser.add_argument("--mode", default="news", choices=["news", "tech", "finance"], help="Subreddit set (default: news)")
+    parser.add_argument("--mode", default="news", choices=["news", "tech", "finance", "science"], help="Subreddit set (default: news)")
     args = parser.parse_args()
 
     proxy = load_proxy()
