@@ -21,6 +21,7 @@ from stats import score_items
 
 SUBREDDITS = {
     "tech": ["technology", "programming", "learnprogramming", "compsci", "webdev", "MachineLearning"],
+    "finance": ["investing", "stocks", "wallstreetbets", "economics", "finance", "geopolitics"],
 }
 BASE_SUB = "https://www.reddit.com/r/{sub}/hot.json?limit={limit}"
 BASE_POPULAR = "https://www.reddit.com/r/popular.json?limit={limit}"
@@ -70,7 +71,7 @@ def fetch_posts(url: str, limit: int, proxy: str | None) -> list[dict]:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=25, help="Posts per subreddit (default: 25)")
-    parser.add_argument("--mode", default="news", choices=["news", "tech"], help="Subreddit set (default: news)")
+    parser.add_argument("--mode", default="news", choices=["news", "tech", "finance"], help="Subreddit set (default: news)")
     args = parser.parse_args()
 
     proxy = load_proxy()
@@ -89,7 +90,7 @@ def main():
         except Exception as e:
             print(f"  Reddit r/popular: ERROR — {e}", file=sys.stderr)
     else:
-        for sub in SUBREDDITS[args.mode]:
+        for sub in SUBREDDITS.get(args.mode, []):
             try:
                 url = BASE_SUB.format(sub=sub, limit=args.limit)
                 items = fetch_posts(url, args.limit, proxy)

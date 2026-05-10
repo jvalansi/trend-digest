@@ -69,6 +69,12 @@ SOURCE_AUTHORITY = {
     "Wikipedia Trending": 1.0,
     "Reddit":             1.1,
     "Bilibili Trending":  0.9,
+    "Yahoo Finance":      1.2,
+    "investing.com":      1.0,
+    "MarketWatch":        1.0,
+    "Reuters Business":   1.1,
+    "ETF Volume":         1.3,
+    "Polymarket":         1.2,
 }
 DEFAULT_AUTHORITY = 0.8
 
@@ -85,6 +91,13 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "tech"], "section": "Reddit Tech"},
         {"cmd": ["python", "src/fetchers/hf_papers.py", "--limit", "20"], "section": "HF Papers"},
         {"cmd": ["python", "src/fetchers/hf_models.py", "--limit", "15"], "section": "HF Models"},
+    ],
+    "finance": [
+        {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "finance"], "is_rss": True},
+        {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "finance"], "section": "Reddit Finance"},
+        {"cmd": ["python", "src/fetchers/x.py", "--limit", "10", "--category", "finance"], "section": "X Finance"},
+        {"cmd": ["python", "src/fetchers/etf_volume.py", "--limit", "10"], "section": "ETF Volume Anomalies"},
+        {"cmd": ["python", "src/fetchers/polymarket.py", "--limit", "10"], "section": "Polymarket"},
     ],
     "news": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "news"], "is_rss": True},
@@ -197,7 +210,7 @@ def main():
     parser.add_argument("--limit", type=int, default=5, help="Top N RSS items (default: 5)")
     parser.add_argument("--section-limit", type=int, default=5, help="Top N per non-RSS section (default: 5)")
     parser.add_argument("--output", help="Write output to FILE instead of stdout")
-    parser.add_argument("--mode", default="tech", choices=["tech", "news"], help="Digest mode (default: tech)")
+    parser.add_argument("--mode", default="tech", choices=["tech", "news", "finance"], help="Digest mode (default: tech)")
     args = parser.parse_args()
 
     fetchers = FETCHERS[args.mode]

@@ -27,6 +27,12 @@ DEFAULT_FEEDS = [
     {"source": "Engadget",        "url": "https://www.engadget.com/rss.xml",                     "category": "tech"},
     {"source": "ZDNet",           "url": "https://www.zdnet.com/news/rss.xml",                   "category": "tech"},
 
+    # Finance feeds — top finance news sites by Similarweb traffic (2026)
+    {"source": "Yahoo Finance",  "url": "https://finance.yahoo.com/news/rssindex",                              "category": "finance"},
+    {"source": "investing.com",  "url": "https://www.investing.com/rss/news.rss",                              "category": "finance"},
+    {"source": "MarketWatch",    "url": "https://feeds.content.dowjones.io/public/rss/mw_marketpulse",         "category": "finance"},
+    {"source": "Reuters Business","url": "https://feeds.reuters.com/reuters/businessNews",                     "category": "finance"},
+
     # News feeds — top 15 by Similarweb traffic (news & media category, March 2026)
     {"source": "Yahoo Japan",     "url": "https://news.yahoo.co.jp/rss/topics/top-picks.xml",                "category": "news"},
     {"source": "Globo",           "url": "https://g1.globo.com/rss/g1/",                                     "category": "news"},

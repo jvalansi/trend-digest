@@ -17,6 +17,7 @@ import urllib.request
 
 SLACK_CHANNEL = os.environ.get("TREND_DIGEST_CHANNEL", "proj-trend-digest")
 NEWS_CHANNEL = os.environ.get("NEWS_DIGEST_CHANNEL", "proj-news-digest")
+FINANCE_CHANNEL = os.environ.get("FINANCE_DIGEST_CHANNEL", SLACK_CHANNEL)
 CLAUDE_PATH = os.environ.get("CLAUDE_PATH", "/home/ubuntu/.local/bin/claude")
 
 
@@ -87,7 +88,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="Read items from FILE instead of stdin")
     parser.add_argument("--dry-run", action="store_true", help="Print message without posting")
-    parser.add_argument("--mode", default="tech", choices=["tech", "news"], help="Digest mode (default: tech)")
+    parser.add_argument("--mode", default="tech", choices=["tech", "news", "finance"], help="Digest mode (default: tech)")
     parser.add_argument("--channel", help="Slack channel override")
     args = parser.parse_args()
 
@@ -99,8 +100,15 @@ def main():
 
     from datetime import datetime, timezone
     date_str = datetime.now(timezone.utc).strftime("%A, %B %-d")
-    label = "News Digest" if args.mode == "news" else "Tech Digest"
-    channel = args.channel or (NEWS_CHANNEL if args.mode == "news" else SLACK_CHANNEL)
+    if args.mode == "news":
+        label = "News Digest"
+        channel = args.channel or NEWS_CHANNEL
+    elif args.mode == "finance":
+        label = "Finance Digest"
+        channel = args.channel or FINANCE_CHANNEL
+    else:
+        label = "Tech Digest"
+        channel = args.channel or SLACK_CHANNEL
 
     # New sectioned format
     if isinstance(data, dict) and "rss" in data:
