@@ -63,6 +63,37 @@ Shared Welford running-stats module. Maintains per-source mean/variance in `data
 
 ---
 
+## Social Platform Coverage
+
+Evaluated platforms for trending signal accessibility (as of May 2026):
+
+```
+Platform    MAU      Trending  API         Science   Used
+──────────────────────────────────────────────────────────────
+Facebook    3.07B    Yes       Restricted  Low       No  — trending endpoint shut down 2018
+WhatsApp    2.80B    No        No          None      No  — private messaging
+YouTube     2.70B    Yes       Yes         Medium    Yes
+Instagram   2.40B    Yes       Restricted  Low       No  — app review required, trending not exposed
+TikTok      1.90B    Yes       Restrictive Low       No  — Research API requires approval
+WeChat      1.40B    Yes       China-only  None      No
+Telegram    0.95B    No        No          None      No
+Messenger   0.94B    No        No          None      No  — private messaging
+Snapchat    0.85B    Discover  No          None      No
+Kuaishou    0.70B    Yes       China-only  None      No
+Reddit      0.61B    Yes       Yes         High      Yes
+Weibo       0.60B    Yes       China-only  None      No
+X/Twitter   0.56B    Yes       Yes         High      Yes
+Pinterest   0.54B    Yes       Yes         Low       No
+Threads     0.40B    No        Limited     None      No  — API too early, trending not exposed
+LinkedIn    0.31B    Yes       Restricted  Medium    No  — partner approval required
+Discord     0.26B    No        No          None      No
+Twitch      0.14B    Yes       Yes         Low       No
+```
+
+**Conclusion:** Reddit, X, and YouTube are the only platforms combining high MAU, accessible trending APIs, and meaningful signal. The rest are either locked down, China-only, or private messaging.
+
+---
+
 ## Sources
 
 Per-interest source lists (RSS feeds, subreddits, channels):
@@ -92,37 +123,6 @@ Run the full pipeline:
 ```bash
 python src/aggregate.py | python src/deliver.py
 ```
-
----
-
-## Social Platform Coverage
-
-Evaluated platforms for trending signal accessibility (as of May 2026):
-
-```
-Platform    MAU      Trending  API         Science   Used
-──────────────────────────────────────────────────────────────
-Facebook    3.07B    Yes       Restricted  Low       No  — trending endpoint shut down 2018
-WhatsApp    2.80B    No        No          None      No  — private messaging
-YouTube     2.70B    Yes       Yes         Medium    Yes
-Instagram   2.40B    Yes       Restricted  Low       No  — app review required, trending not exposed
-TikTok      1.90B    Yes       Restrictive Low       No  — Research API requires approval
-WeChat      1.40B    Yes       China-only  None      No
-Telegram    0.95B    No        No          None      No
-Messenger   0.94B    No        No          None      No  — private messaging
-Snapchat    0.85B    Discover  No          None      No
-Kuaishou    0.70B    Yes       China-only  None      No
-Reddit      0.61B    Yes       Yes         High      Yes
-Weibo       0.60B    Yes       China-only  None      No
-X/Twitter   0.56B    Yes       Yes         High      Yes
-Pinterest   0.54B    Yes       Yes         Low       No
-Threads     0.40B    No        Limited     None      No  — API too early, trending not exposed
-LinkedIn    0.31B    Yes       Restricted  Medium    No  — partner approval required
-Discord     0.26B    No        No          None      No
-Twitch      0.14B    Yes       Yes         Low       No
-```
-
-**Conclusion:** Reddit, X, and YouTube are the only platforms combining high MAU, accessible trending APIs, and meaningful science signal. The rest are either locked down, China-only, or private messaging.
 
 ---
 
