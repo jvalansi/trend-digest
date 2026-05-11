@@ -25,7 +25,7 @@ def publish(title: str, content_md: str, token: str, tags: list[str] | None = No
     user_id = _get_user_id(token)
     body = {
         "title": title,
-        "contentFormat": "markdown",
+        "contentFormat": "html",
         "content": content_md,
         "publishStatus": "draft",
         "tags": tags or ["technology", "ai", "machine-learning", "startups", "news"],

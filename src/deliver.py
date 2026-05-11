@@ -9,11 +9,14 @@ Usage:
 """
 
 import argparse
+import html as html_module
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 SLACK_CHANNEL = os.environ.get("TREND_DIGEST_CHANNEL", "proj-trend-digest")
 NEWS_CHANNEL = os.environ.get("NEWS_DIGEST_CHANNEL", "proj-news-digest")
@@ -27,31 +30,132 @@ REDDIT_SUBREDDITS = {
 }
 
 
-def format_as_markdown(label: str, date_str: str, items: list[dict], descriptions: list[str], sections: dict, section_descs: list[str]) -> str:
-    """Format digest items as a Markdown document for publishing."""
-    lines = [f"# {label} — {date_str}\n"]
+SOURCE_URLS = {
+    "The Verge": "https://www.theverge.com",
+    "TechCrunch": "https://techcrunch.com",
+    "Ars Technica": "https://arstechnica.com",
+    "Wired": "https://www.wired.com",
+    "MIT Tech Review": "https://www.technologyreview.com",
+    "VentureBeat": "https://venturebeat.com",
+    "Engadget": "https://www.engadget.com",
+    "ZDNet": "https://www.zdnet.com",
+    "Hacker News": "https://news.ycombinator.com",
+    "GitHub Blog": "https://github.blog",
+    "Nature": "https://www.nature.com",
+    "Science": "https://www.science.org",
+    "New Scientist": "https://www.newscientist.com",
+    "Scientific American": "https://www.scientificamerican.com",
+    "BBC News": "https://www.bbc.com/news",
+    "New York Times": "https://www.nytimes.com",
+    "The Guardian": "https://www.theguardian.com",
+    "Reuters": "https://www.reuters.com",
+    "CNN": "https://www.cnn.com",
+    "Yahoo Finance": "https://finance.yahoo.com",
+    "MarketWatch": "https://www.marketwatch.com",
+    "Bloomberg": "https://www.bloomberg.com",
+    "Financial Times": "https://www.ft.com",
+}
+
+
+def _youtube_thumbnail(url: str) -> str | None:
+    m = re.search(r'(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})', url)
+    if m:
+        return f"https://img.youtube.com/vi/{m.group(1)}/hqdefault.jpg"
+    return None
+
+
+def fetch_og_image(url: str, timeout: float = 4.0) -> str | None:
+    thumb = _youtube_thumbnail(url)
+    if thumb:
+        return thumb
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            chunk = resp.read(65536).decode("utf-8", errors="ignore")
+        for pattern in [
+            r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+        ]:
+            m = re.search(pattern, chunk)
+            if m:
+                img_url = m.group(1)
+                if img_url.startswith("http://") or img_url.startswith("https://"):
+                    return img_url
+    except Exception:
+        pass
+    return None
+
+
+def fetch_og_images(items: list[dict]) -> dict[str, str | None]:
+    """Concurrently fetch og:image for a list of items. Returns {url: image_url}."""
+    urls = [item["url"] for item in items]
+    results: dict[str, str | None] = {}
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        future_to_url = {ex.submit(fetch_og_image, u): u for u in urls}
+        for future in as_completed(future_to_url):
+            results[future_to_url[future]] = future.result()
+    return results
+
+
+def _format_sources_html(sources: list[str]) -> str:
+    parts = []
+    for s in sources:
+        url = SOURCE_URLS.get(s)
+        if url:
+            parts.append(f'<a href="{html_module.escape(url)}">{html_module.escape(s)}</a>')
+        else:
+            parts.append(html_module.escape(s))
+    return " · ".join(parts)
+
+
+def _entry_html(title: str, url: str, desc: str, sources: list[str], og_image: str | None) -> str:
+    t = html_module.escape(title)
+    d = html_module.escape(desc) if desc else ""
+    u = html_module.escape(url)
+    s_html = " · ".join(f'<a href="{u}">{html_module.escape(s)}</a>' for s in (sources or ["Source"]))
+    img = f'<figure><img src="{html_module.escape(og_image)}" /></figure>\n' if og_image else ""
+    return (
+        f'{img}<h4>{t}</h4>\n'
+        + (f"<p>{d}</p>\n" if d else "")
+        + f"<p><em>{s_html}</em></p>\n"
+    )
+
+
+def _slugify(name: str) -> str:
+    return re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+
+
+def format_as_html(label: str, date_str: str, items: list[dict], descriptions: list[str], sections: dict, section_descs: list[str], og_images: dict[str, str | None] | None = None) -> str:
+    """Format digest items as an HTML document for Medium publishing."""
+    og_images = og_images or {}
+
+    all_sections = [("top-stories", "Top Stories")] + [(_slugify(name), name) for name in sections]
+
+    toc = "<ul>\n" + "".join(f'<li><a href="#{slug}">{html_module.escape(name)}</a></li>\n' for slug, name in all_sections) + "</ul>\n"
+
+    parts = [
+        f"<h1>{html_module.escape(label)} — {html_module.escape(date_str)}</h1>\n",
+        f"<p>Your daily roundup of the most important stories in tech, science, and AI.</p>\n",
+        toc,
+        f'<hr>\n<h2 id="top-stories">Top Stories</h2>\n',
+    ]
     for item, desc in zip(items, descriptions):
         title = item.get("title_en") or item["title"]
         url = item["url"]
-        sources = " · ".join(item.get("sources", [item["source"]]))
-        lines.append(f"### [{title}]({url})")
-        if desc:
-            lines.append(f"{desc}")
-        lines.append(f"*{sources}*\n")
+        sources = item.get("sources", [item["source"]])
+        parts.append(_entry_html(title, url, desc, sources, og_images.get(url)))
     desc_idx = 0
     for name, sitems in sections.items():
-        lines.append(f"## {name}\n")
+        slug = _slugify(name)
+        parts.append(f'<hr>\n<h2 id="{slug}">{html_module.escape(name)}</h2>\n')
         for item in sitems:
             title = item.get("title_en") or item["title"]
             url = item["url"]
-            sources = " · ".join(item.get("sources", [item["source"]]))
+            sources = item.get("sources", [item["source"]])
             desc = section_descs[desc_idx] if desc_idx < len(section_descs) else ""
             desc_idx += 1
-            lines.append(f"### [{title}]({url})")
-            if desc:
-                lines.append(f"{desc}")
-            lines.append(f"*{sources}*\n")
-    return "\n".join(lines)
+            parts.append(_entry_html(title, url, desc, sources, og_images.get(url)))
+    return "".join(parts)
 
 
 def generate_social_teaser(items: list[dict], label: str) -> str:
@@ -143,14 +247,18 @@ def _publish_to_socials(label, date_str, rss_items, rss_descs, sections, section
 
     all_items = rss_items + [item for items in sections.values() for item in items]
     title = f"{label} — {date_str}"
-    content_md = format_as_markdown(label, date_str, rss_items, rss_descs, sections, section_descs)
+    print("Fetching OG images...", file=sys.stderr)
+    og_images = fetch_og_images(all_items)
+    fetched = sum(1 for v in og_images.values() if v)
+    print(f"  Got {fetched}/{len(all_items)} images", file=sys.stderr)
+    content_html = format_as_html(label, date_str, rss_items, rss_descs, sections, section_descs, og_images)
     teaser = generate_social_teaser(all_items, label)
 
     medium_token = os.environ.get("MEDIUM_TOKEN")
     post_url = None
     if medium_token:
         try:
-            post_url = medium.publish(title, content_md, medium_token)
+            post_url = medium.publish(title, content_html, medium_token)
             print(f"Published to Medium: {post_url}", file=sys.stderr)
         except Exception as e:
             print(f"Medium publish failed: {e}", file=sys.stderr)
