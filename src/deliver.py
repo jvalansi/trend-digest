@@ -21,6 +21,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 SLACK_CHANNEL = os.environ.get("TREND_DIGEST_CHANNEL", "proj-trend-digest")
+SCIENCE_CHANNEL = os.environ.get("SCIENCE_DIGEST_CHANNEL", SLACK_CHANNEL)
 NEWS_CHANNEL = os.environ.get("NEWS_DIGEST_CHANNEL", "proj-news-digest")
 FINANCE_CHANNEL = os.environ.get("FINANCE_DIGEST_CHANNEL", SLACK_CHANNEL)
 CLAUDE_PATH = os.environ.get("CLAUDE_PATH", "/home/ubuntu/.local/bin/claude")
@@ -455,7 +456,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="Read items from FILE instead of stdin")
     parser.add_argument("--dry-run", action="store_true", help="Print message without posting")
-    parser.add_argument("--mode", default="tech", choices=["tech", "news", "finance"], help="Digest mode (default: tech)")
+    parser.add_argument("--mode", default="tech", choices=["tech", "science", "news", "finance"], help="Digest mode (default: tech)")
     parser.add_argument("--channel", help="Slack channel override")
     parser.add_argument("--publish", action="store_true", help="Publish to Medium and share on Bluesky, LinkedIn, Reddit")
     args = parser.parse_args()
@@ -468,7 +469,10 @@ def main():
 
     from datetime import datetime, timezone
     date_str = datetime.now(timezone.utc).strftime("%A, %B %-d")
-    if args.mode == "news":
+    if args.mode == "science":
+        label = "Science Digest"
+        channel = args.channel or SCIENCE_CHANNEL
+    elif args.mode == "news":
         label = "News Digest"
         channel = args.channel or NEWS_CHANNEL
     elif args.mode == "finance":

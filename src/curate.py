@@ -23,6 +23,11 @@ import sys
 CLAUDE_PATH = os.environ.get("CLAUDE_PATH", "/home/ubuntu/.local/bin/claude")
 
 INTEREST_PROFILES = {
+    "science": (
+        "Biology, genetics, genomics, neuroscience, medicine, clinical trials, "
+        "physics, climate science, ecology, chemistry, space exploration, "
+        "mathematics, preprints, and scientific breakthroughs across all disciplines."
+    ),
     "tech": (
         "AI/ML breakthroughs, open-source projects, developer tools, startups, "
         "cloud infrastructure, programming languages, security vulnerabilities, "
@@ -104,7 +109,7 @@ def curate_batch(items: list[dict], mode: str) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", default="tech", choices=["tech", "news", "finance"], help="Interest profile (default: tech)")
+    parser.add_argument("--mode", default="tech", choices=["tech", "science", "news", "finance"], help="Interest profile (default: tech)")
     parser.add_argument("--top", type=int, default=50, help="Max RSS items to curate (default: 50)")
     parser.add_argument("--input", help="Read items from FILE instead of stdin")
     parser.add_argument("--output", help="Write output to FILE instead of stdout")
