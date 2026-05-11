@@ -27,7 +27,7 @@ def publish(title: str, content_md: str, token: str, tags: list[str] | None = No
         "title": title,
         "contentFormat": "markdown",
         "content": content_md,
-        "publishStatus": "unlisted",  # Medium API no longer allows "public" via integration tokens
+        "publishStatus": "draft",
         "tags": tags or ["technology", "ai", "machine-learning", "startups", "news"],
     }
     req = urllib.request.Request(
