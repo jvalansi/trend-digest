@@ -26,7 +26,8 @@ INTEREST_PROFILES = {
     "tech": (
         "AI/ML breakthroughs, open-source projects, developer tools, startups, "
         "cloud infrastructure, programming languages, security vulnerabilities, "
-        "chip/hardware news, science with practical applications."
+        "chip/hardware news, science discoveries, biology, physics, medicine, "
+        "climate science, space exploration, neuroscience."
     ),
     "news": (
         "Major world events, geopolitics, wars and conflicts, elections and democracy, "
