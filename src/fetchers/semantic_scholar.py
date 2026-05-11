@@ -13,6 +13,7 @@ import argparse
 import json
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -45,11 +46,24 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
             f"&limit=50"
         )
         req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
-        try:
-            with urllib.request.urlopen(req, timeout=15) as r:
-                data = json.loads(r.read())
-        except Exception as e:
-            print(f"  WARNING: query '{query}' failed: {e}", file=sys.stderr)
+        data = None
+        for attempt in range(4):
+            try:
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    data = json.loads(r.read())
+                break
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    wait = 2 ** attempt * 5
+                    print(f"  WARNING: rate limited on '{query}', waiting {wait}s (attempt {attempt+1})", file=sys.stderr)
+                    time.sleep(wait)
+                else:
+                    print(f"  WARNING: query '{query}' failed: {e}", file=sys.stderr)
+                    break
+            except Exception as e:
+                print(f"  WARNING: query '{query}' failed: {e}", file=sys.stderr)
+                break
+        if data is None:
             time.sleep(1)
             continue
 
