@@ -22,7 +22,7 @@ echo "[$(date)] Starting $MODE digest..."
 
 $PYTHON src/aggregate.py --mode "$MODE" --limit 5 --output "$TMPFILE"
 $PYTHON src/curate.py --mode "$MODE" --input "$TMPFILE" --top 50 --output "$CURATED"
-$PYTHON src/deliver.py --mode "$MODE" --input "$CURATED" --channel "$DIGEST_CHANNEL"
+$PYTHON src/deliver.py --mode "$MODE" --input "$CURATED" --channel "$DIGEST_CHANNEL" --publish
 
 rm -f "$TMPFILE" "$CURATED"
 echo "[$(date)] $MODE digest done."
