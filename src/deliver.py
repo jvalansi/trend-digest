@@ -86,14 +86,66 @@ def fetch_og_image(url: str, timeout: float = 4.0) -> str | None:
     return None
 
 
+_SOURCE_IMAGES = {
+    "Reddit":             "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png",
+    "Reddit Science":     "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png",
+    "Reddit Tech":        "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png",
+    "Reddit Finance":     "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png",
+    "Reddit News":        "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png",
+    "Semantic Scholar":   "https://www.semanticscholar.org/img/semantic_scholar_og.png",
+    "New Scientist":      "https://www.newscientist.com/build/images/meta/new-scientist-social-meta-image.85ef6f47.png",
+    "Scientific American":"https://www.scientificamerican.com/static/sciam-mark.jpg",
+    "HF Papers":          "https://huggingface.co/front/assets/huggingface_logo.svg",
+    "HF Models":          "https://huggingface.co/front/assets/huggingface_logo.svg",
+}
+
+_SOURCE_DOMAINS = {
+    "bioRxiv": "biorxiv.org",
+    "medRxiv": "medrxiv.org",
+    "Nature": "nature.com",
+    "Science": "science.org",
+    "Ars Technica": "arstechnica.com",
+    "Ars Technica Science": "arstechnica.com",
+    "MIT Tech Review": "technologyreview.com",
+    "Hacker News": "news.ycombinator.com",
+    "Altmetric": "crossref.org",
+    "TechCrunch": "techcrunch.com",
+    "The Verge": "theverge.com",
+    "Wired": "wired.com",
+    "VentureBeat": "venturebeat.com",
+    "Engadget": "engadget.com",
+    "ZDNet": "zdnet.com",
+    "GitHub Trending": "github.com",
+    "YouTube Tech": "youtube.com",
+    "YouTube News": "youtube.com",
+}
+
+
+def _source_fallback_image(source: str, url: str) -> str | None:
+    """Return a fallback image for a source when OG scraping fails."""
+    if source in _SOURCE_IMAGES:
+        return _SOURCE_IMAGES[source]
+    domain = _SOURCE_DOMAINS.get(source)
+    if not domain:
+        m = re.search(r'https?://(?:www\.)?([^/]+)', url)
+        domain = m.group(1) if m else None
+    if domain:
+        return f"https://www.google.com/s2/favicons?domain={domain}&sz=256"
+    return None
+
+
 def fetch_og_images(items: list[dict]) -> dict[str, str | None]:
-    """Concurrently fetch og:image for a list of items. Returns {url: image_url}."""
-    urls = [item["url"] for item in items]
+    """Concurrently fetch og:image for a list of items, with source logo fallback."""
     results: dict[str, str | None] = {}
     with ThreadPoolExecutor(max_workers=10) as ex:
-        future_to_url = {ex.submit(fetch_og_image, u): u for u in urls}
-        for future in as_completed(future_to_url):
-            results[future_to_url[future]] = future.result()
+        future_to_item = {ex.submit(fetch_og_image, item["url"]): item for item in items}
+        for future in as_completed(future_to_item):
+            item = future_to_item[future]
+            url = item["url"]
+            img = future.result()
+            if img is None:
+                img = _source_fallback_image(item.get("source", ""), url)
+            results[url] = img
     return results
 
 
