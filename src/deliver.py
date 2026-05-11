@@ -15,6 +15,8 @@ import os
 import re
 import subprocess
 import sys
+import time
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -134,18 +136,104 @@ def _source_fallback_image(source: str, url: str) -> str | None:
     return None
 
 
+_PEXELS_CACHE: dict[str, str | None] = {}
+_PEXELS_LAST_CALL = 0.0
+_PEXELS_MIN_INTERVAL = 0.25  # 4 req/s well under free-tier limit
+
+
+# Maps sets of title substrings → a Pexels-friendly search query
+_SCIENCE_DOMAIN_MAP = [
+    (["retina", "optic", "cornea", "ocular", "ophth", "vision"],        "eye retina closeup"),
+    (["brain", "neuro", "cortex", "hippocamp", "cerebr", "synap", "axon", "neuron", "prefrontal", "amygdala", "affective"],
+                                                                         "brain neuroscience"),
+    (["cancer", "tumor", "carcinoma", "oncol", "malignant", "metasta",  "radioth"], "cancer research microscope"),
+    (["immune", "antibod", "lymph", "monocyte", "macrophage", "cytokine", "chemokine", "t-cell", "immunol"], "immune cells blood"),
+    (["genome", "dna", "gene", "rna", "crispr", "sequenc", "genomic", "transcript", "epigenet"], "dna genetics laboratory"),
+    (["climate", "carbon", "emission", "warming", "atmospher", "arctic", "glacier"], "climate change earth"),
+    (["quantum", "photon", "laser", "electron", "particle", "atomic", "plasma"],     "physics laboratory"),
+    (["protein", "enzyme", "metabol", "biochem", "peptide", "amino"],    "molecular biology"),
+    (["microbiome", "bacteria", "virus", "pathogen", "infect", "antibiotic"], "bacteria microscope"),
+    (["mental health", "psychiatr", "depress", "anxiety", "cognit", "behavior"],    "mental health brain"),
+    (["cardiovasc", "cardiac", "heart", "arterial", "blood pressure"],   "heart cardiology"),
+    (["stem cell", "embryo", "differenti", "pluripotent"],               "stem cells research"),
+    (["vaccine", "immuniz", "clinical trial", "therapeut"],              "vaccine medicine"),
+    (["ecolog", "biodiversity", "species", "habitat", "ecosyst"],        "nature biodiversity"),
+    (["space", "stellar", "galaxy", "planet", "orbit", "astrono"],       "space galaxy"),
+    (["machine learning", "neural network", "deep learning", "artific"], "artificial intelligence technology"),
+]
+
+
+def _extract_keywords(item: dict) -> str:
+    """Map a paper title to a Pexels-friendly search query."""
+    text = (item.get("title", "") + " " + (item.get("summary") or "")[:300]).lower()
+    for patterns, query in _SCIENCE_DOMAIN_MAP:
+        if any(p in text for p in patterns):
+            return query
+    # Generic fallback: pick the 2 longest meaningful words from the title
+    skip = {"study", "research", "analysis", "novel", "using", "based", "role",
+            "effect", "impact", "review", "data", "model", "results", "method",
+            "human", "associated", "potential", "increased", "decreased", "between"}
+    words = [w for w in re.findall(r'\b[a-zA-Z]{5,}\b', item.get("title", "").lower()) if w not in skip]
+    return " ".join(words[:2]) if words else item.get("title", "")[:40]
+
+
+def _pexels_search(query: str, api_key: str) -> str | None:
+    global _PEXELS_LAST_CALL
+    if query in _PEXELS_CACHE:
+        return _PEXELS_CACHE[query]
+
+    # Rate-limit
+    wait = _PEXELS_MIN_INTERVAL - (time.time() - _PEXELS_LAST_CALL)
+    if wait > 0:
+        time.sleep(wait)
+    _PEXELS_LAST_CALL = time.time()
+
+    url = "https://api.pexels.com/v1/search?" + urllib.parse.urlencode({
+        "query": query, "per_page": 1, "orientation": "landscape",
+    })
+    try:
+        req = urllib.request.Request(url, headers={"Authorization": api_key, "User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=6) as r:
+            data = json.loads(r.read())
+        photos = data.get("photos", [])
+        img = photos[0]["src"]["large"] if photos else None
+    except Exception:
+        img = None
+
+    _PEXELS_CACHE[query] = img
+    return img
+
+
 def fetch_og_images(items: list[dict]) -> dict[str, str | None]:
-    """Concurrently fetch og:image for a list of items, with source logo fallback."""
+    """Concurrently fetch og:image; fall back to Pexels search or source logo."""
+    pexels_key = os.environ.get("PEXELS_API_KEY")
     results: dict[str, str | None] = {}
+
     with ThreadPoolExecutor(max_workers=10) as ex:
         future_to_item = {ex.submit(fetch_og_image, item["url"]): item for item in items}
         for future in as_completed(future_to_item):
             item = future_to_item[future]
             url = item["url"]
-            img = future.result()
-            if img is None:
-                img = _source_fallback_image(item.get("source", ""), url)
-            results[url] = img
+            results[url] = future.result()
+
+    # Second pass: fill in missing images
+    for item in items:
+        url = item["url"]
+        if results.get(url):
+            continue
+        source = item.get("source", "")
+        # Use Pexels for science/preprint sources that never have og:images
+        if pexels_key and source in {
+            "bioRxiv", "medRxiv", "Semantic Scholar", "Altmetric",
+            "Nature", "Science", "New Scientist", "Scientific American",
+            "Ars Technica Science", "MIT Tech Review",
+        }:
+            query = _extract_keywords(item)
+            img = _pexels_search(query, pexels_key)
+            results[url] = img or _source_fallback_image(source, url)
+        else:
+            results[url] = _source_fallback_image(source, url)
+
     return results
 
 
