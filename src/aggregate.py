@@ -80,8 +80,7 @@ SOURCE_AUTHORITY = {
     "New Scientist":      1.1,
     "Scientific American":1.1,
     "Ars Technica Science":1.1,
-    "bioRxiv":            1.2,
-    "medRxiv":            1.1,
+    "OpenAlex":           1.2,
     "Semantic Scholar":   1.0,
     "Altmetric":          1.3,
 }
@@ -103,8 +102,7 @@ FETCHERS = {
     ],
     "science": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "science"], "is_rss": True},
-        {"cmd": ["python", "src/fetchers/biorxiv.py", "--limit", "20", "--server", "biorxiv"], "section": "bioRxiv Most-Read"},
-        {"cmd": ["python", "src/fetchers/biorxiv.py", "--limit", "10", "--server", "medrxiv"], "section": "medRxiv Most-Read"},
+        {"cmd": ["python", "src/fetchers/openalex.py", "--limit", "20", "--days", "75"], "section": "OpenAlex Trending Preprints"},
         {"cmd": ["python", "src/fetchers/altmetric.py", "--limit", "20"], "section": "Altmetric"},
         {"cmd": ["python", "src/fetchers/semantic_scholar.py", "--limit", "20", "--mode", "science"], "section": "Semantic Scholar"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "science"], "section": "Reddit Science"},
