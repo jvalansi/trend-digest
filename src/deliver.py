@@ -479,7 +479,7 @@ def main():
         label = "Finance Digest"
         channel = args.channel or FINANCE_CHANNEL
     else:
-        label = "Tech & Science Digest"
+        label = "Tech Digest"
         channel = args.channel or SLACK_CHANNEL
 
     # New sectioned format
