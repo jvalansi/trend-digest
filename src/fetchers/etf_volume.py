@@ -1,137 +1,69 @@
 #!/usr/bin/env python3
 """
-ETF volume anomaly fetcher — detects ETFs trading at unusually high volume vs. their 30-day average.
+ETF volume anomaly fetcher — detects ETFs trading at unusually high volume vs. their average.
 
-Uses yfinance (no API key required).
+Uses FMP /v3/quotes/etf (one API call, all ETFs, includes volume + avgVolume).
+Filters to US-listed ETFs. Reports anomalies where volume/avgVolume exceeds threshold.
 
 Usage:
-  python fetchers/etf_volume.py [--limit N]
-
-Output: JSON array of normalized items to stdout.
+  python fetchers/etf_volume.py [--limit N] [--min-ratio F] [--sort ratio|volume]
 """
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 
 try:
-    import yfinance as yf
+    import requests
 except ImportError:
-    print("  ERROR: yfinance not installed", file=sys.stderr)
+    print("  ERROR: requests not installed", file=sys.stderr)
     sys.exit(1)
 
-# High-volume mega ETFs included when sorting by raw volume.
-HIGH_VOLUME_ETFS = {
-    "SPY": "S&P 500",
-    "QQQ": "Nasdaq 100",
-    "IWM": "Russell 2000",
-    "VOO": "Vanguard S&P 500",
-    "VTI": "Total Stock Market",
-    "VEA": "Developed Markets ex-US",
-    "VWO": "Emerging Markets (Vanguard)",
-    "EFA": "MSCI EAFE",
-    "AGG": "US Aggregate Bond",
-    "LQD": "Investment Grade Corp Bonds",
-    "XLF": "Financials Sector",
-    "XLK": "Technology Sector",
-    "XLV": "Health Care Sector",
-    "ARKK": "ARK Innovation",
-    "DIA": "Dow Jones Industrial",
-}
-
-# Thematic/country/commodity ETFs with geopolitical signal value.
-# Excludes mega-funds (SPY, QQQ, IWM) that spike constantly for routine reasons.
-ETFS = {
-    # Defense & geopolitics
-    "ITA": "US Aerospace & Defense",
-    "XAR": "Aerospace & Defense (SPDR)",
-    "PPA": "Defense & Aerospace",
-    # Energy & commodities
-    "XLE": "US Energy Sector",
-    "OIH": "Oil Services",
-    "USO": "Crude Oil",
-    "UNG": "Natural Gas",
-    "GLD": "Gold",
-    "SLV": "Silver",
-    "WEAT": "Wheat",
-    "CORN": "Corn",
-    # Geopolitical regions
-    "EWJ": "Japan",
-    "EWZ": "Brazil",
-    "EWG": "Germany",
-    "EWY": "South Korea",
-    "EWI": "Italy",
-    "EWT": "Taiwan",
-    "INDA": "India",
-    "EEM": "Emerging Markets",
-    "EWQ": "France",
-    "EZA": "South Africa",
-    "TUR": "Turkey",
-    "EWW": "Mexico",
-    # Thematic
-    "HACK": "Cybersecurity",
-    "NLR": "Nuclear Energy",
-    "REMX": "Rare Earth Metals",
-    "LIT": "Lithium & Battery",
-    "BOTZ": "Robotics & AI",
-    "SMH": "Semiconductors",
-    # Rates & credit stress
-    "HYG": "High Yield Bonds",
-    "TLT": "Long-Term Treasuries",
-    "EMB": "Emerging Market Bonds",
-}
+US_EXCHANGES = {"AMEX", "NASDAQ", "NYSE", "BATS", "NYSEArca"}
+FMP_BASE = "https://financialmodelingprep.com/api"
 
 
-def fetch_volume_ratios(tickers: list[str]) -> list[dict]:
-    results = []
-    data = yf.download(tickers, period="35d", interval="1d", progress=False, auto_adjust=True)
-
-    if data.empty:
-        print("  ERROR: yfinance returned no data", file=sys.stderr)
-        return []
-
-    volume = data["Volume"] if "Volume" in data.columns else data.xs("Volume", axis=1, level=0)
-
-    for ticker in tickers:
-        try:
-            series = volume[ticker].dropna()
-            if len(series) < 5:
-                continue
-            today_vol = float(series.iloc[-1])
-            avg_30d = float(series.iloc[:-1].tail(30).mean())
-            if avg_30d <= 0:
-                continue
-            ratio = today_vol / avg_30d
-            results.append({
-                "ticker": ticker,
-                "today_volume": int(today_vol),
-                "avg_30d_volume": int(avg_30d),
-                "ratio": round(ratio, 2),
-            })
-        except Exception as e:
-            print(f"  {ticker}: ERROR — {e}", file=sys.stderr)
-
-    return results
+def fetch_etf_quotes(fmp_key: str) -> list[dict]:
+    resp = requests.get(f"{FMP_BASE}/v3/quotes/etf?apikey={fmp_key}", timeout=30)
+    resp.raise_for_status()
+    return resp.json()
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=10, help="Top N ETFs to return (default: 10)")
-    parser.add_argument("--min-ratio", type=float, default=1.5, help="Minimum volume ratio to include (default: 1.5)")
-    parser.add_argument("--sort", choices=["ratio", "volume"], default="ratio",
-                        help="Sort by anomaly ratio (default) or raw volume")
+    parser.add_argument("--limit", type=int, default=10)
+    parser.add_argument("--min-ratio", type=float, default=1.5)
+    parser.add_argument("--sort", choices=["ratio", "volume"], default="ratio")
     args = parser.parse_args()
 
-    if args.sort == "volume":
-        all_etfs = {**HIGH_VOLUME_ETFS, **ETFS}
-    else:
-        all_etfs = ETFS
+    fmp_key = os.environ.get("FMP_API_KEY", "")
+    if not fmp_key:
+        print("  ERROR: FMP_API_KEY not set", file=sys.stderr)
+        print("[]")
+        return
 
-    tickers = list(all_etfs.keys())
-    print(f"  Fetching volume data for {len(tickers)} ETFs...", file=sys.stderr)
+    print("  Fetching ETF quotes from FMP...", file=sys.stderr)
+    quotes = fetch_etf_quotes(fmp_key)
+    print(f"  Total ETFs: {len(quotes)}", file=sys.stderr)
 
-    ratios = fetch_volume_ratios(tickers)
+    us_quotes = [q for q in quotes if q.get("exchange") in US_EXCHANGES]
+    print(f"  US-listed ETFs: {len(us_quotes)}", file=sys.stderr)
+
+    ratios = []
+    for q in us_quotes:
+        vol = q.get("volume") or 0
+        avg_vol = q.get("avgVolume") or 0
+        if avg_vol < 10_000 or vol <= 0:
+            continue
+        ratios.append({
+            "ticker": q["symbol"],
+            "name": q.get("name", q["symbol"]),
+            "today_volume": int(vol),
+            "avg_volume": int(avg_vol),
+            "ratio": round(vol / avg_vol, 2),
+        })
 
     if args.sort == "volume":
         ranked = sorted(ratios, key=lambda x: x["today_volume"], reverse=True)[:args.limit]
@@ -144,18 +76,15 @@ def main():
     output = []
     for item in ranked:
         ticker = item["ticker"]
-        label = all_etfs.get(ticker, ticker)
+        name = item["name"]
         ratio = item["ratio"]
         today_vol = item["today_volume"]
-        avg_vol = item["avg_30d_volume"]
+        avg_vol = item["avg_volume"]
 
         if args.sort == "volume":
             output.append({
-                "title": f"{ticker} ({label}) — {today_vol:,} shares",
-                "summary": (
-                    f"Traded {today_vol:,} shares today "
-                    f"(30-day avg: {avg_vol:,}, ratio: {ratio:.1f}x)."
-                ),
+                "title": f"{ticker} ({name}) — {today_vol:,} shares",
+                "summary": f"Traded {today_vol:,} shares today (avg: {avg_vol:,}, ratio: {ratio:.1f}x).",
                 "url": f"https://finance.yahoo.com/quote/{ticker}",
                 "source": "ETF Volume",
                 "category": "finance",
@@ -166,11 +95,10 @@ def main():
             })
         else:
             output.append({
-                "title": f"{ticker} ({label}) — {ratio:.1f}x normal volume",
+                "title": f"{ticker} ({name}) — {ratio:.1f}x normal volume",
                 "summary": (
-                    f"Trading at {ratio:.1f}x its 30-day average volume today "
-                    f"({today_vol:,} vs avg {avg_vol:,}). "
-                    f"Unusual activity may signal geopolitical or macro movement."
+                    f"Trading at {ratio:.1f}x its average volume today "
+                    f"({today_vol:,} vs avg {avg_vol:,})."
                 ),
                 "url": f"https://finance.yahoo.com/quote/{ticker}",
                 "source": "ETF Volume",
