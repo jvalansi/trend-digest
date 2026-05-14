@@ -31,6 +31,22 @@ def fetch_etf_quotes(fmp_key: str) -> list[dict]:
     return resp.json()
 
 
+def fetch_etf_description(ticker: str, fmp_key: str) -> str:
+    """Return a short description of what the ETF tracks, or empty string on failure."""
+    try:
+        resp = requests.get(f"{FMP_BASE}/v3/profile/{ticker}?apikey={fmp_key}", timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        if data and isinstance(data, list):
+            desc = data[0].get("description", "")
+            # Truncate to first sentence or 120 chars
+            first_sentence = desc.split(".")[0].strip()
+            return first_sentence[:120] if first_sentence else ""
+    except Exception:
+        pass
+    return ""
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=10)
@@ -72,6 +88,13 @@ def main():
         ranked = sorted(anomalies, key=lambda x: x["ratio"], reverse=True)[:args.limit]
         print(f"  Found {len(anomalies)} ETFs with ratio >= {args.min_ratio}x", file=sys.stderr)
 
+    print("  Fetching ETF descriptions...", file=sys.stderr)
+    descriptions = {}
+    for item in ranked:
+        ticker = item["ticker"]
+        descriptions[ticker] = fetch_etf_description(ticker, fmp_key)
+        print(f"    {ticker}: {descriptions[ticker][:60] or '(none)'}", file=sys.stderr)
+
     now = datetime.now(timezone.utc).isoformat()
     output = []
     for item in ranked:
@@ -80,11 +103,13 @@ def main():
         ratio = item["ratio"]
         today_vol = item["today_volume"]
         avg_vol = item["avg_volume"]
+        desc = descriptions.get(ticker, "")
+        desc_suffix = f" {desc}." if desc else ""
 
         if args.sort == "volume":
             output.append({
                 "title": f"{ticker} ({name}) — {today_vol:,} shares",
-                "summary": f"Traded {today_vol:,} shares today (avg: {avg_vol:,}, ratio: {ratio:.1f}x).",
+                "summary": f"Traded {today_vol:,} shares today (avg: {avg_vol:,}, ratio: {ratio:.1f}x).{desc_suffix}",
                 "url": f"https://finance.yahoo.com/quote/{ticker}",
                 "source": "ETF Volume",
                 "category": "finance",
@@ -98,7 +123,7 @@ def main():
                 "title": f"{ticker} ({name}) — {ratio:.1f}x normal volume",
                 "summary": (
                     f"Trading at {ratio:.1f}x its average volume today "
-                    f"({today_vol:,} vs avg {avg_vol:,})."
+                    f"({today_vol:,} vs avg {avg_vol:,}).{desc_suffix}"
                 ),
                 "url": f"https://finance.yahoo.com/quote/{ticker}",
                 "source": "ETF Volume",
