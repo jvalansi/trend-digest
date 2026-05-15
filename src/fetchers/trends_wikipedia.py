@@ -14,17 +14,31 @@ Output: JSON array of normalized items to stdout.
 import argparse
 import json
 import sys
+import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 
 from stats import score_items
 
 BASE = "https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access"
+SUMMARY_BASE = "https://en.wikipedia.org/api/rest_v1/page/summary"
 
 SKIP = {
     "Main_Page", "Special:Search", "Special:Random", "Special:Export",
     "Wikipedia:Featured_pictures", "Portal:Current_events",
 }
+
+
+def fetch_thumbnail(title: str) -> str | None:
+    url = f"{SUMMARY_BASE}/{urllib.parse.quote(title, safe='')}"
+    req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        return data.get("thumbnail", {}).get("source")
+    except Exception:
+        return None
 
 
 def fetch(date: str, limit: int) -> list[dict]:
@@ -54,6 +68,20 @@ def fetch(date: str, limit: int) -> list[dict]:
         })
         if len(items) >= limit:
             break
+
+    # Fetch thumbnails concurrently
+    title_to_item = {art["article"]: item for art, item in zip(
+        [a for a in articles if a["article"] not in SKIP and not a["article"].startswith("Special:")],
+        items
+    )}
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        future_to_title = {ex.submit(fetch_thumbnail, title): title for title in title_to_item}
+        for future in as_completed(future_to_title):
+            title = future_to_title[future]
+            thumb = future.result()
+            if thumb and title in title_to_item:
+                title_to_item[title]["thumbnail"] = thumb
+
     return items
 
 

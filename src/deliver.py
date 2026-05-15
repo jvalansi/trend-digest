@@ -366,11 +366,13 @@ def format_item(item: dict, description: str) -> str:
     return f"*<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}_"
 
 
-def post_to_slack(text: str, token: str, channel: str, thread_ts: str | None = None, unfurl: bool = False) -> str:
+def post_to_slack(text: str, token: str, channel: str, thread_ts: str | None = None, unfurl: bool = False, attachments: list | None = None) -> str:
     """Post a message and return its ts."""
     body: dict = {"channel": channel, "text": text, "unfurl_links": unfurl, "unfurl_media": unfurl}
     if thread_ts:
         body["thread_ts"] = thread_ts
+    if attachments:
+        body["attachments"] = attachments
     payload = json.dumps(body).encode()
     req = urllib.request.Request(
         "https://slack.com/api/chat.postMessage",
@@ -506,12 +508,16 @@ def main():
     formatted_rss = [format_item(item, desc) for item, desc in zip(rss_items, rss_descs)]
 
     # Group section messages: header per section, then one message per item
+    # Each entry is (text, attachments_or_None)
     section_messages = []
     desc_idx = 0
     for name, items in sections.items():
-        section_messages.append(f"*{name}*")
+        section_messages.append((f"*{name}*", None))
         for item in items:
-            section_messages.append(format_item(item, section_descs[desc_idx]))
+            text = format_item(item, section_descs[desc_idx])
+            thumb = item.get("thumbnail")
+            attachments = [{"image_url": thumb, "fallback": item.get("title", "")}] if thumb else None
+            section_messages.append((text, attachments))
             desc_idx += 1
 
     total_items = len(rss_items) + len(section_items)
@@ -521,7 +527,7 @@ def main():
         print(header)
         for msg in formatted_rss:
             print("\n---\n" + msg)
-        for msg in section_messages:
+        for msg, _ in section_messages:
             print("\n---\n" + msg)
         return
 
@@ -533,8 +539,8 @@ def main():
     thread_ts = post_to_slack(header, token, channel)
     for msg in formatted_rss:
         post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True)
-    for msg in section_messages:
-        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True)
+    for msg, attachments in section_messages:
+        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True, attachments=attachments)
     print(f"Posted {total_items} items to #{channel}", file=sys.stderr)
 
     if args.publish:
