@@ -102,7 +102,6 @@ FETCHERS = {
     ],
     "science": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "science"], "is_rss": True},
-        {"cmd": ["python", "src/fetchers/arxiv.py", "--limit", "20", "--days", "7"], "section": "arXiv"},
         {"cmd": ["python", "src/fetchers/altmetric.py", "--limit", "20"], "section": "Altmetric"},
         {"cmd": ["python", "src/fetchers/semantic_scholar.py", "--limit", "20", "--mode", "science"], "section": "Semantic Scholar"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "science"], "section": "Reddit Science"},
