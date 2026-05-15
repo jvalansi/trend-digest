@@ -18,8 +18,6 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-from stats import score_items
-
 CATEGORIES = "cat:q-bio.* OR cat:physics.* OR cat:cs.*"
 
 
@@ -71,7 +69,6 @@ def fetch_papers(days: int, limit: int) -> list[dict]:
             "category": "science",
             "authors": author_str,
             "arxiv_category": primary_cat,
-            "score": 0,
             "fetched_at": datetime.now(timezone.utc).isoformat(),
             "published_at": published,
         })
@@ -92,7 +89,6 @@ def main():
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    items = score_items(items, "arXiv", "score")
     items = sorted(items, key=lambda x: x.get("published_at") or "", reverse=True)
     items = items[:args.limit]
 
