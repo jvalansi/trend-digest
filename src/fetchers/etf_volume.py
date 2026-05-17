@@ -12,6 +12,7 @@ Usage:
 import argparse
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 
@@ -23,6 +24,7 @@ except ImportError:
 
 US_EXCHANGES = {"AMEX", "NASDAQ", "NYSE", "BATS", "NYSEArca"}
 FMP_BASE = "https://financialmodelingprep.com/api"
+CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "etf_descriptions.json")
 
 
 def fetch_etf_quotes(fmp_key: str) -> list[dict]:
@@ -39,12 +41,61 @@ def fetch_etf_description(ticker: str, fmp_key: str) -> str:
         data = resp.json()
         if data and isinstance(data, list):
             desc = data[0].get("description", "")
-            # Truncate to first sentence or 120 chars
             first_sentence = desc.split(".")[0].strip()
             return first_sentence[:120] if first_sentence else ""
     except Exception:
         pass
     return ""
+
+
+def load_desc_cache() -> dict:
+    try:
+        with open(CACHE_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_desc_cache(cache: dict) -> None:
+    try:
+        with open(CACHE_PATH, "w") as f:
+            json.dump(cache, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"  WARNING: could not save description cache: {e}", file=sys.stderr)
+
+
+def generate_descriptions_claude(items: list[dict]) -> dict:
+    """Call Claude CLI (subscription mode) to generate plain-English descriptions for a list of ETFs.
+    Returns dict of ticker → description string.
+    """
+    if not items:
+        return {}
+
+    lines = ["For each ETF below, write one plain-English sentence (max 20 words) explaining what it tracks or bets on. Return ONLY a JSON object mapping ticker to description, no other text.\n"]
+    for item in items:
+        lines.append(f"{item['ticker']}: {item['name']}")
+    prompt = "\n".join(lines)
+
+    claude_path = os.environ.get("CLAUDE_PATH", "/home/ubuntu/.local/bin/claude")
+    env = os.environ.copy()
+    env.pop("ANTHROPIC_API_KEY", None)  # use subscription/session auth, not API key
+    env.pop("CLAUDECODE", None)
+
+    try:
+        result = subprocess.run(
+            [claude_path, "-p", prompt, "--output-format", "text", "--dangerously-skip-permissions"],
+            capture_output=True, text=True, timeout=60, env=env,
+        )
+        text = result.stdout.strip()
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start >= 0 and end > start:
+            return json.loads(text[start:end])
+        if result.returncode != 0:
+            print(f"  WARNING: Claude exited {result.returncode}: {result.stderr[:200]}", file=sys.stderr)
+    except Exception as e:
+        print(f"  WARNING: Claude description generation failed: {e}", file=sys.stderr)
+    return {}
 
 
 def main():
@@ -88,12 +139,32 @@ def main():
         ranked = sorted(anomalies, key=lambda x: x["ratio"], reverse=True)[:args.limit]
         print(f"  Found {len(anomalies)} ETFs with ratio >= {args.min_ratio}x", file=sys.stderr)
 
-    print("  Fetching ETF descriptions...", file=sys.stderr)
-    descriptions = {}
-    for item in ranked:
-        ticker = item["ticker"]
-        descriptions[ticker] = fetch_etf_description(ticker, fmp_key)
-        print(f"    {ticker}: {descriptions[ticker][:60] or '(none)'}", file=sys.stderr)
+    cache = load_desc_cache()
+    need_lookup = [item for item in ranked if item["ticker"] not in cache]
+
+    if need_lookup:
+        print(f"  Fetching ETF descriptions for {len(need_lookup)} uncached tickers...", file=sys.stderr)
+        fmp_empty = []
+        for item in need_lookup:
+            ticker = item["ticker"]
+            desc = fetch_etf_description(ticker, fmp_key)
+            if desc:
+                cache[ticker] = desc
+                print(f"    {ticker} (FMP): {desc[:60]}", file=sys.stderr)
+            else:
+                fmp_empty.append(item)
+
+        if fmp_empty:
+            print(f"  Generating descriptions via Claude for {len(fmp_empty)} tickers...", file=sys.stderr)
+            claude_descs = generate_descriptions_claude(fmp_empty)
+            for ticker, desc in claude_descs.items():
+                if desc:
+                    cache[ticker] = desc
+                    print(f"    {ticker} (Claude): {desc[:60]}", file=sys.stderr)
+
+        save_desc_cache(cache)
+
+    descriptions = {item["ticker"]: cache.get(item["ticker"], "") for item in ranked}
 
     now = datetime.now(timezone.utc).isoformat()
     output = []
