@@ -540,7 +540,7 @@ def main():
     for msg in formatted_rss:
         post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True)
     for msg, attachments in section_messages:
-        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True, attachments=attachments)
+        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=attachments is None, attachments=attachments)
     print(f"Posted {total_items} items to #{channel}", file=sys.stderr)
 
     if args.publish:
