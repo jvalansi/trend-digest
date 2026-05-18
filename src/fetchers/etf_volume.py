@@ -78,7 +78,6 @@ def generate_descriptions_claude(items: list[dict]) -> dict:
 
     claude_path = os.environ.get("CLAUDE_PATH", "/home/ubuntu/.local/bin/claude")
     env = os.environ.copy()
-    env.pop("ANTHROPIC_API_KEY", None)  # use subscription/session auth, not API key
     env.pop("CLAUDECODE", None)
 
     try:
