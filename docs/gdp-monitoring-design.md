@@ -83,33 +83,33 @@ Detecting *that* something changed is easy. Knowing *why* requires a news layer.
 
 Two complementary sources cover different event types:
 
-**Google Trends trending searches** (primary, live attribution)
-- `pytrends.trending_searches(pn='vietnam')` returns what's organically trending in a country on a given day — no keyword needed, fully open-ended
-- Captures the full event spectrum: natural disasters, political crises, tech disruptions, supply chain events, policy changes
-- Reflects actual public attention, not just media volume
-- Free, daily granularity, ~180 countries
-- Limitation: shallow historical archive — only ~24 hours of trending data exposed via the API, so cannot be used for backtesting
+**Wikipedia page views** (primary attribution — live and backtesting)
+- Wikimedia API returns the top 1000 most-viewed articles for any language edition on any given day, ~1 day lag for live use, back to 2015 for backtesting — no keywords needed, fully open-ended
+- Language editions map to countries: `vi.wikipedia` → Vietnam, `ar.wikipedia` → Arabic-speaking world, etc.
+- Captures the full event spectrum: conflicts, tech launches, economic events, natural disasters, political crises
+- Reflects deliberate information-seeking (stronger signal than search volume)
+- Official API — more stable and reliable than pytrends (which scrapes Google unofficially)
+- Free, no auth required
+- Proof of concept: ChatGPT article went from 2,074 views on Dec 5 2022 (launch day) to #8 globally on Jan 17 2023 (226k views), and #2 on Feb 9 2023 (310k views) — a clear signal GDELT entirely missed
 
 ```
 Signal anomaly detected (e.g. Vietnam electricity -15%)
-→ Pull Google Trends trending searches for Vietnam that week
-→ Claude: "Top trends include 'bão Yagi' (Typhoon Yagi) — made landfall, disrupting industrial zones in the north"
+→ Pull top Wikipedia articles for vi.wikipedia that week
+→ Claude: "Top article: 'Bão Yagi' (Typhoon Yagi) — made landfall, disrupting industrial zones in the north"
 ```
-
-**Wikipedia page views** (backtesting — full event spectrum)
-- Wikimedia API returns the top 1000 most-viewed articles for any language edition on any given day, back to 2015 — no keywords needed
-- Captures exactly what GDELT misses: tech launches, economic events, cultural moments
-- Language editions provide country-level signal: `vi.wikipedia` for Vietnam, `ar.wikipedia` for Arabic-speaking countries, etc.
-- Free, no auth, reliable
-- Proof of concept: ChatGPT article went from 2,074 views on Dec 5 2022 (launch day) to 130k+ by Dec 13, hit #8 globally on Jan 17 2023 (226k views), and #2 on Feb 9 2023 (310k views) — a clear signal GDELT entirely missed
 
 ```python
-# Top articles for a country/language on a given day (no keywords needed)
-GET https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/2023/01/17
+# Top articles for a language edition on a given day (no keywords needed)
+GET https://wikimedia.org/api/rest_v1/metrics/pageviews/top/vi.wikipedia/all-access/2024/09/07
 
-# Specific article history for validation
+# Specific article history for validation/backtesting
 GET https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/ChatGPT/daily/20221201/20230331
 ```
+
+**Google Trends trending searches** (supplementary live attribution)
+- `pytrends.trending_searches(pn='vietnam')` returns what's trending in a country on a given day
+- Useful as a cross-check, especially for countries with low Wikipedia language edition coverage
+- Limitation: unofficial scraper, rate-limited, shallow historical archive (~24 hours), periodically breaks
 
 **GDELT** (backtesting and conflict attribution)
 - Monitors 100+ languages, 65,000+ news sources globally, codes every event by country/type/intensity, updates every 15 minutes, completely free
@@ -138,17 +138,17 @@ Data layer:
   - IEA electricity consumption          (80 countries, monthly)
   - Google Mobility Reports              (180 countries, daily)
   - NASA Black Marble lights             (global, monthly, fallback)
-  - Google Trends trending searches      (180 countries, daily, live attribution)
-  - Wikipedia top articles               (global, daily back to 2015, backtesting attribution)
+  - Wikipedia top articles               (global, daily, live + backtesting attribution — primary)
+  - Google Trends trending searches      (supplementary live attribution)
   - GDELT news events                    (global, real-time, conflict attribution + backtesting)
   - Maddison historical data             (context layer, static)
 
 Processing layer:
   - Detect anomalies vs 90-day rolling average per country
   - Rank by deviation magnitude
-  - Pull Google Trends trending searches for anomalous countries (live)
-  - Pull Wikipedia top articles for anomalous countries (backtesting, all event types)
-  - Pull GDELT events for anomalous countries (backtesting / conflict validation)
+  - Pull Wikipedia top articles for anomalous countries (live + backtesting, all event types)
+  - Pull GDELT events for anomalous countries (conflict validation)
+  - Pull Google Trends trending searches as cross-check where Wikipedia coverage is thin
   - Claude synthesizes signal + news into attribution + historical context
 
 Output layer:
@@ -170,8 +170,9 @@ Output layer:
 
 - [ ] Build electricity fetcher — IEA Monthly Electricity Statistics API
 - [ ] Build mobility fetcher — Google Mobility Reports CSV (published ~2 days lag)
-- [ ] Build Google Trends fetcher — daily trending searches per country via pytrends (live attribution)
-- [ ] Build Wikipedia fetcher — top articles per language edition via Wikimedia API (backtesting attribution)
+- [ ] Build Wikipedia fetcher — top articles per language edition via Wikimedia API (primary attribution, live + backtesting)
+- [ ] Build country → Wikipedia language edition mapping (e.g. Vietnam → vi.wikipedia)
+- [ ] Build Google Trends fetcher — pytrends trending searches as supplementary signal
 - [ ] Build GDELT fetcher — for backtesting and conflict-specific attribution
 - [ ] Anomaly detection — rolling z-score per country, flag >2σ moves
 - [ ] Historical context lookup — given a country, pull its Maddison arc and key inflection points
