@@ -81,15 +81,38 @@ These two signals are more independent than electricity + web traffic (which bot
 
 Detecting *that* something changed is easy. Knowing *why* requires a news layer.
 
-**GDELT** — monitors 100+ languages, 65,000+ news sources globally, codes every event by country/type/intensity, updates every 15 minutes, completely free. When a signal anomaly is detected, pull GDELT events for that country and Claude synthesizes an attribution.
+Two complementary sources cover different event types:
+
+**Google Trends trending searches** (primary, live attribution)
+- `pytrends.trending_searches(pn='vietnam')` returns what's organically trending in a country on a given day — no keyword needed, fully open-ended
+- Captures the full event spectrum: natural disasters, political crises, tech disruptions, supply chain events, policy changes
+- Reflects actual public attention, not just media volume
+- Free, daily granularity, ~180 countries
+- Limitation: shallow historical archive — only ~24 hours of trending data exposed via the API, so cannot be used for backtesting
 
 ```
 Signal anomaly detected (e.g. Vietnam electricity -15%)
-→ Pull GDELT events for Vietnam from that week
-→ Claude: "Typhoon Yagi made landfall, disrupting industrial zones in the north"
+→ Pull Google Trends trending searches for Vietnam that week
+→ Claude: "Top trends include 'bão Yagi' (Typhoon Yagi) — made landfall, disrupting industrial zones in the north"
 ```
 
-GDELT also replaces HN/arXiv as the news source for the broader digest — it covers global events in 100+ languages rather than English-language tech news only.
+**GDELT** (backtesting and conflict attribution)
+- Monitors 100+ languages, 65,000+ news sources globally, codes every event by country/type/intensity, updates every 15 minutes, completely free
+- Deep historical archive (1979–present, 876M+ events) — essential for validating the system against known past shocks
+- Strongest signal for kinetic conflict events (wars, bombings, coups); weaker for economic/tech disruptions
+- Known limitation: English-language bias inflates US domestic events; tech events (e.g. ChatGPT launch) are nearly invisible to its NLP pipeline
+
+```
+Backtesting: Vietnam electricity -15% in Sept 2024
+→ Pull GDELT events for Vietnam, Sept 2024
+→ Confirm: Typhoon Yagi (GoldsteinScale -9.4, 180k mentions) matches anomaly date
+```
+
+**GDELT event intensity findings** (from empirical analysis of `gdelt-bq.full.events`, 876M rows):
+- Most intense events by normalized mention share (% of global news): Gulf War Feb 1991 (3.4%), Oct 2023 Gaza war (3.4%), 2006 Lebanon War (3.1%)
+- Most negative Goldstein scale pre-internet: Halabja chemical attack, Iraq March 1988 (-9.84)
+- Pre-2000 data is sparse due to limited newspaper digitization; 1930s–1960s have virtually no coverage
+- Media volume scaled ~1000× from 1980s to 2020s — always normalize by total monthly volume when comparing across eras
 
 ---
 
@@ -97,16 +120,18 @@ GDELT also replaces HN/arXiv as the news source for the broader digest — it co
 
 ```
 Data layer:
-  - IEA electricity consumption    (80 countries, monthly)
-  - Google Mobility Reports        (180 countries, daily)
-  - NASA Black Marble lights       (global, monthly, fallback)
-  - GDELT news events              (global, real-time, attribution)
-  - Maddison historical data       (context layer, static)
+  - IEA electricity consumption          (80 countries, monthly)
+  - Google Mobility Reports              (180 countries, daily)
+  - NASA Black Marble lights             (global, monthly, fallback)
+  - Google Trends trending searches      (180 countries, daily, live attribution)
+  - GDELT news events                    (global, real-time, conflict attribution + backtesting)
+  - Maddison historical data             (context layer, static)
 
 Processing layer:
   - Detect anomalies vs 90-day rolling average per country
   - Rank by deviation magnitude
-  - Pull GDELT events for anomalous countries
+  - Pull Google Trends trending searches for anomalous countries (live)
+  - Pull GDELT events for anomalous countries (backtesting / conflict validation)
   - Claude synthesizes signal + news into attribution + historical context
 
 Output layer:
@@ -128,7 +153,8 @@ Output layer:
 
 - [ ] Build electricity fetcher — IEA Monthly Electricity Statistics API
 - [ ] Build mobility fetcher — Google Mobility Reports CSV (published ~2 days lag)
-- [ ] Build GDELT fetcher — replace/supplement current HN/arXiv sources
+- [ ] Build Google Trends fetcher — daily trending searches per country via pytrends (live attribution)
+- [ ] Build GDELT fetcher — for backtesting and conflict-specific attribution
 - [ ] Anomaly detection — rolling z-score per country, flag >2σ moves
 - [ ] Historical context lookup — given a country, pull its Maddison arc and key inflection points
 - [ ] Integrate into existing trend-digest pipeline as a new digest mode
