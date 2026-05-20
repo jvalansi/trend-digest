@@ -216,7 +216,7 @@ def fetch_og_images(items: list[dict]) -> dict[str, str | None]:
 
     og_items = [item for item in items if item.get("source") not in _SKIP_OG_SOURCES]
     with ThreadPoolExecutor(max_workers=10) as ex:
-        future_to_item = {ex.submit(fetch_og_image, item["url"]): item for item in og_items}
+        future_to_item = {ex.submit(fetch_og_image, item.get("article_url") or item["url"]): item for item in og_items}
         for future in as_completed(future_to_item):
             item = future_to_item[future]
             url = item["url"]

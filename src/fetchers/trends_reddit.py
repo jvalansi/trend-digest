@@ -59,7 +59,8 @@ def fetch_posts(url: str, limit: int, proxy: str | None) -> list[dict]:
         items.append({
             "title": post["title"].strip(),
             "summary": post.get("selftext", "")[:300].strip(),
-            "url": post.get("url") or f"https://reddit.com{post['permalink']}",
+            "url": f"https://reddit.com{post['permalink']}",
+            "article_url": post.get("url", ""),
             "source": "Reddit",
             "category": "news",
             "score": post.get("score", 0),
