@@ -142,24 +142,12 @@ def main():
     need_lookup = [item for item in ranked if item["ticker"] not in cache]
 
     if need_lookup:
-        print(f"  Fetching ETF descriptions for {len(need_lookup)} uncached tickers...", file=sys.stderr)
-        fmp_empty = []
-        for item in need_lookup:
-            ticker = item["ticker"]
-            desc = fetch_etf_description(ticker, fmp_key)
+        print(f"  Generating descriptions via Claude for {len(need_lookup)} tickers...", file=sys.stderr)
+        claude_descs = generate_descriptions_claude(need_lookup)
+        for ticker, desc in claude_descs.items():
             if desc:
                 cache[ticker] = desc
-                print(f"    {ticker} (FMP): {desc[:60]}", file=sys.stderr)
-            else:
-                fmp_empty.append(item)
-
-        if fmp_empty:
-            print(f"  Generating descriptions via Claude for {len(fmp_empty)} tickers...", file=sys.stderr)
-            claude_descs = generate_descriptions_claude(fmp_empty)
-            for ticker, desc in claude_descs.items():
-                if desc:
-                    cache[ticker] = desc
-                    print(f"    {ticker} (Claude): {desc[:60]}", file=sys.stderr)
+                print(f"    {ticker} (Claude): {desc[:60]}", file=sys.stderr)
 
         save_desc_cache(cache)
 
