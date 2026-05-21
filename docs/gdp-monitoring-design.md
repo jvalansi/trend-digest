@@ -166,14 +166,22 @@ Output layer:
 
 ---
 
-## Next Steps
+## Plan
 
-- [ ] Build electricity fetcher — IEA Monthly Electricity Statistics API
-- [ ] Build mobility fetcher — Google Mobility Reports CSV (published ~2 days lag)
-- [ ] Build Wikipedia fetcher — top articles per language edition via Wikimedia API (primary attribution, live + backtesting)
-- [ ] Build country → Wikipedia language edition mapping (e.g. Vietnam → vi.wikipedia)
-- [ ] Build Google Trends fetcher — pytrends trending searches as supplementary signal
-- [ ] Build GDELT fetcher — for backtesting and conflict-specific attribution
-- [ ] Anomaly detection — rolling z-score per country, flag >2σ moves
-- [ ] Historical context lookup — given a country, pull its Maddison arc and key inflection points
-- [ ] Integrate into existing trend-digest pipeline as a new digest mode
+### Phase 1 — Attribution layer (highest leverage, start here)
+The attribution layer is the core value-add. Build and validate it before investing in signal fetchers.
+
+- [ ] **Wikipedia fetcher** — `GET /metrics/pageviews/top/{lang}.wikipedia/all-access/{date}` for top articles per language edition; build country → language edition mapping (e.g. Vietnam → `vi`, Iraq → `ar`, Russia → `ru`)
+- [ ] **Backtest attribution** — for 5–10 known historical shocks (Typhoon Yagi Sept 2024, Ukraine invasion Feb 2022, ChatGPT Dec 2022, etc.), verify Wikipedia top articles correctly surface the cause within ±3 days of the signal anomaly
+- [ ] **GDELT fetcher** — query `gdelt-bq.full.events` for conflict-specific attribution; GCP project `optimum-lodge-278819` already authenticated with BigQuery access
+- [ ] **Google Trends fetcher** — `pytrends.trending_searches()` as supplementary signal for countries with thin Wikipedia coverage
+
+### Phase 2 — Signal layer
+- [ ] **Electricity fetcher** — IEA Monthly Electricity Statistics API (~80 countries, monthly, ~6 week lag)
+- [ ] **Mobility fetcher** — Google Mobility Reports CSV (~180 countries, daily, ~2 day lag)
+- [ ] **Nighttime lights fetcher** — NASA Black Marble (~global, monthly, fallback for Tier 3 countries)
+- [ ] **Anomaly detection** — rolling z-score per country per signal; flag >2σ moves; combine signals into a composite score
+
+### Phase 3 — Integration
+- [ ] **Historical context** — given a country + anomaly, pull its Maddison arc and key inflection points for Claude to use as background
+- [ ] **Pipeline integration** — wire into existing trend-digest as a new digest mode; daily Slack output: top 5–10 country movers with attribution + historical context
