@@ -142,12 +142,23 @@ def main():
     need_lookup = [item for item in ranked if item["ticker"] not in cache]
 
     if need_lookup:
-        print(f"  Generating descriptions via Claude for {len(need_lookup)} tickers...", file=sys.stderr)
-        claude_descs = generate_descriptions_claude(need_lookup)
-        for ticker, desc in claude_descs.items():
+        # Try FMP profile descriptions first (authoritative)
+        for item in need_lookup:
+            ticker = item["ticker"]
+            desc = fetch_etf_description(ticker, fmp_key)
             if desc:
                 cache[ticker] = desc
-                print(f"    {ticker} (Claude): {desc[:60]}", file=sys.stderr)
+                print(f"    {ticker} (FMP): {desc[:60]}", file=sys.stderr)
+
+        # Fall back to Claude for any still missing
+        still_missing = [item for item in need_lookup if item["ticker"] not in cache]
+        if still_missing:
+            print(f"  Generating descriptions via Claude for {len(still_missing)} tickers...", file=sys.stderr)
+            claude_descs = generate_descriptions_claude(still_missing)
+            for ticker, desc in claude_descs.items():
+                if desc:
+                    cache[ticker] = desc
+                    print(f"    {ticker} (Claude): {desc[:60]}", file=sys.stderr)
 
         save_desc_cache(cache)
 
@@ -162,12 +173,12 @@ def main():
         today_vol = item["today_volume"]
         avg_vol = item["avg_volume"]
         desc = descriptions.get(ticker, "")
-        desc_suffix = f" {desc}." if desc else ""
+        desc_prefix = f"{desc} " if desc else ""
 
         if args.sort == "volume":
             output.append({
                 "title": f"{ticker} ({name}) — {today_vol:,} shares",
-                "summary": f"Traded {today_vol:,} shares today (avg: {avg_vol:,}, ratio: {ratio:.1f}x).{desc_suffix}",
+                "summary": f"{desc_prefix}Traded {today_vol:,} shares today (avg: {avg_vol:,}, ratio: {ratio:.1f}x).",
                 "url": f"https://finance.yahoo.com/quote/{ticker}",
                 "source": "ETF Volume",
                 "category": "finance",
@@ -180,8 +191,8 @@ def main():
             output.append({
                 "title": f"{ticker} ({name}) — {ratio:.1f}x normal volume",
                 "summary": (
-                    f"Trading at {ratio:.1f}x its average volume today "
-                    f"({today_vol:,} vs avg {avg_vol:,}).{desc_suffix}"
+                    f"{desc_prefix}Volume spiked to {ratio:.1f}x above average "
+                    f"({today_vol:,} vs avg {avg_vol:,} shares)."
                 ),
                 "url": f"https://finance.yahoo.com/quote/{ticker}",
                 "source": "ETF Volume",
