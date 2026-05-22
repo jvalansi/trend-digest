@@ -333,11 +333,19 @@ def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
         }
         for i, item in enumerate(items)
     ]
-    prompt = (
-        "Write a single plain-text sentence (max 20 words) describing each news item below. "
-        "Be specific and factual. Return ONLY a JSON array of objects with 'index' and 'description' fields.\n\n"
-        + json.dumps(compact, ensure_ascii=False)
-    )
+    if mode == "finance":
+        instruction = (
+            "Write a single plain-text sentence (max 30 words) describing each ETF/financial item below. "
+            "For ETFs that track a specific asset, index, or company, briefly explain what that underlying is "
+            "(e.g. what the company does, what the index measures). Be specific and factual. "
+            "Return ONLY a JSON array of objects with 'index' and 'description' fields."
+        )
+    else:
+        instruction = (
+            "Write a single plain-text sentence (max 20 words) describing each news item below. "
+            "Be specific and factual. Return ONLY a JSON array of objects with 'index' and 'description' fields."
+        )
+    prompt = instruction + "\n\n" + json.dumps(compact, ensure_ascii=False)
     env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
     result = subprocess.run(
         [CLAUDE_PATH, "-p", prompt, "--output-format", "json", "--dangerously-skip-permissions"],
