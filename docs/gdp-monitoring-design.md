@@ -185,3 +185,57 @@ The attribution layer is the core value-add. Build and validate it before invest
 ### Phase 3 — Integration
 - [ ] **Historical context** — given a country + anomaly, pull its Maddison arc and key inflection points for Claude to use as background
 - [ ] **Pipeline integration** — wire into existing trend-digest as a new digest mode; daily Slack output: top 5–10 country movers with attribution + historical context
+
+---
+
+## GDP Component Framework
+
+GDP decomposes into four components (expenditure approach):
+
+| Component | Driven by | Available signal |
+|---|---|---|
+| **C** — Consumer spending | Wages from company revenue | Google Mobility (retail/workplace) |
+| **I** — Private investment | Retained earnings + debt | Electricity consumption (industrial load) |
+| **G** — Government spending | Tax revenue (redistributive) | Set aside — funded by C+I tax base |
+| **NX** — Net exports | Trade flows | WTO trade stats, AIS ship tracking — **currently unmonitored** |
+
+**Why not use company earnings directly?**
+Public companies account for only ~20–25% of US GDP (value-added basis, per NBER), and the fraction is lower in most other economies. Earnings data gives a biased sample — large, listed, export-oriented firms — and systematically misses SMEs, private companies, and the informal economy. Physical signals (electricity, mobility) capture the full 100% of activity regardless of listing status.
+
+Earnings data is most useful as an **attribution layer**: once a physical signal anomaly is detected, sector-level earnings can confirm which industries drove it.
+
+**Real vs. nominal GDP**
+Productivity gains in existing sectors tend to be competed away into lower prices (more output × lower price = flat revenue). Nominal GDP growth requires credit expansion — banks creating new money faster than output grows. This is why central banks target ~2% inflation: deliberately expanding money supply ~5% against ~3% real output growth. Real GDP (inflation-adjusted) strips this out and is the better measure of actual output growth. Real hourly wages — how much real stuff an hour of labor buys — is arguably the most honest single measure of whether growth reaches people.
+
+---
+
+## Beyond GDP — Happiness and Welfare
+
+GDP was designed by Simon Kuznets in WWII to measure industrial war capacity. He explicitly said it shouldn't be used as a welfare measure. The World Happiness Report (WHR) attempts a richer picture using the **Cantril Ladder**: respondents rate their life 0–10 against their personal best/worst possible life. Country scores are national averages from ~1,000 Gallup respondents, 3-year rolling average.
+
+### WHR regression factors and coefficients
+
+| Factor | Coefficient | Gallup question |
+|---|---|---|
+| Social support | **2.563** | "Do you have friends/family to count on in a crisis?" |
+| Freedom | 1.378 | "Are you satisfied with your freedom to choose what to do with your life?" |
+| Corruption (negative) | −0.733 | "Is corruption widespread in government/business?" |
+| Generosity | 0.487 | "Did you donate to charity in the past month?" (residualized on GDP) |
+| GDP per capita (log) | 0.349 | — |
+| Life expectancy | 0.028 | — |
+
+These 6 factors explain ~75% of cross-country happiness variance. Social support has the largest coefficient; when multiplied by the actual range of variation across countries, GDP and social support contribute roughly equally in practice.
+
+### Notable gaps in the WHR model
+
+**Generalized trust** — "Generally speaking, would you say most people can be trusted?" (World Values Survey) — is not an explicit WHR factor, despite being one of the strongest independent predictors of national happiness. The WHR proxies for it through "absence of corruption" (institutional trust) and "social support" (in-group trust), but neither captures trust in strangers, which is what differentiates Nordic societies most sharply.
+
+Generalized trust correlates negatively with the Gini coefficient (more unequal → less trust), but causation is contested: Uslaner argues trust predicts future equality; Wilkinson & Pickett argue inequality erodes trust; Rothstein argues institutional quality drives both.
+
+### US happiness trend
+
+US happiness peaked ~2008–2012 (ranked 11th globally in 2012, now 24th in 2025). The decline is sharpest among young people and correlates precisely with smartphone/social media saturation (~2012–2015). Older Americans (65+) who use social media less have held steady. Material living standards continued rising over this period — the divergence is the strongest evidence that above a baseline income, social connection quality dominates over material wealth as a happiness driver.
+
+### Implications for GDP monitoring
+
+The monitoring system tracks economic *output*. The happiness literature suggests output is a proxy for welfare with significant limitations: real wage growth, social trust, and freedom to make life choices are more directly predictive of whether people are actually better off. A future extension could layer WHR country scores against economic anomalies — flagging cases where output is rising but welfare indicators are not.
