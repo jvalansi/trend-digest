@@ -239,3 +239,70 @@ US happiness peaked ~2008–2012 (ranked 11th globally in 2012, now 24th in 2025
 ### Implications for GDP monitoring
 
 The monitoring system tracks economic *output*. The happiness literature suggests output is a proxy for welfare with significant limitations: real wage growth, social trust, and freedom to make life choices are more directly predictive of whether people are actually better off. A future extension could layer WHR country scores against economic anomalies — flagging cases where output is rising but welfare indicators are not.
+
+---
+
+## Beyond Happiness — Civilization Trajectory
+
+### What do people actually optimize for?
+
+Happiness may not be the right welfare target. Aristotle's distinction between *hedonia* (felt pleasure) and *eudaimonia* (flourishing through achievement and virtue) is 2,400 years old — the observation that people don't purely optimize for happiness predates the WHR by millennia. Nozick's experience machine (1974) formalized it: most people decline guaranteed happiness if it means forfeiting authentic achievement.
+
+Empirical evidence from revealed preferences (time use, consumption patterns, career choices) and stated preferences (Pew's "what makes life meaningful" surveys across 17 countries) points to people actually optimizing for **status, security, and belonging** — with happiness as a downstream byproduct, not the direct target. The Easterlin paradox (GDP growth above ~$60–80k household income doesn't raise average happiness) suggests feedback loops that would exist if populations were optimizing for happiness are absent.
+
+This suggests capability and output metrics are closer to what people actually chase than happiness surveys.
+
+### The two fundamental axes
+
+If the question is *species* advancement rather than just economic output, two physics-grounded metrics emerge:
+
+**Energy capture per capita** — the Kardashev scale (1964). Civilization advancement measured by energy harnessed: Type I (planetary), Type II (stellar), Type III (galactic). Humanity is currently ~Type 0.73. Chaisson's refinement — *energy rate density* (ergs/s/g) — captures thermodynamic complexity: bacteria ~0.5, human brain ~150,000, modern society ~500,000. Every major historical discontinuity (Industrial Revolution, post-WWII boom, China's rise) is visible in energy consumption before it shows up in GDP.
+
+**Novel information consumed per capita** — the cognitive axis. Bohn & Short (2009) measured ~34 GB/person/day in modern America. Reconstructible historically via literacy rate × available corpus × reading time, with clear discontinuities at each communication technology: writing, printing press (~1450), telegraph, mass literacy (~1850), internet (~1995).
+
+These two axes are not independent — Landauer's principle establishes a hard thermodynamic cost per bit processed. Energy and information are the same phenomenon viewed physically and cognitively.
+
+### Institutional reach as the unifying latent variable
+
+Both axes are downstream of a single latent variable: **institutional reach** — the radius within which people trust the system enough to cooperate with strangers rather than handle disputes personally.
+
+Two historical proxies, both reconstructible to ~1200 AD:
+
+**Homicide rate per 100k** (Eisner dataset, European records back to ~1200) — measures whether people defer to institutions vs. personal violence. The European decline from ~35 per 100k in medieval England to ~1 today tracks exactly with state formation and legal system development. Elias (*The Civilizing Process*, 1939) argued this was the internalization of "use law, not force" — the civilizing process as expanding trust in institutional dispute resolution.
+
+**Market integration + contract density** — do prices converge across cities (market integration), and how rich is the available contract law (contract density)? Greif's comparison of Maghribi traders (tight in-group coalitions, limited trust radius) vs. Genoese traders (impersonal contract enforcement with strangers) shows the institutional difference that determined which model scaled. The Commenda contract (~1000 AD, Genoa and Venice) — the first documented instrument for investing with a stranger — was guaranteed by the merchant courts of the Italian city-states: the first time merchants *were* the government, creating aligned incentives between contract guarantors and contract users. The same logic runs through to North & Weingast's (1989) account of the 1688 Glorious Revolution making English property rights credible.
+
+When homicide falls *and* contract density rises together, institutional trust is genuinely expanding — not just one dimension suppressed. This is the European 1300–1800 pattern that preceded and enabled the Industrial Revolution.
+
+### Cooperative problem-solving radius
+
+Institutional reach is the civilizational expression of a more fundamental metric: **cooperative problem-solving radius** — how large a group can coordinate, and how complex the problems they can collectively solve.
+
+| Threshold | Coordination radius | Key enabler |
+|---|---|---|
+| Pre-language | ~band (50) | — |
+| Language | ~tribe (150, Dunbar) | Shared mental models |
+| Writing + law | ~city-state | Enforceable contracts with strangers |
+| Markets + courts | ~trading network (millions) | Impersonal exchange |
+| Print + mass literacy | ~nation | Shared information layer |
+| Internet | ~global | Near-zero communication cost |
+| AI | potentially unbounded | Automated synthesis and translation |
+
+Every step in the GDP monitoring system's historical analysis maps onto this: the Maddison GDP data is the economic output of this radius compounding; institutional trust is the mechanism; energy and information are the substrate and structure.
+
+### Long-run metric stack
+
+Metrics trackable at 100–1000 year scales, in rough order of historical depth:
+
+| Metric | Trackable from | Source |
+|---|---|---|
+| Real GDP per capita | 1 AD | Maddison Project |
+| Urbanization rate | 2000+ years | Archaeological + census |
+| Homicide rate per 100k | ~1200 | Eisner dataset |
+| Energy per capita | ~1500 | Smil historical reconstructions |
+| Literacy rate | ~1500 | Parish records, OECD back to ~1800 |
+| Book production / corpus size | ~1450 | Buringh & van Zanden (2009); Dittmar (2011) |
+| Market integration (price convergence) | ~1300 | Medieval price series |
+| Generalized trust | 1981 | World Values Survey (direct); proxied earlier |
+
+GDP and happiness are both downstream of institutional reach, which is downstream of cooperative radius, which is downstream of energy + information. The monitoring system's real-time signals (electricity, mobility) are the short-lag layer of this same structure.
