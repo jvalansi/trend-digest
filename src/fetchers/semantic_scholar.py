@@ -44,6 +44,7 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
             f"&fields={FIELDS}"
             f"&publicationDateOrYear={date_range}"
             f"&limit=50"
+            f"&sort=citationCount:desc"
         )
         req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
         data = None
