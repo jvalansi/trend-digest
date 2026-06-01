@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 from stats import score_items
 
 BASE_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
-FIELDS = "title,abstract,citationCount,publicationDate,externalIds,authors"
+FIELDS = "title,abstract,citationCount,influentialCitationCount,publicationDate,externalIds,authors"
 QUERIES = {
     "tech": ["artificial intelligence", "machine learning", "large language model", "deep learning"],
     "science": ["biology", "physics", "neuroscience", "climate science", "quantum computing", "genomics"],
@@ -84,6 +84,10 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
             if len(authors) > 3:
                 author_str += " et al."
 
+            influential = paper.get("influentialCitationCount") or 0
+            if influential == 0:
+                continue
+
             items.append({
                 "title": paper.get("title", "").strip(),
                 "summary": (paper.get("abstract") or "")[:400].strip(),
@@ -91,7 +95,8 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
                 "source": "Semantic Scholar",
                 "category": "tech",
                 "authors": author_str,
-                "citations": paper.get("citationCount") or 0,
+                "citations": influential,
+                "total_citations": paper.get("citationCount") or 0,
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": paper.get("publicationDate"),
             })
@@ -104,7 +109,7 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=20, help="Number of papers to return (default: 20)")
-    parser.add_argument("--days", type=int, default=30, help="Look back N days (default: 30)")
+    parser.add_argument("--days", type=int, default=365, help="Look back N days (default: 365)")
     parser.add_argument("--mode", default="tech", choices=["tech", "science"], help="Query set (default: tech)")
     args = parser.parse_args()
 
