@@ -57,7 +57,7 @@ def fetch(geo: str, limit: int) -> list[dict]:
             wait_until="domcontentloaded",
             timeout=30000,
         )
-        page.wait_for_timeout(5000)
+        page.wait_for_timeout(10000)
         browser.close()
 
     body = trend_data.get("body", "")
