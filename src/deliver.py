@@ -19,12 +19,55 @@ import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 
 SLACK_CHANNEL = os.environ.get("TREND_DIGEST_CHANNEL", "proj-trend-digest")
 SCIENCE_CHANNEL = os.environ.get("SCIENCE_DIGEST_CHANNEL", SLACK_CHANNEL)
 NEWS_CHANNEL = os.environ.get("NEWS_DIGEST_CHANNEL", "proj-news-digest")
 FINANCE_CHANNEL = os.environ.get("FINANCE_DIGEST_CHANNEL", SLACK_CHANNEL)
 CLAUDE_PATH = os.environ.get("CLAUDE_PATH", "/home/ubuntu/.local/bin/claude")
+
+_SEEN_ITEMS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seen_items.json")
+
+
+def load_seen_items() -> dict:
+    try:
+        with open(_SEEN_ITEMS_PATH) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_seen_items(seen: dict) -> None:
+    with open(_SEEN_ITEMS_PATH, "w") as f:
+        json.dump(seen, f, indent=2)
+
+
+def annotate_seen(items: list[dict], seen: dict) -> None:
+    today = datetime.now(timezone.utc).date().isoformat()
+    for item in items:
+        url = item.get("url", "")
+        if url in seen:
+            first = seen[url]["first_seen"]
+            try:
+                delta = (datetime.now(timezone.utc).date() - datetime.fromisoformat(first).date()).days
+            except Exception:
+                delta = 0
+            if delta > 0:
+                item["days_since_first_seen"] = delta
+
+
+def update_seen(items: list[dict], seen: dict) -> None:
+    today = datetime.now(timezone.utc).date().isoformat()
+    for item in items:
+        url = item.get("url", "")
+        if not url:
+            continue
+        if url in seen:
+            seen[url]["count"] += 1
+            seen[url]["last_seen"] = today
+        else:
+            seen[url] = {"first_seen": today, "last_seen": today, "count": 1}
 
 REDDIT_SUBREDDITS = {
     "tech": ["artificial", "MachineLearning", "programming", "technology"],
@@ -371,7 +414,9 @@ def format_item(item: dict, description: str) -> str:
     engagement_str = ""
     if raw is not None and eng is not None:
         engagement_str = f" · {int(raw)} pts · z={eng:+.2f}"
-    return f"*<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}_"
+    days = item.get("days_since_first_seen")
+    seen_str = f" · ↩ {days}d" if days else ""
+    return f"*<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}{seen_str}_"
 
 
 def post_to_slack(text: str, token: str, channel: str, thread_ts: str | None = None, unfurl: bool = False, attachments: list | None = None) -> str:
@@ -477,7 +522,6 @@ def main():
     else:
         data = json.load(sys.stdin)
 
-    from datetime import datetime, timezone
     date_str = datetime.now(timezone.utc).strftime("%A, %B %-d")
     if args.mode == "science":
         label = "Science Digest"
@@ -508,6 +552,9 @@ def main():
         print("No items to deliver.", file=sys.stderr)
         return
 
+    seen = load_seen_items()
+    annotate_seen(all_items, seen)
+
     print("Generating descriptions...", file=sys.stderr)
     descriptions = generate_descriptions(all_items, args.mode)
     rss_descs = descriptions[:len(rss_items)]
@@ -537,6 +584,8 @@ def main():
             print("\n---\n" + msg)
         for msg, _ in section_messages:
             print("\n---\n" + msg)
+        update_seen(all_items, seen)
+        save_seen_items(seen)
         return
 
     token = os.environ.get("SLACK_BOT_TOKEN")
@@ -550,6 +599,8 @@ def main():
     for msg, attachments in section_messages:
         post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=attachments is None, attachments=attachments)
     print(f"Posted {total_items} items to #{channel}", file=sys.stderr)
+    update_seen(all_items, seen)
+    save_seen_items(seen)
 
     if args.publish:
         _publish_to_socials(label, date_str, rss_items, rss_descs, sections, section_descs, args.mode)
