@@ -309,7 +309,66 @@ GDP and happiness are both downstream of institutional reach, which is downstrea
 
 ---
 
-## Inequality Dynamics — r > g and the Piketty Framework
+## Simulating and Predicting History — A Discussion
+
+### Approaches to simulating history
+
+Four broad approaches, not mutually exclusive:
+
+1. **Agent-based modeling (ABM)** — simulate individual actors (people, states, firms) with behavioral rules; macro-level history emerges from their interactions. Best for testing hypotheses about structural forces (geography, resources, population). Tools: Mesa (Python), NetLogo.
+2. **System dynamics** — model stocks and flows (population, wealth, military capacity) with feedback loops. Good for long-run trends (rise and fall of empires, economic cycles). Turchin's cliodynamics is the canonical example.
+3. **LLM-as-actor** — instantiate historical figures or factions as LLM agents with period-accurate context, have them make decisions, step forward in time. More narrative and qualitative; suited to counterfactuals ("what if Napoleon didn't invade Russia?").
+4. **Data replay with perturbation** — take actual historical records, replay through a model, perturb parameters to study sensitivity ("what if the 1918 flu had 2x the CFR?").
+
+The most promising current direction combines 3 and 1: LLM agents embedded in a structured world model that enforces physical and economic constraints, so decision-making is plausible without unconstrained hallucination.
+
+---
+
+### Predictability of historical events
+
+Different categories have very different predictability profiles:
+
+**Financial bubbles (dot-com 2000, housing 2008)** — most predictable. The structural signals were visible and named in advance. Shiller published equity overvaluation warnings in *Irrational Exuberance* (March 2000) and housing warnings in 2005. He won the Nobel in part for these calls. Minsky's credit cycle model (1970s) describes bubble formation mechanically. The hard part is timing, not direction.
+
+**Technological revolutions (agricultural, industrial, AI)** — predictable in direction once enabling conditions are measurable, not in timing. Turing predicted machine intelligence in 1950. The AI revolution was foreseeable from compute cost curves (Wright's Law applied to GPU costs) by ~2015. The industrial revolution was invisible to contemporaries — Malthus wrote his population trap in 1798 at the exact moment steam power was breaking it.
+
+**Geopolitical events** — lower predictability. Structural models (power transition theory, Turchin) give decade-scale risk windows, not specific triggers.
+
+**The meta-pattern:** direction is more predictable than timing. People who called these events usually predicted the right thing too early, were ignored, and credited retroactively.
+
+---
+
+### Tetlock's superforecasting
+
+Tetlock ran a 20-year forecasting tournament (Good Judgment Project / IARPA ACE) where thousands of people predicted geopolitical and economic events. The core method:
+
+1. **Reference class first** — before thinking about specifics, ask "what's the base rate for events like this?"
+2. **Decompose** — break the question into sub-questions estimable independently (Fermi style)
+3. **Express as a probability** — not "likely" but a number; forces precision and enables calibration tracking
+4. **Update incrementally** — when new evidence arrives, move a little, not a lot
+5. **Track calibration** — are events you called 70% actually happening 70% of the time?
+
+**Key finding:** superforecasters — random smart people with no special domain expertise — consistently outperformed CIA analysts with classified intelligence access. The edge came from reasoning process, not information. They are "foxes" (many small things) not "hedgehogs" (one big theory), actively seek disconfirming evidence, and are comfortable with 55% rather than rounding to 50% or 60%.
+
+**Limitation:** works best for 1–2 year horizons on well-defined questions. Degrades for long-horizon structural shifts and doesn't handle true black swans outside the reference class.
+
+---
+
+### Frameworks for summarizing human history
+
+Four complementary lenses:
+
+**Energy and complexity (Big History — David Christian):** Humans have progressively captured more energy per capita — foragers → agriculture → fossil fuels → potentially nuclear/solar. Each step enabled more social complexity, specialization, and population. Most of history is explained by which energy transition is happening and where.
+
+**Cooperation at scale (Harari — Sapiens):** The uniquely human trick is cooperating with strangers via shared fictions — gods, nations, money, laws. Agricultural surplus enabled cities; cities enabled states; states enabled armies and trade. The bottleneck throughout: how many unrelated people can you coordinate, and around what shared story?
+
+**The Malthusian trap and the one escape:** For ~10,000 years after agriculture, productivity gains were absorbed by population growth — average living standards barely moved. The industrial revolution broke this for the first time. That is the central discontinuity in human history.
+
+**Secular cycles (Turchin):** Within any era, recurring ~200-year cycles: integration (stability, growth) → elite overproduction → popular immiseration → instability → correction. Plays out inside civilizations regardless of which energy regime they are in.
+
+**Short version:** Humans learned to cooperate at larger and larger scales, driven by energy transitions that periodically reset the ceiling on complexity. Progress is real but nonlinear — punctuated by instability when the institutions governing distribution cannot keep up with productive capacity.
+
+---
 
 ### The fundamental identity
 
