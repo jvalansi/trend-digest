@@ -306,3 +306,60 @@ Metrics trackable at 100–1000 year scales, in rough order of historical depth:
 | Generalized trust | 1981 | World Values Survey (direct); proxied earlier |
 
 GDP and happiness are both downstream of institutional reach, which is downstream of cooperative radius, which is downstream of energy + information. The monitoring system's real-time signals (electricity, mobility) are the short-lag layer of this same structure.
+
+---
+
+## Inequality Dynamics — r > g and the Piketty Framework
+
+### The fundamental identity
+
+Piketty's central finding: when the return on capital (r) exceeds economic growth (g), wealth concentrates over time. This is not a policy failure — it is the mathematical default. Averaged over all of human history, the gap is enormous: r has been ~4–5% across centuries and civilizations (medieval English land rents, Roman agricultural estates, modern asset portfolios all converge on this range), while g was near zero for ~99% of human history (the Malthusian trap). The post-WWII period of g ≈ 3–4% was the historical anomaly, not the norm.
+
+### When r < g
+
+The exceptions are instructive:
+
+- **Post-WWII Golden Age (~1945–1975)** — the clearest case. Growth hit 4–6% in Western Europe while r was simultaneously compressed by: physical destruction of capital stock, progressive taxation (top marginal rates 70–90% in the US), capital controls (Bretton Woods), strong unions, and inflation eroding real returns. Inequality compressed sharply. The combination of catastrophic capital destruction *and* aggressive policy intervention has not occurred simultaneously since.
+- **The Black Death (1347–1353)** — killed ~30–50% of Europe. Labor scarcity drove wages up and land values down. The most dramatic natural shock to r > g in recorded history.
+- **Active wartime** — WWI, WWII: capital physically destroyed, inflated away, and taxed heavily.
+- **Catch-up industrialization** — South Korea, Taiwan, Japan (1950s–80s), China (1980s–2000s): g hit 8–10%+, potentially exceeding r during peak growth phases.
+
+### Gini: not rising everywhere
+
+Within-country inequality has risen in most large economies since ~1980, consistent with r > g reasserting after the post-WWII compression. But the global picture is more complex:
+
+- **Latin America: falling** — Brazil, Mexico, Peru all saw significant Gini reductions in the 2000s–2010s. The major counter-example.
+- **Between-country inequality: falling** — China and India growing faster than rich countries has compressed the global distribution, lifting hundreds of millions out of poverty.
+
+Milanovic's **elephant curve** (income growth 1988–2008 by global percentile) captures both forces simultaneously: large gains for the Asian middle class (10th–65th percentile), stagnation for the developed-world working/middle class (75th–90th percentile), and large gains for the global top 1%. r > g predicts this exactly — it governs within-country dynamics, not which countries grow fastest.
+
+As China and India finish their catch-up phase, the between-country compression effect weakens. If r > g continues within those economies as they mature, global inequality begins rising on both axes simultaneously.
+
+### Proposed mechanisms
+
+**UBI as demand maintenance** — if capital returns are recycled into consumer spending (via universal dividend), capital owners' returns become partly self-sustaining: capital → profits → UBI → consumer spending → profits. The Alaska Permanent Fund and Norway's sovereign wealth fund are real implementations: collectively-owned capital stock with returns distributed universally. The structural argument is that UBI is not redistribution but demand insurance — maintaining the consumer base that makes r possible. Key limitation: UBI redistributes income (flow) but not wealth (stock). Piketty argues you need a wealth tax to address the stock accumulation.
+
+**Wealth tax** — directly compresses r by taxing the accumulated capital stock. If r = 5% and wealth tax = 2%, effective r drops to 3%; if g = 2%, the gap nearly closes without catastrophe. The empirical record is poor: France's ISF (1982–2017) was repealed after documented capital flight; Sweden, Germany, Netherlands all tried and repealed. The core problems are valuation of illiquid assets, liquidity (asset-rich cash-poor owners forced to sell), and capital mobility (wealth moves to lower-tax jurisdictions). A global wealth tax — Piketty's own prescription — requires international coordination that has not materialized.
+
+### Predictability of historical inflection points
+
+Different categories of event have different predictability profiles:
+
+**Financial bubbles** — most predictable. Structural signals (Shiller CAPE, credit-to-GDP gap) are visible and measurable in advance. Shiller published equity overvaluation warnings in March 2000 and housing warnings in 2005. The hard part is timing, not direction.
+
+**Technological revolutions** — predictable in direction once enabling conditions are measurable, not in timing. The AI revolution was foreseeable from compute cost curves by ~2015 (Wright's Law applied to GPU costs and training compute). The industrial revolution was invisible to contemporaries (Malthus wrote his population trap in 1798 at the exact moment steam power was breaking it).
+
+**Geopolitical events** — lower predictability. Structural models (power transition theory, Turchin's structural-demographic model) give decade-scale risk windows, not specific triggers.
+
+**The meta-pattern:** direction is more predictable than timing. Calibrated forecasters (Tetlock's superforecasting framework) would have assigned ~70–80% to "AI revolution in the 2020s" by 2015, ~60–70% to "housing correction" by 2006, and much lower to specific geopolitical triggers in a specific year.
+
+### Where we are now
+
+By the major frameworks simultaneously:
+
+- **Turchin:** disintegration phase — wealth inequality at 1920s levels, elite overproduction (more credentialed people than elite positions), declining institutional trust, fiscal stress. Predicted peak instability ~2020, published 2010.
+- **Dalio:** late long-term debt cycle (~100 years, analogous to 1930s) overlapping with a US-China power transition — historically the highest-risk combination.
+- **Big History:** AI as a cognitive energy transition — automating mental labor the way fossil fuels automated physical labor. Analogous to the 1780s of the industrial revolution: enabling technology exists and is spreading, but full restructuring is decades away.
+- **Piketty:** r > g gap has widened since 1980 as the post-WWII compression unwound. Without new policy intervention or a catastrophic reset, the default trajectory continues.
+
+The unusual feature of the current moment: all four frameworks point to the same decade as a transition window. Whether it resolves as breakdown, reformation, or absorption into a new equilibrium at higher complexity depends on contingent factors the structural models cannot predict.
