@@ -165,19 +165,28 @@ Traceable displacement chain:
 
 Each transition is measurable with time-use surveys at both endpoints. **American Time Use Survey (ATUS, 2003+)** covers recent transitions. Earlier data requires patchy academic studies (Robinson & Godbey *Time for Life* is the standard reference).
 
-Rough US daily time allocation (2023, ATUS + eMarketer):
+US daily time allocation — 1965 vs. 2023 (Robinson 1965 survey + ATUS/eMarketer 2023, all adults, all days):
 
-| Activity | Hours/day |
-|---|---|
-| Sleep | 8.7 |
-| Work | 3.6 |
-| Total digital media | ~8.0 |
-| — Video (YouTube + Netflix + TikTok + streaming) | ~3.5 |
-| — Social (Facebook + Instagram + Snapchat) | ~1.5 |
-| — Games | ~1.0 |
-| — Messaging | ~0.75 |
-| Eating | 1.2 |
-| Household | 1.8 |
+| Activity | 1965 | 2023 | Δ |
+|---|---|---|---|
+| Sleep | 8.0 | 6.8 | −1.2 |
+| Paid work | 4.5 | 3.6 | −0.9 |
+| Household work | 3.5 | 1.8 | −1.7 |
+| Childcare | 0.5 | 1.2 | +0.7 |
+| Eating & drinking | 1.4 | 1.2 | −0.2 |
+| Personal care | 0.9 | 0.8 | −0.1 |
+| TV watching | 1.5 | 2.8 | +1.3 |
+| Other digital / social / streaming | 0 | 2.5 | +2.5 |
+| In-person socializing | 1.2 | 0.4 | −0.8 |
+| Reading (print) | 0.5 | 0.1 | −0.4 |
+| Radio / music | 0.4 | 0.3 | −0.1 |
+| Religion / church | 0.3 | 0.1 | −0.2 |
+| Sport / exercise | 0.2 | 0.3 | +0.1 |
+| Education | 0.2 | 0.3 | +0.1 |
+| Other leisure (hobbies, games, events) | 0.9 | 0.6 | −0.3 |
+| **TOTAL** | **24.0** | **24.0** | — |
+
+Caveats: 1965 numbers are Robinson's smaller-sample survey; "other digital" in 2023 is estimated from eMarketer/Data.ai since ATUS buckets it poorly; work drop is largely demographic composition (more retirees, more part-time), not individuals working fewer hours. The 2023 work figure for full-time employed adults is similar to 1965.
 
 ### The ad market as the price of attention
 
