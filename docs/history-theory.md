@@ -104,6 +104,105 @@ GDP and happiness are both downstream of institutional reach, which is downstrea
 
 ---
 
+## Tech and Science Trees
+
+Human knowledge accumulation can be modeled as two interconnected directed acyclic graphs (DAGs):
+
+**Science graph — edges are citations.** A paper cites what it builds on. Citation intent filtering (Semantic Scholar labels citations as background, method, or result) isolates genuine "enabled by" edges from comparison or background references. Best corpus: OpenAlex (~250M works, fully open, with concept taxonomy and citation links).
+
+**Tech graph — edges are composition.** A technology is made of components; the "built out of" relationship is a cleaner dependency signal than citations. Sources: Wikidata `has_part` / `uses` / `made_from_material` relations, patent forward/backward citations (CPC classification), Wikipedia technology infoboxes.
+
+**The science→tech bridge** — the cross-graph edge — is when a scientific discovery becomes a technology. Proxies: first patent citing a paper, first commercial product, time-lag between publication and application (well-studied in biotech/pharma).
+
+### Granularity levels
+
+| Level | Node count | Example |
+|---|---|---|
+| Civilization-game (major milestones) | 500–5,000 | Transformer architecture, CRISPR, printing press |
+| Wikipedia/Wikidata (named items) | 50,000–100,000 | All named inventions and discoveries with articles |
+| Paper/patent (full corpus) | 100M–250M | Every patent and academic paper |
+
+The Wikidata level is the most tractable starting point: large enough to be meaningful, structured enough to have existing edges, small enough to visualize. Pruning to the ~10–20K most-connected nodes produces a navigable graph.
+
+### Node attributes worth tracking
+
+Each node should carry at minimum: date of first publication/deployment, prerequisite edges, and two separate attributes — **capability maturity** (when the underlying technique became reliable) and **adoption threshold crossing** (when it became accessible to non-experts). These often occur years apart and have different causes. ChatGPT (Nov 2022) crossed the adoption threshold for LLMs; the capability had existed in GPT-3 (2020). The Mosaic browser (1993) crossed the adoption threshold for the web; HTTP existed since 1991.
+
+### Multi-track convergence as a pattern
+
+Major innovations are rarely single-track. LLMs required simultaneous maturity across four independent tracks: transformer architecture (algorithms), GPU memory bandwidth (hardware), Common Crawl / LAION (data), and distributed mixed-precision training (infrastructure). The 2020–2025 window was identifiable as early as 2019 by modeling each track's trajectory independently.
+
+Other convergence examples: aviation (aerodynamics + internal combustion + lightweight materials), smartphones (cellular + touchscreen + mobile CPU + lithium battery), nuclear weapons (physics theory + isotope separation + precision engineering).
+
+A well-built tech tree with rate-of-progress metadata on each node could function as a leading indicator for future convergence events — identifying windows where multiple tracks are simultaneously maturing.
+
+---
+
+## Consumer Basket and Attention Economy
+
+### The basket through history
+
+Human consumption can be tracked at three granularities:
+
+| Level | Count | Example |
+|---|---|---|
+| Categories | 20–50 | Food, shelter, transport, media, healthcare |
+| Subcategories | 500–2,000 | Streaming video, ride-sharing, prescription drugs |
+| Named products/brands | 100,000s | Netflix, Uber, ChatGPT |
+
+For tracking "what entered the basket and when," subcategory granularity is most useful — specific enough to be meaningful, abstract enough to track across decades. Best historical source: **BLS Consumer Expenditure Survey** (US household spending by category since 1901).
+
+### Attention as a displacement metric
+
+Time is zero-sum in a way money is not — 24 hours is fixed. When a new product category enters the attention stack it must displace something else. This makes time-use data a cleaner measure of adoption than spending or MAU counts.
+
+Traceable displacement chain:
+- Radio displaced church/community gathering (1920s–30s)
+- TV displaced radio + in-person socializing (1950s–60s)
+- Internet partially displaced TV (2000s)
+- Social/YouTube displaced linear TV for under-35s (2010s)
+- TikTok displaced long-form video (2018+)
+
+Each transition is measurable with time-use surveys at both endpoints. **American Time Use Survey (ATUS, 2003+)** covers recent transitions. Earlier data requires patchy academic studies (Robinson & Godbey *Time for Life* is the standard reference).
+
+Rough US daily time allocation (2023, ATUS + eMarketer):
+
+| Activity | Hours/day |
+|---|---|
+| Sleep | 8.7 |
+| Work | 3.6 |
+| Total digital media | ~8.0 |
+| — Video (YouTube + Netflix + TikTok + streaming) | ~3.5 |
+| — Social (Facebook + Instagram + Snapchat) | ~1.5 |
+| — Games | ~1.0 |
+| — Messaging | ~0.75 |
+| Eating | 1.2 |
+| Household | 1.8 |
+
+### The ad market as the price of attention
+
+"Free" digital products are paid for in attention to ads. The ad market reveals the price:
+
+- Meta: ~$130 revenue per US user per year ([Meta Q4 2023](https://investor.fb.com/))
+- Average US user: ~180 hours/year on Facebook/Instagram
+- Implied price: **~$0.70/hour of attention**
+
+This enables a clean consumer surplus calculation: `surplus = value to user − (hours × attention market rate)`. Attention price varies by platform — search intent (Google) commands higher CPMs than passive social browsing.
+
+Products outside the ad model (Wikipedia, iMessage, open source software) are **commons goods** — collectively produced, freely consumed, surplus almost entirely unmonetized. Wikipedia runs on ~$150M/year in donations while generating consumer surplus that, at Facebook CPM rates, would be worth billions annually.
+
+### CPI's blind spots
+
+CPI tracks the cost of a fixed basket — it cannot capture:
+- **New goods problem:** price drops before a category enters the basket are invisible (mobile phones got 10x cheaper through the 1990s uncounted)
+- **Quality adjustment:** a 2024 smartphone replaced camera, GPS, map, clock, calendar, newspaper, TV, radio — hedonic adjustment methods are inadequate for bundle displacements this large
+- **Free goods:** Google, Wikipedia, Gmail have zero dollar cost but enormous consumer value. Brynjolfsson et al. (2019) estimated US consumer surplus from free internet services at $500B+/year — entirely absent from CPI ([NBER w25770](https://www.nber.org/papers/w25770))
+- **Work usage:** AI tools used during work hours are classified as "working" in time-use surveys — the highest-frequency AI usage is invisible to consumer-side measurement
+
+The attention-based framework handles the first three better than CPI. Work attention remains a systematic blind spot across all current methodologies.
+
+---
+
 ## Simulating and Predicting History
 
 ### Approaches to simulating history
