@@ -560,6 +560,11 @@ def main():
     rss_descs = descriptions[:len(rss_items)]
     section_descs = descriptions[len(rss_items):]
 
+    print("Fetching images...", file=sys.stderr)
+    og_images = fetch_og_images(all_items)
+    fetched = sum(1 for v in og_images.values() if v)
+    print(f"  Got {fetched}/{len(all_items)} images", file=sys.stderr)
+
     formatted_rss = [format_item(item, desc) for item, desc in zip(rss_items, rss_descs)]
 
     # Group section messages: header per section, then one message per item
@@ -570,7 +575,7 @@ def main():
         section_messages.append((f"*{name}*", None))
         for item in items:
             text = format_item(item, section_descs[desc_idx])
-            thumb = item.get("thumbnail")
+            thumb = item.get("thumbnail") or og_images.get(item["url"])
             attachments = [{"image_url": thumb, "fallback": item.get("title", "")}] if thumb else None
             section_messages.append((text, attachments))
             desc_idx += 1
@@ -594,8 +599,10 @@ def main():
         sys.exit(1)
 
     thread_ts = post_to_slack(header, token, channel)
-    for msg in formatted_rss:
-        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=True)
+    for item, msg in zip(rss_items, formatted_rss):
+        img = og_images.get(item["url"])
+        attachments = [{"image_url": img, "fallback": item.get("title", "")}] if img else None
+        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=not bool(attachments), attachments=attachments)
     for msg, attachments in section_messages:
         post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=attachments is None, attachments=attachments)
     print(f"Posted {total_items} items to #{channel}", file=sys.stderr)
