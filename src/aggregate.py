@@ -117,7 +117,7 @@ FETCHERS = {
     "news": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "news"], "is_rss": True},
         {"cmd": ["python", "src/fetchers/trends_google.py", "--limit", "20"], "section": "Google Trends", "section_limit": 10},
-        {"cmd": ["python", "src/fetchers/trends_google_global.py", "--limit", "20"], "section": "Google Trends Global", "section_limit": 15},
+        {"cmd": ["python", "src/fetchers/trends_google_global.py", "--limit", "20"], "section": "Google Trends Global", "section_limit": 10},
         {"cmd": ["python", "src/fetchers/trends_wikipedia.py", "--limit", "20"], "section": "Wikipedia Trending"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "news"], "section": "Reddit News"},
         {"cmd": ["python", "src/fetchers/trends_bilibili.py", "--limit", "20"], "section": "Bilibili Trending"},
