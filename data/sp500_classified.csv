@@ -1,0 +1,501 @@
+ticker,name,sector,industry,main_product,enabling_tech,underlying_science
+MMM,3M,Industrials,Industrial Conglomerates,none,none,none
+AOS,A. O. Smith,Industrials,Building Products,none,none,none
+ABT,Abbott Laboratories,Health Care,Health Care Equipment,diagnostics + medical devices,immunoassay + continuous glucose monitoring,electrochemistry + immunology
+ABBV,AbbVie,Health Care,Biotechnology,immunology + oncology biologics,monoclonal antibodies + ADCs,protein engineering + immunology
+ACN,Accenture,Information Technology,IT Consulting & Other Services,none,none,none
+ADBE,Adobe Inc.,Information Technology,Application Software,creative software + generative AI,generative AI + image/video processing,computer vision + diffusion models
+AMD,Advanced Micro Devices,Information Technology,Semiconductors,CPUs + GPUs + AI chips,chip microarchitecture design,semiconductor physics + computer architecture
+AES,AES Corporation,Utilities,Independent Power Producers & Energy Traders,none,none,none
+AFL,Aflac,Financials,Life & Health Insurance,none,none,none
+A,Agilent Technologies,Health Care,Life Sciences Tools & Services,analytical instruments + diagnostics,LC-MS + genomics instruments,analytical chemistry + mass spectrometry
+APD,Air Products,Materials,Industrial Gases,"industrial gases (H2, O2, N2)",cryogenic gas separation + green hydrogen,chemical engineering + thermodynamics
+ABNB,Airbnb,Consumer Discretionary,"Hotels, Resorts & Cruise Lines",none,none,none
+AKAM,Akamai Technologies,Information Technology,Internet Services & Infrastructure,none,none,none
+ALB,Albemarle Corporation,Materials,Specialty Chemicals,lithium compounds for batteries,lithium carbonate + lithium hydroxide refining,electrochemistry + materials science
+ARE,Alexandria Real Estate Equities,Real Estate,Office REITs,none,none,none
+ALGN,Align Technology,Health Care,Health Care Supplies,clear dental aligners,3D imaging + custom polymer fabrication,materials science + computer vision
+ALLE,Allegion,Industrials,Building Products,none,none,none
+LNT,Alliant Energy,Utilities,Electric Utilities,none,none,none
+ALL,Allstate,Financials,Property & Casualty Insurance,none,none,none
+GOOGL,Alphabet Inc. (Class A),Communication Services,Interactive Media & Services,search + cloud + AI,PageRank + transformer LLMs,information retrieval + deep learning
+GOOG,Alphabet Inc. (Class C),Communication Services,Interactive Media & Services,search + cloud + AI,PageRank + transformer LLMs,information retrieval + deep learning
+MO,Altria,Consumer Staples,Tobacco,none,none,none
+AMZN,Amazon,Consumer Discretionary,Broadline Retail,none,none,none
+AMCR,Amcor,Materials,Paper & Plastic Packaging Products & Materials,none,none,none
+AEE,Ameren,Utilities,Multi-Utilities,none,none,none
+AEP,American Electric Power,Utilities,Electric Utilities,none,none,none
+AXP,American Express,Financials,Consumer Finance,none,none,none
+AIG,American International Group,Financials,Multi-line Insurance,none,none,none
+AMT,American Tower,Real Estate,Telecom Tower REITs,cell towers + wireless infrastructure,RF antenna + tower engineering,RF engineering + electromagnetics
+AWK,American Water Works,Utilities,Water Utilities,none,none,none
+AMP,Ameriprise Financial,Financials,Asset Management & Custody Banks,none,none,none
+AME,Ametek,Industrials,Electrical Components & Equipment,electronic instruments + electromechanical,precision sensors + power quality,electronics + metrology
+AMGN,Amgen,Health Care,Biotechnology,"biologics (Enbrel, Repatha)",monoclonal antibodies + biosimilars,protein engineering + immunology
+APH,Amphenol,Information Technology,Electronic Components,none,none,none
+ADI,Analog Devices,Information Technology,Semiconductors,none,none,none
+AON,Aon plc,Financials,Insurance Brokers,none,none,none
+APA,APA Corporation,Energy,Oil & Gas Exploration & Production,none,none,none
+APO,Apollo Global Management,Financials,Asset Management & Custody Banks,none,none,none
+AAPL,Apple Inc.,Information Technology,"Technology Hardware, Storage & Peripherals",iPhone + Mac + services,custom silicon (Apple Silicon) + mobile OS,semiconductor physics + computer architecture
+AMAT,Applied Materials,Information Technology,Semiconductor Materials & Equipment,semiconductor fab equipment,CVD/PVD thin-film deposition + etch,materials science + plasma physics
+APP,AppLovin,Information Technology,Application Software,none,none,none
+APTV,Aptiv,Consumer Discretionary,Automotive Parts & Equipment,vehicle electronics + software,ADAS + EV wiring architecture,embedded systems + computer vision
+ACGL,Arch Capital Group,Financials,Property & Casualty Insurance,none,none,none
+ADM,Archer Daniels Midland,Consumer Staples,Agricultural Products & Services,none,none,none
+ARES,Ares Management,Financials,Asset Management & Custody Banks,none,none,none
+ANET,Arista Networks,Information Technology,Communications Equipment,none,none,none
+AJG,Arthur J. Gallagher & Co.,Financials,Insurance Brokers,none,none,none
+AIZ,Assurant,Financials,Multi-line Insurance,none,none,none
+T,AT&T,Communication Services,Integrated Telecommunication Services,5G wireless + fiber broadband,5G + fiber-to-the-home,signal processing + RF engineering
+ATO,Atmos Energy,Utilities,Gas Utilities,none,none,none
+ADSK,Autodesk,Information Technology,Application Software,none,none,none
+ADP,Automatic Data Processing,Industrials,Human Resource & Employment Services,none,none,none
+AZO,AutoZone,Consumer Discretionary,Automotive Retail,none,none,none
+AVB,AvalonBay Communities,Real Estate,Multi-Family Residential REITs,none,none,none
+AVY,Avery Dennison,Materials,Paper & Plastic Packaging Products & Materials,none,none,none
+AXON,Axon Enterprise,Industrials,Aerospace & Defense,none,none,none
+BKR,Baker Hughes,Energy,Oil & Gas Equipment & Services,oilfield services + industrial tech,subsurface sensing + LNG tech,geophysics + thermodynamics
+BALL,Ball Corporation,Materials,"Metal, Glass & Plastic Containers",none,none,none
+BAC,Bank of America,Financials,Diversified Banks,none,none,none
+BAX,Baxter International,Health Care,Health Care Equipment,renal + hospital products,hemodialysis technology,bioengineering + membrane science
+BDX,Becton Dickinson,Health Care,Health Care Equipment,medical devices + diagnostics,flow cytometry + microbiology diagnostics,molecular biology + optics
+BBY,Best Buy,Consumer Discretionary,Computer & Electronics Retail,none,none,none
+TECH,Bio-Techne,Health Care,Life Sciences Tools & Services,cytokines + proteins for research,recombinant protein expression,protein biology
+BIIB,Biogen,Health Care,Biotechnology,"neurology drugs (MS, Alzheimer)",antisense oligonucleotides + antibodies,neuroscience + molecular biology
+BLK,BlackRock,Financials,Asset Management & Custody Banks,none,none,none
+BX,Blackstone Inc.,Financials,Asset Management & Custody Banks,none,none,none
+XYZ,"Block, Inc.",Financials,Transaction & Payment Processing Services,none,none,none
+BNY,BNY Mellon,Financials,Asset Management & Custody Banks,none,none,none
+BA,Boeing,Industrials,Aerospace & Defense,commercial aircraft + defense,composite airframes + turbofan engines,aerospace engineering + materials science
+BKNG,Booking Holdings,Consumer Discretionary,"Hotels, Resorts & Cruise Lines",none,none,none
+BSX,Boston Scientific,Health Care,Health Care Equipment,cardiac + endoscopy devices,interventional cardiology devices,materials science + bioengineering
+BMY,Bristol Myers Squibb,Health Care,Pharmaceuticals,oncology + cardiovascular drugs,PD-1 checkpoint inhibitors + small molecules,immuno-oncology + medicinal chemistry
+AVGO,Broadcom,Information Technology,Semiconductors,networking + storage + AI ASICs,custom ASIC design,semiconductor physics
+BR,Broadridge Financial Solutions,Industrials,Data Processing & Outsourced Services,none,none,none
+BRO,Brown & Brown,Financials,Insurance Brokers,none,none,none
+BLDR,Builders FirstSource,Industrials,Building Products,none,none,none
+BG,Bunge Global,Consumer Staples,Agricultural Products & Services,none,none,none
+BXP,"BXP, Inc.",Real Estate,Office REITs,none,none,none
+CHRW,C.H. Robinson,Industrials,Air Freight & Logistics,none,none,none
+CDNS,Cadence Design Systems,Information Technology,Application Software,EDA + IP for chip design,circuit simulation + place-and-route,algorithms + circuit theory
+CPT,Camden Property Trust,Real Estate,Multi-Family Residential REITs,none,none,none
+CPB,Campbell's Company (The),Consumer Staples,Packaged Foods & Meats,none,none,none
+COF,Capital One,Financials,Consumer Finance,none,none,none
+CAH,Cardinal Health,Health Care,Health Care Distributors,none,none,none
+CCL,Carnival Corporation,Consumer Discretionary,"Hotels, Resorts & Cruise Lines",none,none,none
+CARR,Carrier Global,Industrials,Building Products,HVAC + refrigeration,vapor-compression refrigeration,thermodynamics
+CVNA,Carvana,Consumer Discretionary,Automotive Retail,none,none,none
+CASY,Casey's,Consumer Staples,Food Retail,none,none,none
+CAT,Caterpillar Inc.,Industrials,Construction Machinery & Heavy Transportation Equipment,none,none,none
+CBRE,CBRE Group,Real Estate,Real Estate Services,none,none,none
+CDW,CDW Corporation,Information Technology,Technology Distributors,none,none,none
+COR,Cencora,Health Care,Health Care Distributors,none,none,none
+CNC,Centene Corporation,Health Care,Managed Health Care,none,none,none
+CNP,CenterPoint Energy,Utilities,Multi-Utilities,none,none,none
+CF,CF Industries,Materials,Fertilizers & Agricultural Chemicals,nitrogen fertilizers,Haber-Bosch ammonia synthesis,industrial chemistry
+CRL,Charles River Laboratories,Health Care,Life Sciences Tools & Services,none,none,none
+SCHW,Charles Schwab Corporation,Financials,Investment Banking & Brokerage,none,none,none
+CHTR,Charter Communications,Communication Services,Cable & Satellite,none,none,none
+CVX,Chevron Corporation,Energy,Integrated Oil & Gas,none,none,none
+CMG,Chipotle Mexican Grill,Consumer Discretionary,Restaurants,none,none,none
+CB,Chubb Limited,Financials,Property & Casualty Insurance,none,none,none
+CHD,Church & Dwight,Consumer Staples,Household Products,none,none,none
+CIEN,Ciena,Information Technology,Communications Equipment,none,none,none
+CI,Cigna,Health Care,Health Care Services,none,none,none
+CINF,Cincinnati Financial,Financials,Property & Casualty Insurance,none,none,none
+CTAS,Cintas,Industrials,Diversified Support Services,none,none,none
+CSCO,Cisco,Information Technology,Communications Equipment,none,none,none
+C,Citigroup,Financials,Diversified Banks,none,none,none
+CFG,Citizens Financial Group,Financials,Regional Banks,none,none,none
+CLX,Clorox,Consumer Staples,Household Products,none,none,none
+CME,CME Group,Financials,Financial Exchanges & Data,none,none,none
+CMS,CMS Energy,Utilities,Multi-Utilities,none,none,none
+KO,Coca-Cola Company (The),Consumer Staples,Soft Drinks & Non-alcoholic Beverages,none,none,none
+CTSH,Cognizant,Information Technology,IT Consulting & Other Services,none,none,none
+COHR,Coherent Corp.,Information Technology,Electronic Components,none,none,none
+COIN,Coinbase,Financials,Financial Exchanges & Data,none,none,none
+CL,Colgate-Palmolive,Consumer Staples,Household Products,none,none,none
+CMCSA,Comcast,Communication Services,Cable & Satellite,none,none,none
+FIX,Comfort Systems USA,Industrials,Construction & Engineering,none,none,none
+CAG,Conagra Brands,Consumer Staples,Packaged Foods & Meats,none,none,none
+COP,ConocoPhillips,Energy,Oil & Gas Exploration & Production,none,none,none
+ED,Consolidated Edison,Utilities,Multi-Utilities,none,none,none
+STZ,Constellation Brands,Consumer Staples,Distillers & Vintners,none,none,none
+CEG,Constellation Energy,Utilities,Electric Utilities,nuclear + renewable power,nuclear fission power generation,nuclear physics
+COO,Cooper Companies (The),Health Care,Health Care Supplies,none,none,none
+CPRT,Copart,Industrials,Diversified Support Services,none,none,none
+GLW,Corning Inc.,Information Technology,Electronic Components,none,none,none
+CPAY,Corpay,Financials,Transaction & Payment Processing Services,none,none,none
+CTVA,Corteva,Materials,Fertilizers & Agricultural Chemicals,none,none,none
+CSGP,CoStar Group,Real Estate,Real Estate Services,none,none,none
+COST,Costco,Consumer Staples,Consumer Staples Merchandise Retail,none,none,none
+CRH,CRH plc,Materials,Construction Materials,none,none,none
+CRWD,CrowdStrike,Information Technology,Systems Software,cloud-native endpoint security,behavioral AI for threat detection,machine learning
+CCI,Crown Castle,Real Estate,Telecom Tower REITs,cell towers + small cells + fiber,wireless network densification,RF engineering
+CSX,CSX Corporation,Industrials,Rail Transportation,none,none,none
+CMI,Cummins,Industrials,Construction Machinery & Heavy Transportation Equipment,none,none,none
+CVS,CVS Health,Health Care,Health Care Services,none,none,none
+DHR,Danaher Corporation,Health Care,Life Sciences Tools & Services,life science + diagnostics instruments,chromatography + mass spec + sequencing,analytical chemistry + molecular biology
+DRI,Darden Restaurants,Consumer Discretionary,Restaurants,none,none,none
+DDOG,Datadog,Information Technology,Application Software,cloud monitoring + observability,time-series data + ML anomaly detection,machine learning + distributed systems
+DVA,DaVita,Health Care,Health Care Services,none,none,none
+DECK,Deckers Brands,Consumer Discretionary,Footwear,none,none,none
+DE,Deere & Company,Industrials,Agricultural & Farm Machinery,none,none,none
+DELL,Dell Technologies,Information Technology,"Technology Hardware, Storage & Peripherals",none,none,none
+DAL,Delta Air Lines,Industrials,Passenger Airlines,none,none,none
+DVN,Devon Energy,Energy,Oil & Gas Exploration & Production,none,none,none
+DXCM,Dexcom,Health Care,Health Care Equipment,none,none,none
+FANG,Diamondback Energy,Energy,Oil & Gas Exploration & Production,none,none,none
+DLR,Digital Realty,Real Estate,Data Center REITs,none,none,none
+DG,Dollar General,Consumer Staples,Consumer Staples Merchandise Retail,none,none,none
+DLTR,Dollar Tree,Consumer Staples,Consumer Staples Merchandise Retail,none,none,none
+D,Dominion Energy,Utilities,Multi-Utilities,natural gas + nuclear utilities,nuclear + gas generation,nuclear physics
+DPZ,Domino's,Consumer Discretionary,Restaurants,none,none,none
+DASH,DoorDash,Consumer Discretionary,Specialized Consumer Services,none,none,none
+DOV,Dover Corporation,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+DOW,Dow Inc.,Materials,Commodity Chemicals,commodity + specialty chemicals,polyethylene + silicones,polymer chemistry
+DHI,D. R. Horton,Consumer Discretionary,Homebuilding,none,none,none
+DTE,DTE Energy,Utilities,Multi-Utilities,none,none,none
+DUK,Duke Energy,Utilities,Electric Utilities,none,none,none
+DD,DuPont,Materials,Specialty Chemicals,specialty materials + chemicals,polymer science + materials engineering,polymer chemistry + materials science
+ETN,Eaton Corporation,Industrials,Electrical Components & Equipment,electrical power management,power electronics + grid components,electrical engineering
+EBAY,eBay Inc.,Consumer Discretionary,Broadline Retail,none,none,none
+SATS,EchoStar,Communication Services,Wireless Telecommunication Services,none,none,none
+ECL,Ecolab,Materials,Specialty Chemicals,none,none,none
+EIX,Edison International,Utilities,Electric Utilities,none,none,none
+EW,Edwards Lifesciences,Health Care,Health Care Equipment,transcatheter heart valves + hemodynamics,transcatheter valve delivery,bioengineering + fluid dynamics
+EA,Electronic Arts,Communication Services,Interactive Home Entertainment,none,none,none
+ELV,Elevance Health,Health Care,Managed Health Care,none,none,none
+EME,Emcor,Industrials,Construction & Engineering,none,none,none
+EMR,Emerson Electric,Industrials,Electrical Components & Equipment,industrial automation + HVAC controls,process control + smart sensors,control systems engineering
+ETR,Entergy,Utilities,Electric Utilities,none,none,none
+EOG,EOG Resources,Energy,Oil & Gas Exploration & Production,none,none,none
+EQT,EQT Corporation,Energy,Oil & Gas Exploration & Production,none,none,none
+EFX,Equifax,Industrials,Research & Consulting Services,none,none,none
+EQIX,Equinix,Real Estate,Data Center REITs,none,none,none
+EQR,Equity Residential,Real Estate,Multi-Family Residential REITs,none,none,none
+ERIE,Erie Indemnity,Financials,Insurance Brokers,none,none,none
+ESS,Essex Property Trust,Real Estate,Multi-Family Residential REITs,none,none,none
+EL,Estée Lauder Companies (The),Consumer Staples,Personal Care Products,none,none,none
+EG,Everest Group,Financials,Reinsurance,none,none,none
+EVRG,Evergy,Utilities,Electric Utilities,none,none,none
+ES,Eversource Energy,Utilities,Electric Utilities,none,none,none
+EXC,Exelon,Utilities,Electric Utilities,none,none,none
+EXE,Expand Energy,Energy,Oil & Gas Exploration & Production,none,none,none
+EXPE,Expedia Group,Consumer Discretionary,"Hotels, Resorts & Cruise Lines",none,none,none
+EXPD,Expeditors International,Industrials,Air Freight & Logistics,none,none,none
+EXR,Extra Space Storage,Real Estate,Self-Storage REITs,none,none,none
+XOM,ExxonMobil,Energy,Integrated Oil & Gas,none,none,none
+FFIV,"F5, Inc.",Information Technology,Communications Equipment,none,none,none
+FDS,FactSet,Financials,Financial Exchanges & Data,none,none,none
+FICO,Fair Isaac,Information Technology,Application Software,none,none,none
+FAST,Fastenal,Industrials,Trading Companies & Distributors,none,none,none
+FRT,Federal Realty Investment Trust,Real Estate,Retail REITs,none,none,none
+FDX,FedEx,Industrials,Air Freight & Logistics,none,none,none
+FDXF,FedEx Freight,Industrials,Cargo Ground Transportation,none,none,none
+FIS,Fidelity National Information Services,Financials,Transaction & Payment Processing Services,none,none,none
+FITB,Fifth Third Bancorp,Financials,Regional Banks,none,none,none
+FSLR,First Solar,Information Technology,Semiconductors,thin-film solar panels,cadmium telluride (CdTe) photovoltaics,semiconductor physics + thin-film deposition
+FE,FirstEnergy,Utilities,Electric Utilities,none,none,none
+FISV,Fiserv,Financials,Transaction & Payment Processing Services,none,none,none
+F,Ford Motor Company,Consumer Discretionary,Automobile Manufacturers,ICE + EV vehicles,electric motor + battery integration,mechanical engineering + electrochemistry
+FTNT,Fortinet,Information Technology,Systems Software,network security,ASIC-accelerated firewall + SD-WAN,network security
+FTV,Fortive,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+FOXA,Fox Corporation (Class A),Communication Services,Broadcasting,none,none,none
+FOX,Fox Corporation (Class B),Communication Services,Broadcasting,none,none,none
+BEN,Franklin Resources,Financials,Asset Management & Custody Banks,none,none,none
+FCX,Freeport-McMoRan,Materials,Copper,none,none,none
+GRMN,Garmin,Consumer Discretionary,Consumer Electronics,none,none,none
+IT,Gartner,Information Technology,IT Consulting & Other Services,none,none,none
+GE,GE Aerospace,Industrials,Aerospace & Defense,none,none,none
+GEHC,GE HealthCare,Health Care,Health Care Equipment,none,none,none
+GEV,GE Vernova,Industrials,Heavy Electrical Equipment,none,none,none
+GEN,Gen Digital,Information Technology,Systems Software,none,none,none
+GNRC,Generac,Industrials,Electrical Components & Equipment,none,none,none
+GD,General Dynamics,Industrials,Aerospace & Defense,nuclear submarines + tanks + Gulfstream jets,nuclear propulsion + advanced composites,nuclear engineering + materials science
+GIS,General Mills,Consumer Staples,Packaged Foods & Meats,none,none,none
+GM,General Motors,Consumer Discretionary,Automobile Manufacturers,ICE + EV vehicles (Ultium platform),Ultium battery platform + ADAS,electrochemistry + machine learning
+GPC,Genuine Parts Company,Consumer Discretionary,Distributors,none,none,none
+GILD,Gilead Sciences,Health Care,Biotechnology,"antiviral drugs (HIV, COVID)",nucleotide analog antivirals,virology + medicinal chemistry
+GPN,Global Payments,Financials,Transaction & Payment Processing Services,none,none,none
+GL,Globe Life,Financials,Life & Health Insurance,none,none,none
+GDDY,GoDaddy,Information Technology,Internet Services & Infrastructure,none,none,none
+GS,Goldman Sachs,Financials,Investment Banking & Brokerage,none,none,none
+HAL,Halliburton,Energy,Oil & Gas Equipment & Services,oilfield services,drilling + completion technology,mechanical + petroleum engineering
+HIG,Hartford (The),Financials,Property & Casualty Insurance,none,none,none
+HAS,Hasbro,Consumer Discretionary,Leisure Products,none,none,none
+HCA,HCA Healthcare,Health Care,Health Care Facilities,none,none,none
+DOC,Healthpeak Properties,Real Estate,Health Care REITs,none,none,none
+HSIC,Henry Schein,Health Care,Health Care Distributors,none,none,none
+HSY,Hershey Company (The),Consumer Staples,Packaged Foods & Meats,none,none,none
+HPE,Hewlett Packard Enterprise,Information Technology,"Technology Hardware, Storage & Peripherals",enterprise servers + networking,server + HPC architecture,computer architecture
+HLT,Hilton Worldwide,Consumer Discretionary,"Hotels, Resorts & Cruise Lines",none,none,none
+HD,Home Depot (The),Consumer Discretionary,Home Improvement Retail,none,none,none
+HON,Honeywell,Industrials,Industrial Conglomerates,aerospace avionics + building controls + safety,sensor fusion + IoT for buildings + avionics,electronics + aerospace engineering
+HRL,Hormel Foods,Consumer Staples,Packaged Foods & Meats,none,none,none
+HST,Host Hotels & Resorts,Real Estate,Hotel & Resort REITs,none,none,none
+HWM,Howmet Aerospace,Industrials,Aerospace & Defense,aerospace components (turbine blades),single-crystal superalloy turbine blades,materials science + metallurgy
+HPQ,HP Inc.,Information Technology,"Technology Hardware, Storage & Peripherals",none,none,none
+HUBB,Hubbell Incorporated,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+HUM,Humana,Health Care,Managed Health Care,none,none,none
+HBAN,Huntington Bancshares,Financials,Regional Banks,none,none,none
+HII,Huntington Ingalls Industries,Industrials,Aerospace & Defense,nuclear-powered aircraft carriers + submarines,naval nuclear propulsion,nuclear engineering
+IBM,IBM,Information Technology,IT Consulting & Other Services,none,none,none
+IEX,IDEX Corporation,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+IDXX,Idexx Laboratories,Health Care,Health Care Equipment,veterinary diagnostics,PCR + rapid immunoassay diagnostics,molecular biology + immunology
+ITW,Illinois Tool Works,Industrials,Industrial Machinery & Supplies & Components,industrial equipment + fasteners,manufacturing process technology,mechanical engineering
+INCY,Incyte,Health Care,Biotechnology,none,none,none
+IR,Ingersoll Rand,Industrials,Industrial Machinery & Supplies & Components,climate + industrial solutions,HVAC compressor + refrigerant systems,thermodynamics + refrigeration
+PODD,Insulet Corporation,Health Care,Health Care Equipment,none,none,none
+INTC,Intel,Information Technology,Semiconductors,CPUs + data center chips,x86 architecture + process node shrink,semiconductor physics
+IBKR,Interactive Brokers,Financials,Investment Banking & Brokerage,none,none,none
+ICE,Intercontinental Exchange,Financials,Financial Exchanges & Data,none,none,none
+IFF,International Flavors & Fragrances,Materials,Specialty Chemicals,flavors + fragrances + ingredients,synthetic biology for flavor molecules,biochemistry + synthetic biology
+IP,International Paper,Materials,Paper & Plastic Packaging Products & Materials,none,none,none
+INTU,Intuit,Information Technology,Application Software,financial software + AI,ML for tax + accounting,machine learning
+ISRG,Intuitive Surgical,Health Care,Health Care Equipment,robotic surgery systems,robotic-assisted minimally invasive surgery,robotics + computer vision + haptics
+IVZ,Invesco,Financials,Asset Management & Custody Banks,none,none,none
+INVH,Invitation Homes,Real Estate,Single-Family Residential REITs,none,none,none
+IQV,IQVIA,Health Care,Life Sciences Tools & Services,clinical research + data services,real-world data analytics + AI for trials,statistics + machine learning
+IRM,Iron Mountain,Real Estate,Other Specialized REITs,none,none,none
+JBHT,J.B. Hunt,Industrials,Cargo Ground Transportation,none,none,none
+JBL,Jabil,Information Technology,Electronic Manufacturing Services,none,none,none
+JKHY,Jack Henry & Associates,Financials,Transaction & Payment Processing Services,none,none,none
+J,Jacobs Solutions,Industrials,Construction & Engineering,none,none,none
+JNJ,Johnson & Johnson,Health Care,Pharmaceuticals,pharmaceuticals + medical devices,biologics + surgical robotics,immunology + bioengineering
+JCI,Johnson Controls,Industrials,Building Products,none,none,none
+JPM,JPMorgan Chase,Financials,Diversified Banks,none,none,none
+KVUE,Kenvue,Consumer Staples,Personal Care Products,none,none,none
+KDP,Keurig Dr Pepper,Consumer Staples,Soft Drinks & Non-alcoholic Beverages,none,none,none
+KEY,KeyCorp,Financials,Regional Banks,none,none,none
+KEYS,Keysight Technologies,Information Technology,Electronic Equipment & Instruments,none,none,none
+KMB,Kimberly-Clark,Consumer Staples,Household Products,none,none,none
+KIM,Kimco Realty,Real Estate,Retail REITs,none,none,none
+KMI,Kinder Morgan,Energy,Oil & Gas Storage & Transportation,none,none,none
+KKR,KKR & Co.,Financials,Asset Management & Custody Banks,none,none,none
+KLAC,KLA Corporation,Information Technology,Semiconductor Materials & Equipment,semiconductor process control,optical + e-beam metrology,optics + signal processing
+KHC,Kraft Heinz,Consumer Staples,Packaged Foods & Meats,none,none,none
+KR,Kroger,Consumer Staples,Food Retail,none,none,none
+LHX,L3Harris,Industrials,Aerospace & Defense,none,none,none
+LH,Labcorp,Health Care,Health Care Services,none,none,none
+LRCX,Lam Research,Information Technology,Semiconductor Materials & Equipment,semiconductor etch equipment,plasma etching,plasma physics + materials science
+LVS,Las Vegas Sands,Consumer Discretionary,Casinos & Gaming,none,none,none
+LDOS,Leidos,Industrials,Diversified Support Services,none,none,none
+LEN,Lennar,Consumer Discretionary,Homebuilding,none,none,none
+LII,Lennox International,Industrials,Building Products,none,none,none
+LLY,Lilly (Eli),Health Care,Pharmaceuticals,GLP-1 drugs (Ozempic/Mounjaro) + Alzheimer drug,peptide + small molecule drug design,GLP-1 receptor biology + amyloid biology
+LIN,Linde plc,Materials,Industrial Gases,industrial + medical gases + hydrogen,air separation + hydrogen electrolysis,chemical engineering + electrochemistry
+LYV,Live Nation Entertainment,Communication Services,Movies & Entertainment,none,none,none
+LMT,Lockheed Martin,Industrials,Aerospace & Defense,fighter jets + missiles + space systems,stealth materials + hypersonics + AESA radar,RF-absorbing materials + aerodynamics + RF engineering
+L,Loews Corporation,Financials,Multi-line Insurance,none,none,none
+LOW,Lowe's,Consumer Discretionary,Home Improvement Retail,none,none,none
+LULU,Lululemon Athletica,Consumer Discretionary,"Apparel, Accessories & Luxury Goods",none,none,none
+LITE,Lumentum,Information Technology,Communications Equipment,none,none,none
+LYB,LyondellBasell,Materials,Specialty Chemicals,polyolefins + chemicals,polyolefin catalysis,polymer chemistry + catalysis
+MTB,M&T Bank,Financials,Regional Banks,none,none,none
+MPC,Marathon Petroleum,Energy,Oil & Gas Refining & Marketing,none,none,none
+MAR,Marriott International,Consumer Discretionary,"Hotels, Resorts & Cruise Lines",none,none,none
+MRSH,Marsh McLennan,Financials,Insurance Brokers,none,none,none
+MLM,Martin Marietta Materials,Materials,Construction Materials,none,none,none
+MAS,Masco,Industrials,Building Products,none,none,none
+MA,Mastercard,Financials,Transaction & Payment Processing Services,none,none,none
+MKC,McCormick & Company,Consumer Staples,Packaged Foods & Meats,none,none,none
+MCD,McDonald's,Consumer Discretionary,Restaurants,none,none,none
+MCK,McKesson Corporation,Health Care,Health Care Distributors,none,none,none
+MDT,Medtronic,Health Care,Health Care Equipment,cardiac devices + neuromodulation,pacemakers + deep brain stimulation,bioelectronics + neuroscience
+MRK,Merck & Co.,Health Care,Pharmaceuticals,cancer immunotherapy (Keytruda) + vaccines,PD-1 checkpoint inhibitor + mRNA vaccines,immuno-oncology + mRNA biology
+META,Meta Platforms,Communication Services,Interactive Media & Services,social media + VR/AR + AI,social graph algorithms + LLMs + computer vision,graph theory + deep learning
+MET,MetLife,Financials,Life & Health Insurance,none,none,none
+MTD,Mettler Toledo,Health Care,Life Sciences Tools & Services,precision instruments + lab balances,precision measurement + automation,metrology + analytical chemistry
+MGM,MGM Resorts,Consumer Discretionary,Casinos & Gaming,none,none,none
+MCHP,Microchip Technology,Information Technology,Semiconductors,microcontrollers + FPGAs,embedded processor design,semiconductor physics
+MU,Micron Technology,Information Technology,Semiconductors,DRAM + NAND flash memory,flash memory cell design,semiconductor physics + charge trapping
+MSFT,Microsoft,Information Technology,Systems Software,cloud (Azure) + AI + enterprise software,cloud computing + large language models,distributed systems + machine learning
+MAA,Mid-America Apartment Communities,Real Estate,Multi-Family Residential REITs,none,none,none
+MRNA,Moderna,Health Care,Biotechnology,mRNA vaccines + therapeutics,lipid nanoparticle mRNA delivery,mRNA biology + lipid chemistry
+TAP,Molson Coors Beverage Company,Consumer Staples,Brewers,none,none,none
+MDLZ,Mondelez International,Consumer Staples,Packaged Foods & Meats,none,none,none
+MPWR,Monolithic Power Systems,Information Technology,Semiconductors,none,none,none
+MNST,Monster Beverage,Consumer Staples,Soft Drinks & Non-alcoholic Beverages,none,none,none
+MCO,Moody's Corporation,Financials,Financial Exchanges & Data,none,none,none
+MS,Morgan Stanley,Financials,Investment Banking & Brokerage,none,none,none
+MOS,Mosaic Company (The),Materials,Fertilizers & Agricultural Chemicals,phosphate + potash fertilizers,mineral extraction + processing,geology + chemistry
+MSI,Motorola Solutions,Information Technology,Communications Equipment,none,none,none
+MSCI,MSCI Inc.,Financials,Financial Exchanges & Data,none,none,none
+NDAQ,"Nasdaq, Inc.",Financials,Financial Exchanges & Data,none,none,none
+NTAP,NetApp,Information Technology,"Technology Hardware, Storage & Peripherals",cloud data storage management,storage software + flash arrays,none
+NFLX,Netflix,Communication Services,Movies & Entertainment,none,none,none
+NEM,Newmont,Materials,Gold,none,none,none
+NWSA,News Corp (Class A),Communication Services,Publishing,none,none,none
+NWS,News Corp (Class B),Communication Services,Publishing,none,none,none
+NEE,NextEra Energy,Utilities,Multi-Utilities,wind + solar power generation,utility-scale renewable energy,electrical engineering
+NKE,"Nike, Inc.",Consumer Discretionary,"Apparel, Accessories & Luxury Goods",none,none,none
+NI,NiSource,Utilities,Multi-Utilities,none,none,none
+NDSN,Nordson Corporation,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+NSC,Norfolk Southern,Industrials,Rail Transportation,none,none,none
+NTRS,Northern Trust,Financials,Asset Management & Custody Banks,none,none,none
+NOC,Northrop Grumman,Industrials,Aerospace & Defense,B-21 bomber + space + cyber,low-observable (stealth) + space sensors,RF engineering + aerodynamics
+NCLH,Norwegian Cruise Line Holdings,Consumer Discretionary,"Hotels, Resorts & Cruise Lines",none,none,none
+NRG,NRG Energy,Utilities,Independent Power Producers & Energy Traders,none,none,none
+NUE,Nucor,Materials,Steel,none,none,none
+NVDA,Nvidia,Information Technology,Semiconductors,AI/ML accelerators + GPUs,massively parallel GPU computing,deep learning + linear algebra
+NVR,"NVR, Inc.",Consumer Discretionary,Homebuilding,none,none,none
+NXPI,NXP Semiconductors,Information Technology,Semiconductors,none,none,none
+ORLY,O’Reilly Automotive,Consumer Discretionary,Automotive Retail,none,none,none
+OXY,Occidental Petroleum,Energy,Oil & Gas Exploration & Production,none,none,none
+ODFL,Old Dominion,Industrials,Cargo Ground Transportation,none,none,none
+OMC,Omnicom Group,Communication Services,Advertising,none,none,none
+ON,ON Semiconductor,Information Technology,Semiconductors,power + automotive semiconductors,SiC MOSFET + power electronics,semiconductor physics + wide-bandgap materials
+OKE,Oneok,Energy,Oil & Gas Storage & Transportation,none,none,none
+ORCL,Oracle Corporation,Information Technology,Application Software,cloud database + ERP,relational databases + cloud infrastructure,database theory
+OTIS,Otis Worldwide,Industrials,Industrial Machinery & Supplies & Components,elevators + escalators,linear motor + safety systems,mechanical engineering + control systems
+PCAR,Paccar,Industrials,Construction Machinery & Heavy Transportation Equipment,none,none,none
+PKG,Packaging Corporation of America,Materials,Paper & Plastic Packaging Products & Materials,none,none,none
+PLTR,Palantir Technologies,Information Technology,Application Software,AI analytics for defense + enterprise,LLM-based data fusion + ontology graphs,machine learning + graph theory
+PANW,Palo Alto Networks,Information Technology,Systems Software,cybersecurity platform,AI-based threat detection + XDR,machine learning
+PSKY,Paramount Skydance Corporation,Communication Services,Movies & Entertainment,none,none,none
+PH,Parker Hannifin,Industrials,Industrial Machinery & Supplies & Components,"motion + control systems (hydraulics, pneumatics)",fluid power + motion control,fluid mechanics + control systems
+PAYX,Paychex,Industrials,Human Resource & Employment Services,none,none,none
+PYPL,PayPal,Financials,Transaction & Payment Processing Services,none,none,none
+PNR,Pentair,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+PEP,PepsiCo,Consumer Staples,Soft Drinks & Non-alcoholic Beverages,none,none,none
+PFE,Pfizer,Health Care,Pharmaceuticals,none,none,none
+PCG,PG&E Corporation,Utilities,Multi-Utilities,electric + gas utility,grid infrastructure,electrical engineering
+PM,Philip Morris International,Consumer Staples,Tobacco,none,none,none
+PSX,Phillips 66,Energy,Oil & Gas Refining & Marketing,none,none,none
+PNW,Pinnacle West Capital,Utilities,Multi-Utilities,none,none,none
+PNC,PNC Financial Services,Financials,Diversified Banks,none,none,none
+POOL,Pool Corporation,Consumer Discretionary,Distributors,none,none,none
+PPG,PPG Industries,Materials,Specialty Chemicals,coatings + paints,polymer chemistry + nano-coatings,polymer chemistry + materials science
+PPL,PPL Corporation,Utilities,Electric Utilities,none,none,none
+PFG,Principal Financial Group,Financials,Life & Health Insurance,none,none,none
+PG,Procter & Gamble,Consumer Staples,Personal Care Products,none,none,none
+PGR,Progressive Corporation,Financials,Property & Casualty Insurance,none,none,none
+PLD,Prologis,Real Estate,Industrial REITs,none,none,none
+PRU,Prudential Financial,Financials,Life & Health Insurance,none,none,none
+PEG,Public Service Enterprise Group,Utilities,Electric Utilities,none,none,none
+PTC,PTC Inc.,Information Technology,Application Software,none,none,none
+PSA,Public Storage,Real Estate,Self-Storage REITs,none,none,none
+PHM,PulteGroup,Consumer Discretionary,Homebuilding,none,none,none
+PWR,Quanta Services,Industrials,Construction & Engineering,none,none,none
+QCOM,Qualcomm,Information Technology,Semiconductors,mobile SoCs + 5G modems,CDMA/5G wireless + RF integration,signal processing + electromagnetic theory
+DGX,Quest Diagnostics,Health Care,Health Care Services,none,none,none
+Q,Qnity Electronics,Information Technology,Semiconductor Materials & Equipment,none,none,none
+RL,Ralph Lauren Corporation,Consumer Discretionary,"Apparel, Accessories & Luxury Goods",none,none,none
+RJF,Raymond James Financial,Financials,Investment Banking & Brokerage,none,none,none
+RTX,RTX Corporation,Industrials,Aerospace & Defense,jet engines (Pratt & Whitney) + missiles + avionics (Raytheon),gas turbine + AESA radar + precision guidance,thermodynamics + RF engineering + inertial navigation
+O,Realty Income,Real Estate,Retail REITs,none,none,none
+REG,Regency Centers,Real Estate,Retail REITs,none,none,none
+REGN,Regeneron Pharmaceuticals,Health Care,Biotechnology,"antibody drugs (Dupixent, Eylea)",fully human antibody platform (VelocImmune),immunology + genetics
+RF,Regions Financial Corporation,Financials,Regional Banks,none,none,none
+RSG,Republic Services,Industrials,Environmental & Facilities Services,none,none,none
+RMD,ResMed,Health Care,Health Care Equipment,none,none,none
+RVTY,Revvity,Health Care,Health Care Equipment,none,none,none
+HOOD,Robinhood Markets,Financials,Investment Banking & Brokerage,none,none,none
+ROK,Rockwell Automation,Industrials,Electrical Components & Equipment,industrial automation + IoT,PLC + industrial software + AI for manufacturing,control systems + machine learning
+ROL,"Rollins, Inc.",Industrials,Environmental & Facilities Services,none,none,none
+ROP,Roper Technologies,Information Technology,Electronic Equipment & Instruments,none,none,none
+ROST,Ross Stores,Consumer Discretionary,Apparel Retail,none,none,none
+RCL,Royal Caribbean Group,Consumer Discretionary,"Hotels, Resorts & Cruise Lines",none,none,none
+SPGI,S&P Global,Financials,Financial Exchanges & Data,financial data + analytics,data analytics + AI,none
+CRM,Salesforce,Information Technology,Application Software,cloud CRM + AI agents,SaaS + vector search + LLMs,machine learning
+SNDK,Sandisk,Information Technology,"Technology Hardware, Storage & Peripherals",none,none,none
+SBAC,SBA Communications,Real Estate,Telecom Tower REITs,cell towers,wireless infrastructure,RF engineering
+SLB,Schlumberger,Energy,Oil & Gas Equipment & Services,oilfield services + digital for energy,seismic imaging + AI for reservoir modeling,geophysics + machine learning
+STX,Seagate Technology,Information Technology,"Technology Hardware, Storage & Peripherals",hard disk drives,perpendicular magnetic recording,physics of magnetic media
+SRE,Sempra,Utilities,Multi-Utilities,none,none,none
+NOW,ServiceNow,Information Technology,Systems Software,cloud workflow automation,SaaS platform + AI,none
+SHW,Sherwin-Williams,Materials,Specialty Chemicals,paints + coatings,polymer chemistry,polymer chemistry
+SPG,Simon Property Group,Real Estate,Retail REITs,none,none,none
+SWKS,Skyworks Solutions,Information Technology,Semiconductors,RF analog semiconductors,RF front-end modules,RF engineering + semiconductor physics
+SJM,J.M. Smucker Company (The),Consumer Staples,Packaged Foods & Meats,none,none,none
+SW,Smurfit Westrock,Materials,Paper & Plastic Packaging Products & Materials,none,none,none
+SNA,Snap-on,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+SOLV,Solventum,Health Care,Health Care Technology,none,none,none
+SO,Southern Company,Utilities,Electric Utilities,none,none,none
+LUV,Southwest Airlines,Industrials,Passenger Airlines,none,none,none
+SWK,Stanley Black & Decker,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+SBUX,Starbucks,Consumer Discretionary,Restaurants,none,none,none
+STT,State Street Corporation,Financials,Asset Management & Custody Banks,none,none,none
+STLD,Steel Dynamics,Materials,Steel,none,none,none
+STE,Steris,Health Care,Health Care Equipment,sterilization + infection prevention,ethylene oxide + H2O2 sterilization,microbiology + chemistry
+SYK,Stryker Corporation,Health Care,Health Care Equipment,surgical robots + orthopedics + neurotechnology,Mako robotic surgery system,robotics + materials science
+SMCI,Supermicro,Information Technology,"Technology Hardware, Storage & Peripherals",none,none,none
+SYF,Synchrony Financial,Financials,Consumer Finance,none,none,none
+SNPS,Synopsys,Information Technology,Application Software,EDA software,chip design automation + formal verification,algorithms + Boolean logic
+SYY,Sysco,Consumer Staples,Food Distributors,none,none,none
+TMUS,T-Mobile US,Communication Services,Wireless Telecommunication Services,none,none,none
+TROW,T. Rowe Price,Financials,Asset Management & Custody Banks,none,none,none
+TTWO,Take-Two Interactive,Communication Services,Interactive Home Entertainment,none,none,none
+TPR,"Tapestry, Inc.",Consumer Discretionary,"Apparel, Accessories & Luxury Goods",none,none,none
+TRGP,Targa Resources,Energy,Oil & Gas Storage & Transportation,none,none,none
+TGT,Target Corporation,Consumer Staples,Consumer Staples Merchandise Retail,none,none,none
+TEL,TE Connectivity,Information Technology,Electronic Manufacturing Services,none,none,none
+TDY,Teledyne Technologies,Information Technology,Electronic Equipment & Instruments,none,none,none
+TER,Teradyne,Information Technology,Semiconductor Materials & Equipment,semiconductor test equipment,automated test equipment,electrical engineering
+TSLA,"Tesla, Inc.",Consumer Discretionary,Automobile Manufacturers,electric vehicles + energy storage + AI autonomy,lithium-ion batteries + FSD neural nets + power electronics,electrochemistry + deep learning + power electronics
+TXN,Texas Instruments,Information Technology,Semiconductors,analog + embedded semiconductors,analog circuit design,semiconductor physics + circuit theory
+TPL,Texas Pacific Land Corporation,Energy,Oil & Gas Exploration & Production,none,none,none
+TXT,Textron,Industrials,Aerospace & Defense,none,none,none
+TMO,Thermo Fisher Scientific,Health Care,Life Sciences Tools & Services,lab instruments + biotech manufacturing,mass spectrometry + sequencing + bioreactors,analytical chemistry + biochemistry
+TJX,TJX Companies,Consumer Discretionary,Apparel Retail,none,none,none
+TKO,TKO Group Holdings,Communication Services,Movies & Entertainment,none,none,none
+TTD,Trade Desk (The),Communication Services,Advertising,none,none,none
+TSCO,Tractor Supply,Consumer Discretionary,Other Specialty Retail,none,none,none
+TT,Trane Technologies,Industrials,Building Products,HVAC systems,vapor-compression + heat pump systems,thermodynamics
+TDG,TransDigm Group,Industrials,Aerospace & Defense,aerospace components,precision aerospace manufacturing,materials science + aerospace engineering
+TRV,Travelers Companies (The),Financials,Property & Casualty Insurance,none,none,none
+TRMB,Trimble Inc.,Information Technology,Application Software,none,none,none
+TFC,Truist Financial,Financials,Diversified Banks,none,none,none
+TYL,Tyler Technologies,Information Technology,Application Software,none,none,none
+TSN,Tyson Foods,Consumer Staples,Packaged Foods & Meats,none,none,none
+USB,U.S. Bancorp,Financials,Diversified Banks,none,none,none
+UBER,Uber,Industrials,Passenger Ground Transportation,none,none,none
+UDR,"UDR, Inc.",Real Estate,Multi-Family Residential REITs,none,none,none
+ULTA,Ulta Beauty,Consumer Discretionary,Other Specialty Retail,none,none,none
+UNP,Union Pacific Corporation,Industrials,Rail Transportation,none,none,none
+UAL,United Airlines Holdings,Industrials,Passenger Airlines,none,none,none
+UPS,United Parcel Service,Industrials,Air Freight & Logistics,none,none,none
+URI,United Rentals,Industrials,Trading Companies & Distributors,none,none,none
+UNH,UnitedHealth Group,Health Care,Managed Health Care,none,none,none
+UHS,Universal Health Services,Health Care,Health Care Facilities,none,none,none
+VLO,Valero Energy,Energy,Oil & Gas Refining & Marketing,none,none,none
+VEEV,Veeva Systems,Health Care,Health Care Technology,cloud software for life sciences,regulatory data management,none
+VTR,Ventas,Real Estate,Health Care REITs,none,none,none
+VLTO,Veralto,Industrials,Environmental & Facilities Services,none,none,none
+VRSN,Verisign,Information Technology,Internet Services & Infrastructure,none,none,none
+VRSK,Verisk Analytics,Industrials,Research & Consulting Services,none,none,none
+VZ,Verizon,Communication Services,Integrated Telecommunication Services,5G wireless + broadband,5G NR (New Radio) networks,signal processing + RF engineering
+VRTX,Vertex Pharmaceuticals,Health Care,Biotechnology,cystic fibrosis + pain drugs,CFTR modulators + sodium channel blockers,molecular biology + ion channel biophysics
+VRT,Vertiv,Industrials,Electrical Components & Equipment,none,none,none
+VTRS,Viatris,Health Care,Pharmaceuticals,none,none,none
+VICI,Vici Properties,Real Estate,Hotel & Resort REITs,none,none,none
+V,Visa Inc.,Financials,Transaction & Payment Processing Services,none,none,none
+VST,Vistra Corp.,Utilities,Electric Utilities,none,none,none
+VMC,Vulcan Materials Company,Materials,Construction Materials,none,none,none
+WRB,W. R. Berkley Corporation,Financials,Property & Casualty Insurance,none,none,none
+GWW,W. W. Grainger,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+WAB,Wabtec,Industrials,Construction Machinery & Heavy Transportation Equipment,none,none,none
+WMT,Walmart,Consumer Staples,Consumer Staples Merchandise Retail,none,none,none
+DIS,Walt Disney Company (The),Communication Services,Movies & Entertainment,none,none,none
+WBD,Warner Bros. Discovery,Communication Services,Broadcasting,none,none,none
+WM,Waste Management,Industrials,Environmental & Facilities Services,none,none,none
+WAT,Waters Corporation,Health Care,Life Sciences Tools & Services,"analytical instruments (HPLC, MS)",liquid chromatography + mass spectrometry,analytical chemistry
+WEC,WEC Energy Group,Utilities,Electric Utilities,none,none,none
+WFC,Wells Fargo,Financials,Diversified Banks,none,none,none
+WELL,Welltower,Real Estate,Health Care REITs,none,none,none
+WST,West Pharmaceutical Services,Health Care,Health Care Supplies,none,none,none
+WDC,Western Digital,Information Technology,"Technology Hardware, Storage & Peripherals",hard drives + NAND flash,magnetic recording + flash memory,semiconductor physics
+WY,Weyerhaeuser,Real Estate,Timber REITs,none,none,none
+WSM,"Williams-Sonoma, Inc.",Consumer Discretionary,Homefurnishing Retail,none,none,none
+WMB,Williams Companies,Energy,Oil & Gas Storage & Transportation,none,none,none
+WTW,Willis Towers Watson,Financials,Insurance Brokers,none,none,none
+WDAY,"Workday, Inc.",Information Technology,Application Software,cloud HR + finance software,SaaS platform,none
+WYNN,Wynn Resorts,Consumer Discretionary,Casinos & Gaming,none,none,none
+XEL,Xcel Energy,Utilities,Multi-Utilities,none,none,none
+XYL,Xylem Inc.,Industrials,Industrial Machinery & Supplies & Components,none,none,none
+YUM,Yum! Brands,Consumer Discretionary,Restaurants,none,none,none
+ZBRA,Zebra Technologies,Information Technology,Electronic Equipment & Instruments,none,none,none
+ZBH,Zimmer Biomet,Health Care,Health Care Equipment,orthopedic implants + robotics,3D-printed implants + surgical robots,materials science + robotics
+ZTS,Zoetis,Health Care,Pharmaceuticals,none,none,none
