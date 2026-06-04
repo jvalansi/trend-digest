@@ -8,38 +8,40 @@ Which underlying sciences created the most economic value, and when did science 
 
 ## Findings by Decade
 
-### 1985–1995
-**Dominated by:** banks, consumer staples, energy — zero science-driven value at scale.
+*Note on "underlying science": science typically precedes engineering by decades. The column reflects the mature scientific foundation being commercially exploited, not necessarily new science being done in that period. "None" means the value driver was brand, distribution, financial structure, or regulation — not science at any lag.*
 
-| # | Company | +Value | Underlying |
+### 1985–1995
+**Dominated by:** banks, consumer staples, energy. Science-driven value exists but is small relative to financial/brand companies.
+
+| # | Company | +Value | Underlying science (mature by this era) |
 |---|---------|--------|------------|
-| 1 | Citigroup | +$31B | none |
-| 2 | Bank of America | +$26B | none |
-| 3 | Coca-Cola | +$23B | none |
-| 4 | ExxonMobil | +$18B | none |
-| 5 | Walt Disney | +$18B | none |
-| 6 | GE | +$17B | none |
-| 7 | Verizon | +$17B | signal processing |
-| 8 | Walmart | +$15B | none |
-| 9 | Merck | +$14B | immuno-oncology |
-| 10 | Procter & Gamble | +$14B | none |
+| 1 | Citigroup | +$31B | none — deregulation + credit expansion |
+| 2 | Bank of America | +$26B | none — deregulation + credit expansion |
+| 3 | Coca-Cola | +$23B | none — brand + global distribution |
+| 4 | ExxonMobil | +$18B | geophysics (seismic imaging for reservoir discovery) |
+| 5 | Walt Disney | +$18B | none — IP + brand; rode broadcast TV distribution but didn't create it |
+| 6 | GE | +$17B | thermodynamics + materials science (jet engines, turbines, MRI) |
+| 7 | Verizon | +$17B | signal processing + RF engineering |
+| 8 | Walmart | +$15B | none — logistics execution + barcode/EDI adoption |
+| 9 | Merck | +$14B | medicinal chemistry + pharmacology |
+| 10 | Procter & Gamble | +$14B | polymer chemistry + surfactant science (detergents, superabsorbent polymers) |
 
 Intel created ~$10B (semiconductor physics) — real but not top 10. Microsoft grew enormously but absolute dollar gains were modest vs. financials.
 
 ### 1995–2005
 **Dominated by:** banks and energy. Microsoft/tech peaked during dot-com bubble then gave most gains back by 2005.
 
-| # | Company | +Value | Underlying |
+| # | Company | +Value | Underlying science (mature by this era) |
 |---|---------|--------|------------|
-| 1 | Citigroup | +$460B | none |
-| 2 | Bank of America | +$169B | none |
-| 3 | GE | +$89B | none |
-| 4 | ExxonMobil | +$78B | none |
-| 5 | Walmart | +$76B | none |
+| 1 | Citigroup | +$460B | none — Glass-Steagall repeal 1999 + credit cycle |
+| 2 | Bank of America | +$169B | none — same |
+| 3 | GE | +$89B | thermodynamics + materials science (jet engines, medical imaging) |
+| 4 | ExxonMobil | +$78B | geophysics + petroleum engineering |
+| 5 | Walmart | +$76B | none — supply chain software + scale |
 | 6 | Johnson & Johnson | +$67B | immunology + bioengineering |
-| 7 | Procter & Gamble | +$54B | none |
+| 7 | Procter & Gamble | +$54B | polymer chemistry + surfactant science |
 | 8 | JPMorgan Chase | +$46B | none |
-| 9 | Pfizer | +$45B | none |
+| 9 | Pfizer | +$45B | medicinal chemistry + biochemistry (Lipitor — best-selling drug in history) |
 | 10 | Wells Fargo | +$45B | none |
 
 Intel ~$56B (semiconductor physics) — would be #7 but was rate-limited from our data fetch. Google didn't IPO until 2004. Amazon's gains were real but the company is classified as logistics/retail.
@@ -84,13 +86,22 @@ Nvidia alone (+$5.2T) exceeds the entire top 10 of 1985–1995 combined (~$176B)
 
 ## Key Patterns
 
-### Science-driven value was negligible until 2005
-Before 2005, S&P 500 value creation was dominated by:
+### Science lag is long — commercial exploitation comes decades after the discovery
+The underlying sciences for most pre-2005 winners were mature long before the value creation:
+- Thermodynamics (GE's jet engines): 1800s physics
+- Polymer chemistry (P&G's diapers, detergents): 1930s–50s
+- Geophysics (oil exploration): 1950s–60s
+- Medicinal chemistry (Pfizer's Lipitor): 1970s–80s
+
+The companies weren't doing new science — they were productizing science that was already understood. The typical lag between foundational discovery and large-scale commercial value is 20–40 years.
+
+### Direct financial/brand drivers dominated pre-2005
+The *top* value creators in 1985–2005 weren't science-driven at all:
 - **Financial engineering** — deregulation (Gramm-Leach-Bliley 1999 repealing Glass-Steagall), securitization, credit expansion
-- **Brand + distribution** — Coca-Cola, P&G, Walmart won on logistics and brand, not novel science
+- **Brand + distribution** — Coca-Cola, Disney won on IP and logistics, not novel science
 - **Interest rate tailwind** — Volcker raised rates to ~20% in 1981, then they fell for 20 years, inflating bank balance sheets automatically
 
-None of this is science. It's policy + demographics + a long credit cycle.
+Citigroup's $460B gain in 1995–2005 was a deregulation + credit cycle story. That's policy, not science.
 
 ### Volume ≠ S&P 500 value creation
 TVs sold in enormous volumes through the 80s-90s, but almost none of that value ended up in S&P 500 companies:
