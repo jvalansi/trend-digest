@@ -206,6 +206,28 @@ _SCIENCE_DOMAIN_MAP = [
     (["machine learning", "neural network", "deep learning", "artific"], "artificial intelligence technology"),
 ]
 
+_NEWS_DOMAIN_MAP = [
+    (["soccer", "football", "fifa", "world cup", "goal", "league", "champion", "match", "penalty", "striker"], "soccer football sports"),
+    (["basketball", "nba", "wnba", "three-pointer", "dunk"], "basketball court game"),
+    (["tennis", "wimbledon", "french open", "us open", "australian open", "grand slam", "serve", "forehand"], "tennis match court"),
+    (["baseball", "mlb", "pitcher", "home run", "yankees", "dodgers", "cubs"], "baseball game stadium"),
+    (["hockey", "nhl", "ice hockey", "stanley cup"], "ice hockey game"),
+    (["ukraine", "russia", "war", "military", "troops", "missile", "zelenskyy", "putin", "kyiv", "nato", "invasion"], "war conflict military"),
+    (["election", "vote", "ballot", "president", "congress", "senate", "democrat", "republican", "campaign", "polling"], "election voting politics"),
+    (["music", "album", "singer", "rapper", "concert", "grammy", "billboard", "swift", "beyonce", "pop"], "music concert stage"),
+    (["movie", "film", "actor", "actress", "oscars", "cinema", "box office", "marvel", "disney", "netflix"], "cinema movie theater"),
+    (["trial", "court", "judge", "verdict", "lawsuit", "arrested", "charged", "stabbed", "murder", "crime", "shooting"], "courthouse law justice"),
+    (["stock", "market", "economy", "inflation", "recession", "fed", "bitcoin", "crypto", "gdp", "trading"], "financial market charts"),
+    (["earthquake", "hurricane", "flood", "storm", "wildfire", "disaster", "tornado", "tsunami"], "natural disaster emergency"),
+    (["artificial intelligence", "chatgpt", "openai", "llm", "gemini", "tech company", "startup", "silicon valley"], "artificial intelligence technology"),
+    (["space", "nasa", "rocket", "satellite", "astronaut", "mars", "moon", "launch", "orbit"], "space rocket launch"),
+    (["iran", "nuclear", "deal", "sanction", "middle east", "israel", "hamas", "hezbollah", "beirut"], "middle east diplomacy"),
+    (["trump", "biden", "white house", "executive order", "administration", "oval office", "secretary"], "white house government"),
+    (["privacy", "data breach", "surveillance", "fcc", "regulation", "cybersecurity", "hack"], "technology security privacy"),
+    (["immigration", "border", "migrant", "asylum", "deportation", "visa"], "border crossing immigration"),
+    (["climate", "carbon", "emission", "green energy", "solar", "wind power", "fossil fuel"], "climate change environment"),
+]
+
 
 def _extract_keywords(item: dict) -> str:
     """Map a paper title to a Pexels-friendly search query."""
@@ -219,6 +241,20 @@ def _extract_keywords(item: dict) -> str:
             "human", "associated", "potential", "increased", "decreased", "between"}
     words = [w for w in re.findall(r'\b[a-zA-Z]{5,}\b', item.get("title", "").lower()) if w not in skip]
     return " ".join(words[:2]) if words else item.get("title", "")[:40]
+
+
+def _extract_keywords_news(item: dict) -> str:
+    """Map a news/trend item to a Pexels-friendly search query."""
+    text = (item.get("title", "") + " " + (item.get("summary") or "")[:300]).lower()
+    for patterns, query in _NEWS_DOMAIN_MAP:
+        if any(p in text for p in patterns):
+            return query
+    # Generic fallback: pick 2-3 meaningful words from title + summary
+    skip = {"says", "amid", "after", "over", "with", "what", "from", "about", "latest",
+            "update", "breaking", "report", "shows", "could", "would", "should", "their",
+            "have", "been", "that", "this", "also", "more", "than", "will", "were"}
+    words = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', text) if w not in skip][:3]
+    return " ".join(words) if words else item.get("title", "")[:40]
 
 
 def _pexels_search(query: str, api_key: str) -> str | None:
@@ -265,19 +301,25 @@ def fetch_og_images(items: list[dict]) -> dict[str, str | None]:
             url = item["url"]
             results[url] = future.result()
 
+    _PEXELS_SCIENCE_SOURCES = {
+        "bioRxiv", "medRxiv", "Semantic Scholar", "Altmetric",
+        "Nature", "Science", "New Scientist", "Scientific American",
+        "Ars Technica Science", "MIT Tech Review",
+    }
+    _PEXELS_NEWS_SOURCES = {"Google Trends", "Google Trends Global"}
+
     # Second pass: fill in missing images
     for item in items:
         url = item["url"]
         if results.get(url):
             continue
         source = item.get("source", "")
-        # Use Pexels for science/preprint sources that never have og:images
-        if pexels_key and source in {
-            "bioRxiv", "medRxiv", "Semantic Scholar", "Altmetric",
-            "Nature", "Science", "New Scientist", "Scientific American",
-            "Ars Technica Science", "MIT Tech Review",
-        }:
+        if pexels_key and source in _PEXELS_SCIENCE_SOURCES:
             query = _extract_keywords(item)
+            img = _pexels_search(query, pexels_key)
+            results[url] = img or _source_fallback_image(source, url)
+        elif pexels_key and source in _PEXELS_NEWS_SOURCES:
+            query = _extract_keywords_news(item)
             img = _pexels_search(query, pexels_key)
             results[url] = img or _source_fallback_image(source, url)
         else:
