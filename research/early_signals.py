@@ -99,6 +99,79 @@ def pubmed_count_year(query: str, year: int) -> int:
         return -1
 
 
+def _linfit(xs: list, ys: list) -> tuple[float, float]:
+    """Return (slope, intercept) for least-squares line through (xs, ys)."""
+    n = len(xs)
+    sx, sy = sum(xs), sum(ys)
+    sxx = sum(x * x for x in xs)
+    sxy = sum(x * y for x, y in zip(xs, ys))
+    denom = n * sxx - sx * sx
+    if denom == 0:
+        return 0.0, sy / n
+    slope = (n * sxy - sx * sy) / denom
+    intercept = (sy - slope * sx) / n
+    return slope, intercept
+
+
+def _sse(xs: list, ys: list, slope: float, intercept: float) -> float:
+    return sum((y - (slope * x + intercept)) ** 2 for x, y in zip(xs, ys))
+
+
+def find_breakpoint(year_counts: dict, min_peak: int = 50, min_slope_ratio: float = 1.1,
+                    min_level_shift: float = 0.7) -> int | None:
+    """
+    Find the year where publication growth structurally accelerated.
+
+    Fits two log-linear segments (before/after each candidate breakpoint) and
+    picks the split that minimizes total SSE.  Reports a breakpoint if either:
+      (a) slope-change: post-slope >= min_slope_ratio × pre-slope (slope sped up)
+      (b) level-shift:  log-count at breakpoint jumped >= min_level_shift above the
+          left segment's prediction at that point (sudden step-up even if slope unchanged)
+
+    min_level_shift=0.7 ≈ 2× in actual paper count.
+    """
+    import math
+    years = sorted(year_counts)
+    if len(years) < 8:
+        return None
+    if max(year_counts.values()) < min_peak:
+        return None
+
+    log_counts = [math.log(max(year_counts[y], 0.5)) for y in years]
+    xs = list(range(len(years)))
+
+    best_sse = float("inf")
+    best_bp = None
+    best_slopes = (0.0, 0.0)
+    best_intercepts = (0.0, 0.0)
+
+    for bp in range(3, len(years) - 3):
+        s_l, i_l = _linfit(xs[:bp], log_counts[:bp])
+        s_r, i_r = _linfit(xs[bp:], log_counts[bp:])
+        sse = _sse(xs[:bp], log_counts[:bp], s_l, i_l) + _sse(xs[bp:], log_counts[bp:], s_r, i_r)
+        if sse < best_sse:
+            best_sse = sse
+            best_bp = bp
+            best_slopes = (s_l, s_r)
+            best_intercepts = (i_l, i_r)
+
+    s_pre, s_post = best_slopes
+    i_pre, i_post = best_intercepts
+    bp_x = best_bp
+
+    # Condition (a): slope acceleration
+    slope_accel = s_post > 0 and (s_pre <= 0 or s_post >= s_pre * min_slope_ratio)
+
+    # Condition (b): level-shift — right segment's value at breakpoint exceeds left segment's prediction
+    left_pred = s_pre * bp_x + i_pre
+    right_val  = s_post * bp_x + i_post
+    level_shift = (right_val - left_pred) >= min_level_shift
+
+    if slope_accel or level_shift:
+        return years[best_bp]
+    return None
+
+
 def main():
     import os
     years = list(range(START_YEAR, END_YEAR + 1))
@@ -157,22 +230,13 @@ def main():
 
     print(f"\nWrote {len(rows)} rows to {OUTPUT}", file=sys.stderr)
 
-    # Print summary: year of first acceleration (year where count doubles vs prior 3yr avg)
-    print("\n=== ACCELERATION YEARS ===", file=sys.stderr)
     cluster_data = defaultdict(dict)
     for r in rows:
         cluster_data[r["cluster"]][int(r["year"])] = int(r["papers"])
 
+    print("\n=== ACCELERATION YEARS (piecewise log-linear breakpoint) ===", file=sys.stderr)
     for cluster, year_counts in sorted(cluster_data.items()):
-        sorted_years = sorted(year_counts)
-        accel_year = None
-        for i, y in enumerate(sorted_years):
-            if i < 3:
-                continue
-            baseline = sum(year_counts[sorted_years[j]] for j in range(i-3, i)) / 3
-            if baseline > 0 and year_counts[y] > baseline * 2:
-                accel_year = y
-                break
+        accel_year = find_breakpoint(year_counts)
         peak_year = max(year_counts, key=lambda y: year_counts[y])
         peak_count = year_counts[peak_year]
         print(f"  {cluster:<30} accel={accel_year}  peak={peak_year} ({peak_count:,} papers)", file=sys.stderr)
