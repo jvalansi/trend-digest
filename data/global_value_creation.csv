@@ -1,0 +1,21 @@
+ticker,name,country,main_product,enabling_tech,underlying_science,start_mcap_b,end_mcap_b,value_created_b
+005930.KS,Samsung,South Korea,memory + logic chips + smartphones,DRAM + NAND + foundry,semiconductor physics + charge trapping,134084.8,342541.9,208457.1
+TSM,TSMC,Taiwan,contract chip manufacturing,EUV lithography + advanced node process,semiconductor physics + materials science,86.0,1028.7,942.7
+TCEHY,Tencent,China,social media + gaming + fintech,social graph + mobile payments,none,113.5,470.5,357.0
+NVO,Novo Nordisk,Denmark,GLP-1 drugs (Ozempic/Wegovy),peptide drug design + injection delivery,GLP-1 receptor biology + endocrinology,72.3,364.0,291.6
+LVMUY,LVMH,France,luxury goods,none,none,60.4,310.3,249.9
+ASML,ASML,Netherlands,EUV lithography machines,extreme ultraviolet optics + plasma light source,plasma physics + optics + materials science,37.0,266.5,229.4
+SAP,SAP,Germany,enterprise ERP + cloud,ERP software + cloud migration,none,68.4,279.2,210.8
+TM,Toyota,Japan,ICE + hybrid + hydrogen vehicles,hybrid drivetrain + fuel cell,electrochemistry + mechanical engineering,121.6,246.8,125.3
+AZN,AstraZeneca,UK,oncology + cardiovascular drugs,biologics + ADCs + gene therapy,immunology + molecular biology,76.3,198.0,121.8
+SONY,Sony,Japan,gaming + imaging + entertainment,CMOS image sensors + PlayStation platform,semiconductor physics + optics,22.8,124.3,101.4
+SIEGY,Siemens,Germany,industrial automation + energy,industrial IoT + power electronics,electrical engineering + control systems,56.4,145.3,89.0
+MELI,MercadoLibre,Argentina,e-commerce + fintech (LatAm),marketplace + payments platform,none,6.3,89.5,83.2
+NVS,Novartis,Switzerland,gene therapy + cardiovascular drugs,AAV gene therapy + small molecules,molecular biology + genetics,102.4,173.4,71.0
+INFY,Infosys,India,IT services + cloud consulting,software services,none,24.1,89.0,64.9
+RHHBY,Roche,Switzerland,cancer diagnostics + biologics,monoclonal antibodies + PCR diagnostics,immunology + molecular biology,147.1,211.1,64.1
+SNY,Sanofi,France,immunology + vaccines,monoclonal antibodies + mRNA vaccines,immunology + molecular biology,67.1,104.7,37.5
+GSK,GSK,UK,vaccines + specialty medicines,mRNA + adjuvant vaccine platforms,immunology + molecular biology,48.3,64.2,15.9
+BABA,Alibaba,China,e-commerce + cloud (Alibaba Cloud),cloud computing + recommendation algorithms,machine learning,236.0,200.4,-35.6
+BIDU,Baidu,China,search + AI (ERNIE Bot),search algorithms + LLMs,information retrieval + deep learning,75.9,28.1,-47.8
+BAYRY,Bayer,Germany,pharma + crop science,small molecules + crop biotech,medicinal chemistry + agrobiology,97.2,19.3,-78.0
