@@ -20,37 +20,42 @@ OUTPUT = "/home/ubuntu/trend-digest/data/early_signals.csv"
 START_YEAR = 2000
 END_YEAR   = 2024
 
-# Each cluster: (name, source, search_query)
-# OpenAlex: title/abstract keyword search
-# PubMed: standard MeSH/keyword search
+# Each cluster: (name, source, query)
+# openalex_concept: filter by OpenAlex concept ID (most precise — citation-derived field boundaries)
+# openalex_kw: keyword search in title+abstract (fallback for fields without a concept ID)
+# pubmed: PubMed keyword search (better coverage for clinical/biomedical literature)
 CLUSTERS = [
-    # CS / AI / Physics — use OpenAlex (title search)
-    ("deep_learning",         "openalex", "deep learning neural network"),
-    ("transformer_llm",       "openalex", "transformer language model attention"),
-    ("diffusion_models",      "openalex", "diffusion model generative image"),
-    ("semiconductor_process", "openalex", "EUV lithography FinFET semiconductor fabrication"),
-    ("gpu_computing",         "openalex", "GPU parallel computing CUDA graphics processor"),
-    ("robotic_surgery",       "openalex", "robotic surgery surgical robot laparoscopic"),
-    ("chip_eda",              "openalex", "electronic design automation chip synthesis"),
+    # CS / AI — OpenAlex concept IDs
+    ("deep_learning",         "openalex_concept", "C108583219"),           # Deep learning
+    ("language_model_llm",    "openalex_concept", "C137293760"),           # Language model (covers transformers, LLMs)
+    ("gpu_computing",         "openalex_concept", "C50630238"),            # GPGPU
+    ("robotic_surgery",       "openalex_concept", "C103203806"),           # Robotic surgery
+    ("chip_eda",              "openalex_concept", "C64260653"),            # Electronic design automation
+    ("euv_lithography",       "openalex_concept", "C162996421"),           # Extreme ultraviolet lithography
 
-    # Biomedical — use PubMed (already working)
-    ("glp1_agonists",          "pubmed", "GLP-1 receptor agonist OR semaglutide OR liraglutide OR exenatide"),
-    ("checkpoint_inhibitors",  "pubmed", "PD-1 OR PD-L1 OR CTLA-4 AND checkpoint inhibitor AND cancer"),
-    ("mrna_therapeutics",      "pubmed", "mRNA vaccine OR mRNA therapy OR lipid nanoparticle mRNA"),
-    ("crispr",                 "pubmed", "CRISPR Cas9 OR CRISPR gene editing OR CRISPR therapy"),
-    ("car_t_cell",             "pubmed", "CAR-T cell therapy OR chimeric antigen receptor T cell"),
-    ("gene_therapy_aav",       "pubmed", "AAV gene therapy OR adeno-associated virus gene therapy"),
-    ("cftr_modulators",        "pubmed", "CFTR modulator OR ivacaftor OR lumacaftor OR elexacaftor"),
-    ("continuous_glucose",     "pubmed", "continuous glucose monitor OR CGM diabetes sensor"),
-    ("protein_structure",      "pubmed", "protein structure prediction OR AlphaFold OR deep learning protein folding"),
-    ("antibody_drug_conjugate","pubmed", "antibody-drug conjugate OR ADC cancer therapy"),
+    # No clean concept ID — use keyword fallback
+    ("diffusion_models",      "openalex_kw",      "diffusion model score matching denoising generative"),
+
+    # Biomedical — OpenAlex concept IDs
+    ("glp1_agonists",         "openalex_concept", "C2776398474"),          # Glucagon-like peptide-1
+    ("immune_checkpoint",     "openalex_concept", "C2780851360"),          # Immune checkpoint
+    ("crispr",                "openalex_concept", "C98108389"),            # CRISPR
+    ("car_t_cell",            "openalex_concept", "C2911194787"),          # CAR T-cell therapy
+    ("aav_gene_therapy",      "openalex_concept", "C2778107364"),          # Adeno-associated virus
+    ("cftr_modulators",       "openalex_concept", "C2778428886"),          # CFTR
+    ("continuous_glucose",    "openalex_concept", "C2986379492"),          # Continuous glucose monitoring
+    ("protein_structure_pred","openalex_concept", "C18051474"),            # Protein structure prediction
+    ("antibody_drug_conj",    "openalex_concept", "C2777325958"),          # Antibody-drug conjugate
+
+    # mRNA therapeutics — no single concept; use PubMed for clinical specificity
+    ("mrna_therapeutics",     "pubmed", "mRNA vaccine OR mRNA therapy OR lipid nanoparticle mRNA"),
 ]
 
 
-def openalex_count_year(query: str, year: int) -> int:
-    """Count papers in OpenAlex matching keyword query in a given year."""
+def openalex_fetch(filter_str: str, year: int) -> int:
+    """Count papers in OpenAlex using an arbitrary filter string."""
     params = {
-        "filter": f"title_and_abstract.search:{query},publication_year:{year}",
+        "filter": f"{filter_str},publication_year:{year}",
         "per_page": 1,
         "select": "id",
         "mailto": "jvalansi1@gmail.com",
@@ -64,6 +69,14 @@ def openalex_count_year(query: str, year: int) -> int:
     except Exception as e:
         print(f"    WARN OpenAlex {year}: {e}", file=sys.stderr)
         return -1
+
+
+def openalex_count_concept(concept_id: str, year: int) -> int:
+    return openalex_fetch(f"concepts.id:{concept_id}", year)
+
+
+def openalex_count_kw(query: str, year: int) -> int:
+    return openalex_fetch(f"title_and_abstract.search:{urllib.parse.quote(query)}", year)
 
 
 def pubmed_count_year(query: str, year: int) -> int:
@@ -115,8 +128,11 @@ def main():
             if (cluster_name, year) in existing_keys:
                 counts.append(None)
                 continue
-            if source == "openalex":
-                count = openalex_count_year(query, year)
+            if source == "openalex_concept":
+                count = openalex_count_concept(query, year)
+                time.sleep(0.15)
+            elif source == "openalex_kw":
+                count = openalex_count_kw(query, year)
                 time.sleep(0.15)
             else:
                 count = pubmed_count_year(query, year)
