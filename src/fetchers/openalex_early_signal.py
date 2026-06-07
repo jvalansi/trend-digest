@@ -26,7 +26,7 @@ import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import datetime, date, timezone
 
 DATA_DIR       = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data")
 CONCEPTS_CACHE = os.path.join(DATA_DIR, "openalex_concepts_l3.json")
@@ -127,10 +127,38 @@ def main():
     concepts = load_or_refresh_concepts()
     state    = load_state()
     offset   = state["offset"]
-    batch    = concepts[offset: offset + args.batch_size]
     total    = len(concepts)
 
-    batch_num   = offset // args.batch_size + 1
+    now           = datetime.now(timezone.utc).isoformat()
+    today         = date.today()
+    current_month = today.strftime("%Y-%m")
+    cycle_month   = state.get("cycle_month", "")
+
+    # If the cycle just completed (offset reset to 0) and we're still in the same
+    # month, wait — don't start the next cycle until the calendar month rolls over.
+    if offset == 0 and cycle_month == current_month:
+        next_m = date(today.year + (today.month == 12), today.month % 12 + 1, 1)
+        next_month_name = next_m.strftime("%B %Y")
+        print(f"  Sweep complete for {current_month} — waiting for {next_month_name}", file=sys.stderr)
+        items = [{
+            "title":        f"Early signal sweep — waiting for {next_month_name}",
+            "summary":      f"This month's full sweep of {total:,} concepts is complete (cycle {state['cycle'] - 1}). Next sweep starts in {next_month_name}.",
+            "url":          "https://openalex.org/concepts",
+            "source":       "OpenAlex Early Signal",
+            "category":     "science",
+            "engagement":   0.1,
+            "fetched_at":   now,
+            "published_at": None,
+        }]
+        print(json.dumps(items, ensure_ascii=False))
+        return
+
+    # Starting a new cycle (either first ever run, or the month has changed)
+    if offset == 0:
+        state["cycle_month"] = current_month
+
+    batch    = concepts[offset: offset + args.batch_size]
+    batch_num     = offset // args.batch_size + 1
     total_batches = math.ceil(total / args.batch_size)
 
     print(f"  Sweeping concepts {offset}–{offset + len(batch) - 1} of {total} "
@@ -158,7 +186,6 @@ def main():
 
     print(f"  {len(hits)} signals in batch {batch_num}/{total_batches}", file=sys.stderr)
 
-    now   = datetime.now(timezone.utc).isoformat()
     items = []
 
     # Always emit a batch summary so the digest shows sweep progress
