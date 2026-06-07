@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-OpenAlex early-signal fetcher — daily batch sweep of academic topics.
+OpenAlex early-signal fetcher — daily batch sweep of level-3 academic concepts.
 
-Uses the OpenAlex Topics API (4,516 topics, full sweep in ~5 days at 1,000/day).
-Each topic has a clean domain hierarchy: domain → field → subfield → topic.
-Surfaces topics with ≥200 papers in 2024 and 5–50× growth since 2019.
-Always emits one item per domain group, even when nothing found.
+Processes ~1,000 concepts/day, cycling through all ~24,749 level-3 concepts in ~25 days.
+Surfaces concepts with ≥200 papers in 2024 and 5–50× growth since 2019.
 
-State file:  data/openalex_sweep_state.json
-Topic cache: data/openalex_topics.json  (refreshed every 30 days)
+Always emits a batch summary item (even when nothing found) so the digest shows
+sweep progress. Individual signal items are emitted for each hit.
+
+State file:    data/openalex_sweep_state.json
+Concept cache: data/openalex_concepts_l3.json  (refreshed every 30 days)
 
 Usage:
   python fetchers/openalex_early_signal.py [--batch-size N]
@@ -18,18 +19,18 @@ Output: JSON array of normalized items to stdout.
 
 import argparse
 import json
+import math
 import os
 import sys
 import time
 import urllib.parse
 import urllib.request
-from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
-DATA_DIR     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data")
-TOPICS_CACHE = os.path.join(DATA_DIR, "openalex_topics.json")
-STATE_FILE   = os.path.join(DATA_DIR, "openalex_sweep_state.json")
+DATA_DIR       = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data")
+CONCEPTS_CACHE = os.path.join(DATA_DIR, "openalex_concepts_l3.json")
+STATE_FILE     = os.path.join(DATA_DIR, "openalex_sweep_state.json")
 
 BASE   = "https://api.openalex.org"
 MAILTO = "jvalansi1@gmail.com"
@@ -45,53 +46,42 @@ def fetch_json(url: str) -> dict:
         return json.loads(r.read())
 
 
-def load_or_refresh_topics() -> list[dict]:
-    if os.path.exists(TOPICS_CACHE):
-        age_days = (time.time() - os.path.getmtime(TOPICS_CACHE)) / 86400
+def load_or_refresh_concepts() -> list[dict]:
+    if os.path.exists(CONCEPTS_CACHE):
+        age_days = (time.time() - os.path.getmtime(CONCEPTS_CACHE)) / 86400
         if age_days < 30:
-            with open(TOPICS_CACHE) as f:
-                topics = json.load(f)
-            print(f"  Loaded {len(topics)} cached topics ({age_days:.0f}d old)", file=sys.stderr)
-            return topics
+            with open(CONCEPTS_CACHE) as f:
+                concepts = json.load(f)
+            print(f"  Loaded {len(concepts)} cached concepts ({age_days:.0f}d old)", file=sys.stderr)
+            return concepts
 
-    print("  Fetching all topics from OpenAlex...", file=sys.stderr)
-    topics = []
-    page = 1
-    while True:
+    print("  Fetching all level-3 concepts from OpenAlex...", file=sys.stderr)
+    concepts = []
+    cursor = "*"
+    while cursor:
         params = urllib.parse.urlencode({
+            "filter": "level:3",
             "per-page": 200,
-            "page": page,
-            "select": "id,display_name,domain,field,subfield",
+            "cursor": cursor,
+            "select": "id,display_name",
             "mailto": MAILTO,
         })
-        data = fetch_json(f"{BASE}/topics?{params}")
-        results = data.get("results", [])
-        if not results:
-            break
-        for t in results:
-            topics.append({
-                "id":       t["id"],
-                "name":     t["display_name"],
-                "domain":   t["domain"]["display_name"],
-                "domain_id": t["domain"]["id"],
-                "field":    t["field"]["display_name"],
-            })
-        total = data["meta"]["count"]
-        print(f"  ... {len(topics)}/{total} topics fetched", file=sys.stderr)
-        if len(topics) >= total:
-            break
-        page += 1
-        time.sleep(0.05)
+        data = fetch_json(f"{BASE}/concepts?{params}")
+        for c in data.get("results", []):
+            concepts.append({"id": c["id"], "name": c["display_name"]})
+        cursor = data.get("meta", {}).get("next_cursor")
+        print(f"  ... {len(concepts)} concepts fetched", file=sys.stderr)
+        time.sleep(0.1)
 
-    with open(TOPICS_CACHE, "w") as f:
-        json.dump(topics, f)
-    print(f"  Cached {len(topics)} topics", file=sys.stderr)
-    return topics
+    with open(CONCEPTS_CACHE, "w") as f:
+        json.dump(concepts, f)
+    print(f"  Cached {len(concepts)} level-3 concepts", file=sys.stderr)
+    return concepts
 
 
-def count_papers(topic_id: str, year: int) -> int:
+def count_papers(concept_id: str, year: int) -> int:
     params = urllib.parse.urlencode({
-        "filter": f"topics.id:{topic_id},publication_year:{year}",
+        "filter": f"concepts.id:{concept_id},publication_year:{year}",
         "per-page": 1,
         "select": "id",
         "mailto": MAILTO,
@@ -103,27 +93,18 @@ def count_papers(topic_id: str, year: int) -> int:
         return -1
 
 
-def check_topic(topic: dict) -> dict | None:
-    tid = topic["id"]
-    n2024 = count_papers(tid, 2024)
+def check_concept(concept: dict) -> dict | None:
+    cid = concept["id"]
+    n2024 = count_papers(cid, 2024)
     if n2024 < MIN_PAPERS_2024:
         return None
-    n2019 = count_papers(tid, 2019)
+    n2019 = count_papers(cid, 2019)
     if n2019 < 0 or n2024 < 0:
         return None
     ratio = n2024 / max(n2019, 1)
     if ratio < MIN_RATIO or ratio > MAX_RATIO:
         return None
-    return {
-        "name":      topic["name"],
-        "id":        topic["id"],
-        "domain":    topic["domain"],
-        "domain_id": topic["domain_id"],
-        "field":     topic["field"],
-        "n2019":     n2019,
-        "n2024":     n2024,
-        "ratio":     ratio,
-    }
+    return {"name": concept["name"], "id": concept["id"], "n2019": n2019, "n2024": n2024, "ratio": ratio}
 
 
 def load_state() -> dict:
@@ -140,37 +121,33 @@ def save_state(state: dict):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--batch-size", type=int, default=1000, help="Topics to scan per run (default: 1000)")
+    parser.add_argument("--batch-size", type=int, default=1000)
     args = parser.parse_args()
 
-    topics = load_or_refresh_topics()
-    state  = load_state()
-    offset = state["offset"]
-    batch  = topics[offset: offset + args.batch_size]
+    concepts = load_or_refresh_concepts()
+    state    = load_state()
+    offset   = state["offset"]
+    batch    = concepts[offset: offset + args.batch_size]
+    total    = len(concepts)
 
-    print(f"  Sweeping topics {offset}–{offset + len(batch) - 1} of {len(topics)} (cycle {state['cycle']})", file=sys.stderr)
+    batch_num   = offset // args.batch_size + 1
+    total_batches = math.ceil(total / args.batch_size)
 
-    # Count topics per domain for this batch
-    domain_meta: dict[str, dict] = {}
-    domain_sizes: dict[str, int] = defaultdict(int)
-    for t in batch:
-        d = t["domain"]
-        domain_sizes[d] += 1
-        if d not in domain_meta:
-            domain_meta[d] = {"id": t["domain_id"]}
+    print(f"  Sweeping concepts {offset}–{offset + len(batch) - 1} of {total} "
+          f"(batch {batch_num}/{total_batches}, cycle {state['cycle']})", file=sys.stderr)
 
-    # Check all topics in parallel
-    hits_by_domain: dict[str, list] = defaultdict(list)
+    hits = []
     with ThreadPoolExecutor(max_workers=10) as pool:
-        futures = {pool.submit(check_topic, t): t for t in batch}
+        futures = {pool.submit(check_concept, c): c for c in batch}
         for future in as_completed(futures):
             result = future.result()
             if result:
-                hits_by_domain[result["domain"]].append(result)
+                hits.append(result)
+    hits.sort(key=lambda h: h["ratio"], reverse=True)
 
     # Advance state
     next_offset = offset + args.batch_size
-    if next_offset >= len(topics):
+    if next_offset >= total:
         state["offset"] = 0
         state["cycle"]  = state.get("cycle", 1) + 1
         print(f"  Full sweep complete — starting cycle {state['cycle']}", file=sys.stderr)
@@ -179,39 +156,41 @@ def main():
     state["last_run"] = datetime.now(timezone.utc).date().isoformat()
     save_state(state)
 
-    total_hits = sum(len(v) for v in hits_by_domain.values())
-    print(f"  {total_hits} early signals across {len(domain_sizes)} domains", file=sys.stderr)
+    print(f"  {len(hits)} signals in batch {batch_num}/{total_batches}", file=sys.stderr)
 
-    now = datetime.now(timezone.utc).isoformat()
+    now   = datetime.now(timezone.utc).isoformat()
     items = []
 
-    # One item per domain — domains with signals first (by max ratio), then empty ones
-    def domain_sort_key(domain):
-        hits = hits_by_domain.get(domain, [])
-        return (-max((h["ratio"] for h in hits), default=0), domain)
+    # Always emit a batch summary so the digest shows sweep progress
+    if hits:
+        top_names = ", ".join(h["name"] for h in hits[:3])
+        summary_text = f"{len(hits)} signal{'s' if len(hits) != 1 else ''} found: {top_names}"
+        if len(hits) > 3:
+            summary_text += f" (+{len(hits) - 3} more)"
+    else:
+        summary_text = "No signals found"
 
-    for domain in sorted(domain_sizes.keys(), key=domain_sort_key):
-        hits       = sorted(hits_by_domain.get(domain, []), key=lambda h: h["ratio"], reverse=True)
-        n_scanned  = domain_sizes[domain]
-        domain_url = domain_meta[domain]["id"].replace("https://openalex.org/domains/", "https://openalex.org/domains/")
+    items.append({
+        "title":        f"Early signal sweep — batch {batch_num}/{total_batches}",
+        "summary":      f"{summary_text}. Scanned concepts {offset:,}–{offset + len(batch) - 1:,} of {total:,} (cycle {state['cycle'] - (1 if next_offset >= total else 0)}, threshold: ≥{MIN_PAPERS_2024} papers in 2024, {MIN_RATIO:.0f}–{MAX_RATIO:.0f}× growth since 2019).",
+        "url":          "https://openalex.org/concepts",
+        "source":       "OpenAlex Early Signal",
+        "category":     "science",
+        "engagement":   0.1,  # small non-zero so it doesn't get sorted out entirely
+        "fetched_at":   now,
+        "published_at": None,
+    })
 
-        if hits:
-            parts    = [f"{h['name']} ({h['field']}): {h['n2019']:,}→{h['n2024']:,} ({h['ratio']:.1f}×)" for h in hits[:5]]
-            summary  = " | ".join(parts)
-            title    = f"{domain} — {len(hits)} signal{'s' if len(hits) != 1 else ''}"
-            engagement = max(h["ratio"] for h in hits)
-        else:
-            title      = f"{domain} — nothing found"
-            summary    = f"Scanned {n_scanned} topics. No acceleration signals (≥{MIN_PAPERS_2024} papers in 2024, {MIN_RATIO:.0f}–{MAX_RATIO:.0f}× growth since 2019)."
-            engagement = 0.0
-
+    # Individual items for each signal
+    for h in hits:
+        concept_slug = h["id"].split("/")[-1]
         items.append({
-            "title":        title,
-            "summary":      summary,
-            "url":          domain_url,
+            "title":        h["name"],
+            "summary":      f"{h['n2019']:,} → {h['n2024']:,} papers (2019→2024, {h['ratio']:.1f}× growth)",
+            "url":          f"https://openalex.org/concepts/{concept_slug}",
             "source":       "OpenAlex Early Signal",
             "category":     "science",
-            "engagement":   round(engagement, 2),
+            "engagement":   round(h["ratio"], 2),
             "fetched_at":   now,
             "published_at": None,
         })
