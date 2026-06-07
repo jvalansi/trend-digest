@@ -107,7 +107,7 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/altmetric.py", "--limit", "20"], "section": "Altmetric"},
         {"cmd": ["python", "src/fetchers/semantic_scholar.py", "--limit", "20", "--mode", "science"], "section": "Semantic Scholar"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "science"], "section": "Reddit Science"},
-        {"cmd": ["python", "src/fetchers/openalex_early_signal.py", "--batch-size", "1000"], "section": "OpenAlex Early Signal"},
+        {"cmd": ["python", "src/fetchers/openalex_early_signal.py", "--batch-size", "1000"], "section": "OpenAlex Early Signal", "section_limit": 25},
     ],
     "finance": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "finance"], "is_rss": True},
