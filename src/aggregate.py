@@ -76,6 +76,7 @@ SOURCE_AUTHORITY = {
     "Reuters Business":   1.1,
     "ETF Volume":         1.3,
     "Polymarket":         1.2,
+    "OpenAlex Early Signal": 1.3,
     "Nature":             1.4,
     "Science":            1.4,
     "New Scientist":      1.1,
@@ -106,6 +107,7 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/altmetric.py", "--limit", "20"], "section": "Altmetric"},
         {"cmd": ["python", "src/fetchers/semantic_scholar.py", "--limit", "20", "--mode", "science"], "section": "Semantic Scholar"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "science"], "section": "Reddit Science"},
+        {"cmd": ["python", "src/fetchers/openalex_early_signal.py", "--batch-size", "1000"], "section": "OpenAlex Early Signal"},
     ],
     "finance": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "finance"], "is_rss": True},
