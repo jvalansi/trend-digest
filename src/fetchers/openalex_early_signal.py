@@ -18,6 +18,7 @@ Output: JSON array of normalized items to stdout.
 """
 
 import argparse
+import calendar
 import json
 import math
 import os
@@ -121,7 +122,8 @@ def save_state(state: dict):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--batch-size", type=int, default=1000)
+    parser.add_argument("--batch-size", type=int, default=0,
+                        help="Concepts per run (default: 0 = auto, sized to fit the calendar month)")
     args = parser.parse_args()
 
     concepts = load_or_refresh_concepts()
@@ -156,10 +158,20 @@ def main():
     # Starting a new cycle (either first ever run, or the month has changed)
     if offset == 0:
         state["cycle_month"] = current_month
+        if args.batch_size == 0:
+            # Size the batch to cover exactly the working days (Mon–Fri) in this month
+            _, days_in_month = calendar.monthrange(today.year, today.month)
+            working_days = sum(
+                1 for d in range(1, days_in_month + 1)
+                if date(today.year, today.month, d).weekday() < 5
+            )
+            state["batch_size"] = math.ceil(total / working_days)
+            print(f"  Auto batch size: {state['batch_size']} ({working_days} working days in {today.strftime('%B %Y')})", file=sys.stderr)
 
-    batch    = concepts[offset: offset + args.batch_size]
-    batch_num     = offset // args.batch_size + 1
-    total_batches = math.ceil(total / args.batch_size)
+    batch_size    = args.batch_size if args.batch_size > 0 else state.get("batch_size", math.ceil(total / 22))
+    batch         = concepts[offset: offset + batch_size]
+    batch_num     = offset // batch_size + 1
+    total_batches = math.ceil(total / batch_size)
 
     print(f"  Sweeping concepts {offset}–{offset + len(batch) - 1} of {total} "
           f"(batch {batch_num}/{total_batches}, cycle {state['cycle']})", file=sys.stderr)
@@ -174,7 +186,7 @@ def main():
     hits.sort(key=lambda h: h["ratio"], reverse=True)
 
     # Advance state
-    next_offset = offset + args.batch_size
+    next_offset = offset + batch_size
     if next_offset >= total:
         state["offset"] = 0
         state["cycle"]  = state.get("cycle", 1) + 1
