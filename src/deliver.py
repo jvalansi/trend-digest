@@ -445,6 +445,27 @@ def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
     return [desc_map.get(i, "") for i in range(len(items))]
 
 
+def format_item_telegram(item: dict, description: str) -> str:
+    title = item.get("title_en") or item["title"]
+    url = item["url"]
+    sources = item.get("sources", [item["source"]])
+    source_str = " · ".join(sources)
+    desc_str = f"\n  {description}" if description else ""
+    days = item.get("days_since_first_seen")
+    seen_str = f" · ↩ {days}d" if days else ""
+    return f"• [{title}]({url}){desc_str}\n  _{source_str}{seen_str}_"
+
+
+def post_to_telegram(text: str) -> None:
+    proc = subprocess.run(
+        ["cc-connect", "send", "--stdin"],
+        input=text, text=True, capture_output=True,
+    )
+    if proc.returncode != 0:
+        print(f"cc-connect error: {proc.stderr}", file=sys.stderr)
+        raise RuntimeError("cc-connect send failed")
+
+
 def format_item(item: dict, description: str) -> str:
     sources = item.get("sources", [item["source"]])
     source_str = " · ".join(sources)
@@ -555,6 +576,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Print message without posting")
     parser.add_argument("--mode", default="tech", choices=["tech", "science", "news", "finance"], help="Digest mode (default: tech)")
     parser.add_argument("--channel", help="Slack channel override")
+    parser.add_argument("--telegram", action="store_true", help="Deliver via cc-connect (Telegram) instead of Slack")
     parser.add_argument("--publish", action="store_true", help="Publish to Medium and share on Bluesky, LinkedIn, Reddit")
     args = parser.parse_args()
 
@@ -635,19 +657,31 @@ def main():
         save_seen_items(seen)
         return
 
-    token = os.environ.get("SLACK_BOT_TOKEN")
-    if not token:
-        print("ERROR: SLACK_BOT_TOKEN not set", file=sys.stderr)
-        sys.exit(1)
-
-    thread_ts = post_to_slack(header, token, channel)
-    for item, msg in zip(rss_items, formatted_rss):
-        img = og_images.get(item["url"])
-        attachments = [{"image_url": img, "fallback": item.get("title", "")}] if img else None
-        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=not bool(attachments), attachments=attachments)
-    for msg, attachments in section_messages:
-        post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=attachments is None, attachments=attachments)
-    print(f"Posted {total_items} items to #{channel}", file=sys.stderr)
+    if args.telegram:
+        tg_parts = [f"*{label} — {date_str}* ({total_items} items)"]
+        for item, desc in zip(rss_items, rss_descs):
+            tg_parts.append(format_item_telegram(item, desc))
+        desc_idx = 0
+        for name, items in sections.items():
+            tg_parts.append(f"\n*{name}*")
+            for item in items:
+                tg_parts.append(format_item_telegram(item, section_descs[desc_idx]))
+                desc_idx += 1
+        post_to_telegram("\n\n".join(tg_parts))
+        print(f"Posted {total_items} items via cc-connect", file=sys.stderr)
+    else:
+        token = os.environ.get("SLACK_BOT_TOKEN")
+        if not token:
+            print("ERROR: SLACK_BOT_TOKEN not set", file=sys.stderr)
+            sys.exit(1)
+        thread_ts = post_to_slack(header, token, channel)
+        for item, msg in zip(rss_items, formatted_rss):
+            img = og_images.get(item["url"])
+            attachments = [{"image_url": img, "fallback": item.get("title", "")}] if img else None
+            post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=not bool(attachments), attachments=attachments)
+        for msg, attachments in section_messages:
+            post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=attachments is None, attachments=attachments)
+        print(f"Posted {total_items} items to #{channel}", file=sys.stderr)
     update_seen(all_items, seen)
     save_seen_items(seen)
 
