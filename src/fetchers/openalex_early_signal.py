@@ -3,8 +3,8 @@
 OpenAlex early-signal fetcher — daily batch sweep of level-3 academic concepts.
 
 Cycles through all ~24,749 level-3 concepts once per quarter (~65 working days).
-Surfaces concepts with ≥200 papers in the most recent complete year and 5–50×
-growth over the prior 5 years (e.g. 2024 vs 2019 when run in 2025).
+Surfaces concepts with ≥200 papers in the trailing 12 months and 5–50× growth
+vs the same 12-month window 5 years prior.
 
 Always emits a batch summary item (even when nothing found) so the digest shows
 sweep progress. Individual signal items are emitted for each hit.
@@ -28,7 +28,7 @@ import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timedelta, timezone
 
 DATA_DIR       = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data")
 CONCEPTS_CACHE = os.path.join(DATA_DIR, "openalex_concepts_l3.json")
@@ -81,9 +81,9 @@ def load_or_refresh_concepts() -> list[dict]:
     return concepts
 
 
-def count_papers(concept_id: str, year: int) -> int:
+def count_papers(concept_id: str, from_date: date, to_date: date) -> int:
     params = urllib.parse.urlencode({
-        "filter": f"concepts.id:{concept_id},publication_year:{year}",
+        "filter": f"concepts.id:{concept_id},from_publication_date:{from_date},to_publication_date:{to_date}",
         "per-page": 1,
         "select": "id",
         "mailto": MAILTO,
@@ -95,19 +95,23 @@ def count_papers(concept_id: str, year: int) -> int:
         return -1
 
 
-def check_concept(concept: dict, recent_year: int, base_year: int) -> dict | None:
+def check_concept(concept: dict, recent_from: date, recent_to: date,
+                  base_from: date, base_to: date) -> dict | None:
     cid = concept["id"]
-    n_recent = count_papers(cid, recent_year)
+    n_recent = count_papers(cid, recent_from, recent_to)
     if n_recent < MIN_PAPERS_RECENT:
         return None
-    n_base = count_papers(cid, base_year)
+    n_base = count_papers(cid, base_from, base_to)
     if n_base < 0 or n_recent < 0:
         return None
     ratio = n_recent / max(n_base, 1)
     if ratio < MIN_RATIO or ratio > MAX_RATIO:
         return None
-    return {"name": concept["name"], "id": concept["id"], "n_base": n_base, "n_recent": n_recent,
-            "base_year": base_year, "recent_year": recent_year, "ratio": ratio}
+    return {"name": concept["name"], "id": concept["id"],
+            "n_base": n_base, "n_recent": n_recent,
+            "recent_from": recent_from.isoformat(), "recent_to": recent_to.isoformat(),
+            "base_from": base_from.isoformat(), "base_to": base_to.isoformat(),
+            "ratio": ratio}
 
 
 def load_state() -> dict:
@@ -159,9 +163,11 @@ def main():
     current_quarter = get_quarter(today)
     cycle_quarter   = state.get("cycle_quarter", "")
 
-    # Years: compare most recent complete year vs 5 years prior
-    recent_year = today.year - 1
-    base_year   = recent_year - 5
+    # Trailing 12 months ending yesterday, vs same window 5 years prior
+    recent_to   = today - timedelta(days=1)
+    recent_from = date(recent_to.year - 1, recent_to.month, recent_to.day)
+    base_to     = date(recent_to.year - 5, recent_to.month, recent_to.day)
+    base_from   = date(recent_from.year - 5, recent_from.month, recent_from.day)
 
     # If the cycle just completed (offset reset to 0) and we're still in the same
     # quarter, wait — don't start the next cycle until the quarter rolls over.
@@ -196,11 +202,12 @@ def main():
     total_batches = math.ceil(total / batch_size)
 
     print(f"  Sweeping concepts {offset}–{offset + len(batch) - 1} of {total} "
-          f"(batch {batch_num}/{total_batches}, cycle {state['cycle']}, {base_year}→{recent_year})", file=sys.stderr)
+          f"(batch {batch_num}/{total_batches}, cycle {state['cycle']}, "
+          f"{base_from}–{base_to} vs {recent_from}–{recent_to})", file=sys.stderr)
 
     hits = []
     with ThreadPoolExecutor(max_workers=10) as pool:
-        futures = {pool.submit(check_concept, c, recent_year, base_year): c for c in batch}
+        futures = {pool.submit(check_concept, c, recent_from, recent_to, base_from, base_to): c for c in batch}
         for future in as_completed(futures):
             result = future.result()
             if result:
@@ -233,7 +240,7 @@ def main():
 
     items.append({
         "title":        f"Early signal sweep — batch {batch_num}/{total_batches}",
-        "summary":      f"{summary_text}. Scanned concepts {offset:,}–{offset + len(batch) - 1:,} of {total:,} (cycle {state['cycle'] - (1 if next_offset >= total else 0)}, threshold: ≥{MIN_PAPERS_RECENT} papers in {recent_year}, {MIN_RATIO:.0f}–{MAX_RATIO:.0f}× growth since {base_year}).",
+        "summary":      f"{summary_text}. Scanned concepts {offset:,}–{offset + len(batch) - 1:,} of {total:,} (cycle {state['cycle'] - (1 if next_offset >= total else 0)}, threshold: ≥{MIN_PAPERS_RECENT} papers in trailing 12 months, {MIN_RATIO:.0f}–{MAX_RATIO:.0f}× growth vs same window 5 years prior).",
         "url":          "https://openalex.org/concepts",
         "source":       "OpenAlex Early Signal",
         "category":     "science",
@@ -247,7 +254,7 @@ def main():
         concept_slug = h["id"].split("/")[-1]
         items.append({
             "title":        h["name"],
-            "summary":      f"{h['n_base']:,} → {h['n_recent']:,} papers ({h['base_year']}→{h['recent_year']}, {h['ratio']:.1f}× growth)",
+            "summary":      f"{h['n_base']:,} → {h['n_recent']:,} papers ({h['base_from']}–{h['base_to']} vs {h['recent_from']}–{h['recent_to']}, {h['ratio']:.1f}×)",
             "url":          f"https://openalex.org/concepts/{concept_slug}",
             "source":       "OpenAlex Early Signal",
             "category":     "science",
