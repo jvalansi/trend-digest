@@ -21,6 +21,8 @@ from datetime import datetime, timezone
 
 import feedparser
 import requests
+from deep_translator import GoogleTranslator
+from langdetect import detect, LangDetectException
 from playwright.sync_api import sync_playwright
 
 from stats import score_items
@@ -119,6 +121,26 @@ def fetch_country(code: str, fsid: str, bl: str, cookies: dict) -> list[dict]:
     return items
 
 
+def translate_to_english(title: str) -> str:
+    """Return the English translation of title, or the original if already English or on error."""
+    try:
+        if detect(title) == "en":
+            return title
+    except LangDetectException:
+        return title
+    try:
+        return GoogleTranslator(source="auto", target="en").translate(title) or title
+    except Exception:
+        return title
+
+
+def batch_translate(titles: list[str]) -> dict[str, str]:
+    """Return mapping original_title → english_title for all titles."""
+    with ThreadPoolExecutor(max_workers=20) as pool:
+        futures = {pool.submit(translate_to_english, t): t for t in titles}
+        return {futures[f]: f.result() for f in as_completed(futures)}
+
+
 def fetch_headline(query: str) -> tuple[str, str]:
     try:
         url = NEWS_RSS.format(query=urllib.parse.quote(query))
@@ -142,9 +164,7 @@ def fetch_global(limit: int) -> list[dict]:
     bl = re.search(r"bl=([^&]+)", base_url).group(1)
     cookies = session["cookies"]
 
-    aggregated: dict[str, dict] = defaultdict(
-        lambda: {"title": "", "countries": [], "total_volume": 0.0}
-    )
+    raw_results: list[tuple[str, list[dict]]] = []
 
     def fetch_one(code, name):
         try:
@@ -158,16 +178,27 @@ def fetch_global(limit: int) -> list[dict]:
     with ThreadPoolExecutor(max_workers=20) as pool:
         futures = {pool.submit(fetch_one, code, name): (code, name) for code, name in COUNTRIES}
         for future in as_completed(futures):
-            _, items = future.result()
-            country_name = futures[future][1]
-            for item in items:
-                key = item["title"].lower().strip()
-                if NOISE_RE.match(key):
-                    continue
-                if not aggregated[key]["title"]:
-                    aggregated[key]["title"] = item["title"]
-                aggregated[key]["countries"].append(country_name)
-                aggregated[key]["total_volume"] += item["traffic"]
+            country_name, items = future.result()
+            raw_results.append((country_name, items))
+
+    # Collect all unique titles and translate to English for deduplication
+    all_titles = {item["title"] for _, items in raw_results for item in items}
+    print(f"  Translating {len(all_titles)} unique titles to English...", file=sys.stderr)
+    translation_map = batch_translate(list(all_titles))
+
+    aggregated: dict[str, dict] = defaultdict(
+        lambda: {"title": "", "countries": [], "total_volume": 0.0}
+    )
+    for country_name, items in raw_results:
+        for item in items:
+            en_title = translation_map.get(item["title"], item["title"])
+            key = en_title.lower().strip()
+            if NOISE_RE.match(key):
+                continue
+            if not aggregated[key]["title"]:
+                aggregated[key]["title"] = en_title
+            aggregated[key]["countries"].append(country_name)
+            aggregated[key]["total_volume"] += item["traffic"]
 
     ranked = sorted(
         aggregated.values(),
