@@ -61,6 +61,7 @@ def normalize(market: dict) -> dict | None:
         "category": "finance",
         "engagement": volume_24h,
         "engagement_raw": volume_24h,
+        "probability": prob,
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "published_at": datetime.now(timezone.utc).isoformat(),
     }

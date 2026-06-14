@@ -25,6 +25,12 @@ SLACK_CHANNEL = os.environ.get("TREND_DIGEST_CHANNEL", "proj-trend-digest")
 SCIENCE_CHANNEL = os.environ.get("SCIENCE_DIGEST_CHANNEL", SLACK_CHANNEL)
 NEWS_CHANNEL = os.environ.get("NEWS_DIGEST_CHANNEL", "proj-news-digest")
 FINANCE_CHANNEL = os.environ.get("FINANCE_DIGEST_CHANNEL", SLACK_CHANNEL)
+
+DISCORD_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
+DISCORD_TREND_CHANNEL = os.environ.get("DISCORD_TREND_DIGEST_CHANNEL", "1513381044169085028")
+DISCORD_SCIENCE_CHANNEL = os.environ.get("DISCORD_SCIENCE_DIGEST_CHANNEL", DISCORD_TREND_CHANNEL)
+DISCORD_NEWS_CHANNEL = os.environ.get("DISCORD_NEWS_DIGEST_CHANNEL", DISCORD_TREND_CHANNEL)
+DISCORD_FINANCE_CHANNEL = os.environ.get("DISCORD_FINANCE_DIGEST_CHANNEL", DISCORD_TREND_CHANNEL)
 CLAUDE_PATH = os.environ.get("CLAUDE_PATH", "/home/ubuntu/.local/bin/claude")
 
 _SEEN_ITEMS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seen_items.json")
@@ -451,9 +457,11 @@ def format_item_telegram(item: dict, description: str) -> str:
     sources = item.get("sources", [item["source"]])
     source_str = " · ".join(sources)
     desc_str = f"\n  {description}" if description else ""
+    prob = item.get("probability")
+    prob_str = f" · Yes {prob}%" if prob is not None else ""
     days = item.get("days_since_first_seen")
     seen_str = f" · ↩ {days}d" if days else ""
-    return f"• [{title}]({url}){desc_str}\n  _{source_str}{seen_str}_"
+    return f"• [{title}]({url}){desc_str}\n  _{source_str}{prob_str}{seen_str}_"
 
 
 def post_to_telegram(text: str) -> None:
@@ -464,6 +472,47 @@ def post_to_telegram(text: str) -> None:
     if proc.returncode != 0:
         print(f"cc-connect error: {proc.stderr}", file=sys.stderr)
         raise RuntimeError("cc-connect send failed")
+
+
+_DISCORD_HEADERS = {
+    "Content-Type": "application/json",
+    "User-Agent": "DiscordBot (https://github.com/jvalansi/trend-digest, 1.0)",
+}
+
+
+def _discord_request(method: str, url: str, token: str, body: dict | None = None) -> dict:
+    import time
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(
+        url, data=data,
+        headers={**_DISCORD_HEADERS, "Authorization": f"Bot {token}"},
+        method=method,
+    )
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read())
+
+
+def post_to_discord(text: str, token: str, channel_id: str) -> str:
+    """Post a message and return its message ID."""
+    import time
+    chunks = [text[i:i+2000] for i in range(0, len(text), 2000)]
+    msg_id = None
+    for chunk in chunks:
+        result = _discord_request("POST", f"https://discord.com/api/v10/channels/{channel_id}/messages", token, {"content": chunk})
+        msg_id = result["id"]
+        time.sleep(1.2)
+    return msg_id
+
+
+def create_discord_thread(token: str, channel_id: str, message_id: str, name: str) -> str:
+    """Create a thread from a message and return the thread channel ID."""
+    result = _discord_request(
+        "POST",
+        f"https://discord.com/api/v10/channels/{channel_id}/messages/{message_id}/threads",
+        token,
+        {"name": name[:100], "auto_archive_duration": 1440},
+    )
+    return result["id"]
 
 
 def format_item(item: dict, description: str) -> str:
@@ -477,9 +526,11 @@ def format_item(item: dict, description: str) -> str:
     engagement_str = ""
     if raw is not None and eng is not None:
         engagement_str = f" · {int(raw)} pts · z={eng:+.2f}"
+    prob = item.get("probability")
+    prob_str = f" · Yes {prob}%" if prob is not None else ""
     days = item.get("days_since_first_seen")
     seen_str = f" · ↩ {days}d" if days else ""
-    return f"*<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}{seen_str}_"
+    return f"*<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}{prob_str}{seen_str}_"
 
 
 def post_to_slack(text: str, token: str, channel: str, thread_ts: str | None = None, unfurl: bool = False, attachments: list | None = None) -> str:
@@ -577,6 +628,7 @@ def main():
     parser.add_argument("--mode", default="tech", choices=["tech", "science", "news", "finance"], help="Digest mode (default: tech)")
     parser.add_argument("--channel", help="Slack channel override")
     parser.add_argument("--telegram", action="store_true", help="Deliver via cc-connect (Telegram) instead of Slack")
+    parser.add_argument("--discord", action="store_true", help="Deliver to Discord channel")
     parser.add_argument("--publish", action="store_true", help="Publish to Medium and share on Bluesky, LinkedIn, Reddit")
     args = parser.parse_args()
 
@@ -590,15 +642,19 @@ def main():
     if args.mode == "science":
         label = "Science Digest"
         channel = args.channel or SCIENCE_CHANNEL
+        discord_channel = DISCORD_SCIENCE_CHANNEL
     elif args.mode == "news":
         label = "News Digest"
         channel = args.channel or NEWS_CHANNEL
+        discord_channel = DISCORD_NEWS_CHANNEL
     elif args.mode == "finance":
         label = "Finance Digest"
         channel = args.channel or FINANCE_CHANNEL
+        discord_channel = DISCORD_FINANCE_CHANNEL
     else:
         label = "Tech Digest"
         channel = args.channel or SLACK_CHANNEL
+        discord_channel = DISCORD_TREND_CHANNEL
 
     # New sectioned format
     if isinstance(data, dict) and "rss" in data:
@@ -669,6 +725,36 @@ def main():
                 desc_idx += 1
         post_to_telegram("\n\n".join(tg_parts))
         print(f"Posted {total_items} items via cc-connect", file=sys.stderr)
+    elif args.discord:
+        token = DISCORD_TOKEN
+        if not token:
+            print("ERROR: DISCORD_BOT_TOKEN not set", file=sys.stderr)
+            sys.exit(1)
+        header_msg_id = post_to_discord(f"**{label} — {date_str}** ({total_items} items)", token, discord_channel)
+        thread_id = create_discord_thread(token, discord_channel, header_msg_id, f"{label} — {date_str}")
+        for item, desc in zip(rss_items, rss_descs):
+            title = item.get("title_en") or item["title"]
+            url = item["url"]
+            sources = item.get("sources", [item["source"]])
+            source_str = " · ".join(sources)
+            desc_str = f"\n  {desc}" if desc else ""
+            days = item.get("days_since_first_seen")
+            seen_str = f" · ↩ {days}d" if days else ""
+            post_to_discord(f"**[{title}](<{url}>)**{desc_str}\n  _{source_str}{seen_str}_", token, thread_id)
+        desc_idx = 0
+        for name, items in sections.items():
+            post_to_discord(f"**{name}**", token, thread_id)
+            for item in items:
+                title = item.get("title_en") or item["title"]
+                url = item["url"]
+                sources = item.get("sources", [item["source"]])
+                source_str = " · ".join(sources)
+                desc_str = f"\n  {section_descs[desc_idx]}" if section_descs[desc_idx] else ""
+                days = item.get("days_since_first_seen")
+                seen_str = f" · ↩ {days}d" if days else ""
+                post_to_discord(f"**[{title}](<{url}>)**{desc_str}\n  _{source_str}{seen_str}_", token, thread_id)
+                desc_idx += 1
+        print(f"Posted {total_items} items to Discord #{discord_channel} (thread)", file=sys.stderr)
     else:
         token = os.environ.get("SLACK_BOT_TOKEN")
         if not token:
