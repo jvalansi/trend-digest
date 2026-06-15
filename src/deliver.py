@@ -750,9 +750,11 @@ def main():
                 sources = item.get("sources", [item["source"]])
                 source_str = " · ".join(sources)
                 desc_str = f"\n  {section_descs[desc_idx]}" if section_descs[desc_idx] else ""
+                prob = item.get("probability")
+                prob_str = f" · Yes {prob}%" if prob is not None else ""
                 days = item.get("days_since_first_seen")
                 seen_str = f" · ↩ {days}d" if days else ""
-                post_to_discord(f"**[{title}](<{url}>)**{desc_str}\n  _{source_str}{seen_str}_", token, thread_id)
+                post_to_discord(f"**[{title}](<{url}>)**{desc_str}\n  _{source_str}{prob_str}{seen_str}_", token, thread_id)
                 desc_idx += 1
         print(f"Posted {total_items} items to Discord #{discord_channel} (thread)", file=sys.stderr)
     else:
