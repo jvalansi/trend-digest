@@ -205,6 +205,115 @@ Plus:
 
 ---
 
+## Worked example — democratic depth as a non-GDP indicator
+
+The "freedom / political agency" dimension of the dashboard is the cleanest case study of how to track a non-GDP gap over time, what the data actually shows, and where causal attribution gets contested.
+
+### Expert-coded indices
+
+Two dominant sources:
+
+- **V-Dem (Varieties of Democracy)** — ~3,700 country-experts code ~500 indicators across ~200 countries back to 1789. A Bayesian item-response measurement model corrects for systematic coder bias and produces uncertainty intervals. Indicators aggregate into mid-level components (electoral, liberal, deliberative, participatory, egalitarian), which combine into composites including the Liberal Democracy Index (LDI). [V-Dem methodology](https://v-dem.net/about/v-dem-project/methodology/).
+- **Freedom House — Freedom in the World** — in-house staff plus ~125 outside analysts score each country on 25 questions (10 political rights, 15 civil liberties), 0–4 scale each, aggregating to 0–100 and to Free / Partly Free / Not Free. [FH methodology](https://freedomhouse.org/reports/freedom-world/freedom-world-research-methodology).
+
+Both are procedural — they measure rules, institutions, and rights, not policy responsiveness or substantive outcomes. Whether votes actually shape policy (Gilens-Page question) is a separate literature.
+
+### Behavioral proxies — less subject to expert bias
+
+| Measure | Source | What it captures |
+|---|---|---|
+| Journalists imprisoned | [CPJ Prison Census](https://cpj.org/data/) | Hard repression of press |
+| Journalists killed | [CPJ](https://cpj.org/data/) | Same, fatal end |
+| Internet shutdowns | [Access Now #KeepItOn](https://www.accessnow.org/keepiton/) | State control over information flow |
+| RSF Press Freedom Index | [RSF](https://rsf.org/en/index) | Press freedom composite |
+| UNHCR forced displacement | [UNHCR Global Trends](https://www.unhcr.org/global-trends-report-2023) | Revealed preference — people leaving |
+| Net emigration / asylum applications | UNHCR, OECD | Same |
+| Gallup "freedom to make life choices" | [WHR](https://worldhappiness.report/) | Subjective freedom (caveats apply) |
+
+Subjective Gallup measure correlates ~0.5–0.6 with V-Dem LDI at the country level but has its own biases: fear of honest answers in authoritarian contexts (China rates surprisingly high), preference adaptation (people downgrade what they think is achievable), and cultural baselines in how "free" is interpreted.
+
+### The trajectory — multiple methods, similar inflection
+
+| Index / Measure | Peak year | Current trend |
+|---|---|---|
+| V-Dem Liberal Democracy Index (pop-weighted) | 2012 | At 1985 levels by 2023 |
+| V-Dem Electoral Democracy Index | 2012 | Same |
+| Freedom House aggregate score | 2005–2006 | 18 consecutive years of decline |
+| FH "Free" country count | 90 in 2005 | 84 in 2024 |
+| EIU Democracy Index | 2014 | Declining |
+| Polity5 democracies count | 2006–2010 | Declining |
+| RSF Press Freedom Index | ~2013 | Declining |
+| Journalists imprisoned (CPJ) | ~145 in 2000 | Record 363 in 2022, ~320 in 2023 |
+| Internet shutdowns (Access Now) | rare pre-2016 | 283 across 39 countries in 2023 |
+| UNHCR forced displacement | 40M in 2011 | 117M in 2023 |
+| Refugees specifically | 10M in 2010 | 36M in 2023 |
+| Gallup "freedom to choose" | 2017–2019 | Slight decline |
+
+Sources as above plus [V-Dem 2024 Democracy Report](https://v-dem.net/documents/43/v-dem_dr2024_lowres.pdf), [FH 2024](https://freedomhouse.org/report/freedom-world/2024/mounting-damage-flawed-elections-and-armed-conflict), [Access Now 2024](https://www.accessnow.org/internet-shutdowns-2023/).
+
+Peak years cluster in **2005–2014** across methodologies. The convergence across independent measurement traditions — expert coding, journalist counts, refugee flows, internet shutdowns, subjective surveys — is the validation that something real happened, not a single index's drift. The structural and behavioral measures lead; subjective measures lag by ~5 years.
+
+### Context — world public sector trajectory
+
+World general government expenditure as % of GDP (GDP-weighted; pre-1990 = advanced economies dominated, post-1990 = IMF Fiscal Monitor world):
+
+- 1925: ~19% → 1944: ~48% (WWII) → 1948: ~28%
+- 1950: ~26% → 1980: ~37% (Wagner's law expansion)
+- 1980–2019: roughly plateaued at 31–37%
+- Crisis spikes: 2009 GFC (~38%), 2020 COVID (~40%)
+- 2023: ~32%
+
+Sources: [IMF Historical Public Finance Database (Mauro, Romeu, Binder & Zaman 2015)](https://www.imf.org/en/Publications/WP/Issues/2016/12/31/A-Modern-History-of-Fiscal-Prudence-and-Profligacy-43381); [IMF Fiscal Monitor Oct 2024](https://www.imf.org/en/Publications/FM/Issues/2024/10/23/fiscal-monitor-october-2024).
+
+Wagner's law (Wagner 1880s) predicted public-sector share would rise with industrialization. It did, from ~10% in 1880 to ~40% by 1980 across advanced economies, then plateaued. Mechanisms for the plateau: (a) advanced economies completed industrialization by ~1970 and shifted to services — Wagner's original mechanism saturated; (b) post-1980 industrializers (China, India, SE Asia) chose smaller states for political reasons; (c) Thatcher/Reagan-era policy reversal; (d) globalization-driven race to the bottom on corporate tax (OECD average corporate rate fell from ~48% in 1980 to ~23% by 2020, [OECD tax database](https://www.oecd.org/tax/tax-policy/tax-database/)); (e) practical political ceiling around ~55% of GDP that no large democracy has sustainably exceeded.
+
+**The relevant point for the freedom trajectory: world public-sector share was rising or flat over 2012–2023 while V-Dem democracy declined.** Public-sector size and democratic decline don't correlate at the world-aggregate level, and at the advanced-economy level if anything correlate mildly negatively (states grew slightly; freedom declined). So the "more public sector = more democratic decline" hypothesis fails the basic data.
+
+### Candidate causes for the 2010s inflection
+
+Five overlapping shocks in a 5-year window:
+
+1. **2008–09 GFC and 2010–12 Eurozone crisis.** Eroded trust in elite economic governance; post-2008 middle classes in advanced economies became receptive to populist alternatives. Greek bailout terms, US TARP backlash, Brexit roots all date here.
+2. **Smartphone + algorithmic social media saturation (2010–12).** Facebook hit 1B users in 2012; iPhone mass-adoption; engagement-optimizing feeds replaced chronological. Same inflection as US happiness decline ([`history-theory.md`](history-theory.md)) and global attention/polarization metrics.
+3. **Arab Spring reversion (2011 → 2013–14).** Mechanically reduced democracy counts (Egypt → Sisi, Syria civil war, Libya collapse) and chilled democratic optimism.
+4. **Xi (2012) and Putin's return (2012).** China abandoned "hide and bide," launched BRI in 2013; Russia cracked down on Bolotnaya protests, annexed Crimea 2014. End of post-Cold War liberal-order assumptions; emergence of authoritarian model competition.
+5. **Inequality at ~1920s levels** plus first post-war generation projected to be worse off than parents — eroded median-voter buy-in to the status quo.
+
+V-Dem's annual reports flag (1), (2), and (4) most prominently. Backsliding clusters are **bipartisan populist** rather than ideologically aligned — right-populist (Hungary/Orbán, Turkey/Erdoğan, India/Modi, Brazil/Bolsonaro, US/Trump-era per V-Dem) and left-populist (Venezuela, Nicaragua, Bolivia under Morales). The common factor is incumbent populist consolidating power against checks, not left vs. right.
+
+### Causal contestation — is it social media specifically?
+
+Pre-social-media media was already highly concentrated (3 US TV networks + a few newspapers of record). Chomsky-Herman's *Manufacturing Consent* (1988) is a sustained argument that the old system was *more* dangerous for democracy than commonly admitted. The shift wasn't from concentration to distribution; it was from **professional editorial gatekeeping** (slow, sometimes biased but fact-checked) to **algorithmic engagement optimization** across 5 global platforms (fast, viral, gamified).
+
+Whether the net effect on democracy is worse depends on which dimension dominates:
+- Number of voices: vastly higher now
+- Attention concentration: arguably similar via power-law dynamics
+- Deliberative quality: lower now
+- Speed/reach: much higher
+
+Empirical causal evidence is mixed: Allcott-Gentzkow estimated small fake-news effect on 2016 vote; [Bail et al. 2018](https://www.pnas.org/doi/10.1073/pnas.1804840115) found exposure to opposing views *increased* polarization; Müller-Schwarz found Facebook usage correlated with refugee-attacks in Germany; [Levy 2021](https://www.aeaweb.org/articles?id=10.1257/aer.20191777) found Facebook restrictions reduced political tension.
+
+**The defensible synthesis: economic-legitimacy collapse (factor 1) and inequality (factor 5) created demand for populism; the transformed media environment (factor 2) shaped which kind of populism scaled.** Social media is more transmission mechanism than root cause. Countries with similar social-media saturation but better post-GFC economic trajectories (e.g., Australia, Canada, Nordics) showed much milder backsliding, which is consistent with this attribution.
+
+### Is the decline real or just better-measured?
+
+Worth checking — analogous to crime statistics where reporting improvements can mimic increases. Probably 70–80% real change, 20–30% measurement effect:
+
+**Arguments for real change:**
+- Behavioral metrics aren't perception-dependent (shutdowns, journalists imprisoned, displacement are physical events)
+- De jure changes are concrete and datable (Hungary 2011 constitutional rewrite, Turkey 2017 referendum, Russia 2020 amendments, India 2019 Article 370)
+- Multiple independent methodologies converge on similar timing despite different traditions
+
+**Arguments for measurement effect:**
+- "Democratic backsliding" as a concept crystallized post-2010 (Bermeo 2016, Levitsky-Ziblatt 2018)
+- V-Dem launched in 2014; rapid coverage expansion
+- Contested reclassifications (India 2018 in V-Dem was debated internally)
+- Tightening of "liberal democracy" standards as the egalitarian dimension gained weight
+
+The Indian-rape-reporting analogy — where statistics rose because reporting improved while underlying incidence may not have — fits *cultural awareness* metrics (#MeToo era harassment reports) much better than constitutional/behavioral ones. Democracy indices live closer to the "did the legislature pass X law" end than the "how many people felt unsafe" end.
+
+---
+
 ## The dashboard, not a single number
 
 GDP is a *flow* of *market-priced* *current* *output*, with no adjustment for *distribution*, *sustainability*, *welfare*, *capability*, or *stock position*. Each gap corresponds to one missing dimension:
