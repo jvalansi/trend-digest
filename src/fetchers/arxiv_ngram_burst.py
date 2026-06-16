@@ -52,6 +52,7 @@ which what who when where why how
 can could may might must will would should shall
 new our both other another such same most one two three
 use uses using used can also however thus therefore moreover furthermore
+than rather either neither between among while across via
 """.split())
 
 # Phrase-level boilerplate to drop entirely.
@@ -62,6 +63,10 @@ PHRASE_STOPLIST = {
     "experimental results", "extensive experiments", "we evaluate",
     "we conduct", "show that", "shows that", "demonstrate that",
     "such as", "based on", "results show", "in particular",
+    "ablations show", "ablation shows", "ablation studies",
+    "llm agents increasingly", "agents increasingly rely",
+    "increasingly rely on", "increasingly used",
+    "distillation opd", "on-policy distillation opd",
 }
 
 TOKEN_RE = re.compile(r"[a-z][a-z0-9-]*")
