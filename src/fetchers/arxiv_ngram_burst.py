@@ -70,8 +70,10 @@ ATOM_NS  = {"atom": "http://www.w3.org/2005/Atom",
             "opensearch": "http://a9.com/-/spec/opensearch/1.1/"}
 
 
-def fetch_xml(url: str, max_retries: int = 4) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
+def fetch_xml(url: str, max_retries: int = 6) -> bytes:
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "trend-digest/1.0 (mailto:jvalansi1@gmail.com)",
+    })
     last_err: Exception | None = None
     for attempt in range(max_retries):
         try:
@@ -91,18 +93,17 @@ def fetch_xml(url: str, max_retries: int = 4) -> bytes:
     raise RuntimeError("unreachable")
 
 
-def build_query(categories: list[str], start_date: date, end_date: date) -> str:
-    cat_clause = "+OR+".join(f"cat:{c}" for c in categories)
+def build_query(category: str, start_date: date, end_date: date) -> str:
     date_clause = (
         f"submittedDate:%5B{start_date.strftime('%Y%m%d')}0000+TO+"
         f"{end_date.strftime('%Y%m%d')}2359%5D"
     )
-    return f"%28{cat_clause}%29+AND+{date_clause}"
+    return f"cat:{category}+AND+{date_clause}"
 
 
-def fetch_window(categories: list[str], start_date: date, end_date: date) -> list[str]:
-    query = build_query(categories, start_date, end_date)
-    seen_ids = set()
+def fetch_category(category: str, start_date: date, end_date: date,
+                   seen_ids: set[str]) -> list[str]:
+    query = build_query(category, start_date, end_date)
     texts = []
     start = 0
     while True:
@@ -123,11 +124,35 @@ def fetch_window(categories: list[str], start_date: date, end_date: date) -> lis
             title   = entry.findtext("atom:title",   default="", namespaces=ATOM_NS) or ""
             summary = entry.findtext("atom:summary", default="", namespaces=ATOM_NS) or ""
             texts.append(title + " " + summary)
-        print(f"  ... {len(texts)} abstracts ({start_date} → {end_date})", file=sys.stderr)
+        print(f"  ... {category}: {len(seen_ids):,} total abstracts ({start_date} → {end_date})",
+              file=sys.stderr)
         if len(entries) < PAGE_SIZE:
             break
         start += PAGE_SIZE
         time.sleep(RATE_DELAY)
+    return texts
+
+
+def month_chunks(start_date: date, end_date: date) -> list[tuple[date, date]]:
+    """Split [start_date, end_date] into ≤31-day chunks to keep each query under
+    arXiv's ~10k deep-pagination ceiling."""
+    chunks = []
+    cur = start_date
+    while cur <= end_date:
+        nxt = min(cur + timedelta(days=30), end_date)
+        chunks.append((cur, nxt))
+        cur = nxt + timedelta(days=1)
+    return chunks
+
+
+def fetch_window(categories: list[str], start_date: date, end_date: date) -> list[str]:
+    seen_ids: set[str] = set()
+    texts: list[str] = []
+    chunks = month_chunks(start_date, end_date)
+    for category in categories:
+        for chunk_start, chunk_end in chunks:
+            texts.extend(fetch_category(category, chunk_start, chunk_end, seen_ids))
+            time.sleep(RATE_DELAY)
     return texts
 
 
