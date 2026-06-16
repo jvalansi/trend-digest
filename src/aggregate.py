@@ -108,7 +108,7 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/altmetric.py", "--limit", "20"], "section": "Altmetric"},
         {"cmd": ["python", "src/fetchers/semantic_scholar.py", "--limit", "20", "--mode", "science"], "section": "Semantic Scholar"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "science"], "section": "Reddit Science"},
-        {"cmd": ["python", "src/fetchers/openalex_early_signal.py"], "section": "OpenAlex Early Signal", "section_limit": 25},
+        {"cmd": ["python", "src/fetchers/openalex_early_signal.py"], "section": "OpenAlex Early Signal", "section_limit": 5},
         {"cmd": ["python", "src/fetchers/arxiv_ngram_burst.py"], "section": "arXiv n-gram Burst", "section_limit": 15},
     ],
     "finance": [
