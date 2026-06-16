@@ -77,6 +77,7 @@ SOURCE_AUTHORITY = {
     "ETF Volume":         1.3,
     "Polymarket":         1.2,
     "OpenAlex Early Signal": 1.3,
+    "arXiv n-gram Burst": 1.3,
     "Nature":             1.4,
     "Science":            1.4,
     "New Scientist":      1.1,
@@ -108,6 +109,7 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/semantic_scholar.py", "--limit", "20", "--mode", "science"], "section": "Semantic Scholar"},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "science"], "section": "Reddit Science"},
         {"cmd": ["python", "src/fetchers/openalex_early_signal.py"], "section": "OpenAlex Early Signal", "section_limit": 25},
+        {"cmd": ["python", "src/fetchers/arxiv_ngram_burst.py"], "section": "arXiv n-gram Burst", "section_limit": 15},
     ],
     "finance": [
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "finance"], "is_rss": True},
