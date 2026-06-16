@@ -70,10 +70,25 @@ ATOM_NS  = {"atom": "http://www.w3.org/2005/Atom",
             "opensearch": "http://a9.com/-/spec/opensearch/1.1/"}
 
 
-def fetch_xml(url: str) -> bytes:
+def fetch_xml(url: str, max_retries: int = 4) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return r.read()
+    last_err: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code < 500 or attempt == max_retries - 1:
+                raise
+            last_err = e
+        except urllib.error.URLError as e:
+            if attempt == max_retries - 1:
+                raise
+            last_err = e
+        backoff = RATE_DELAY * (2 ** attempt)
+        print(f"  arXiv API transient error ({last_err}); retrying in {backoff:.0f}s", file=sys.stderr)
+        time.sleep(backoff)
+    raise RuntimeError("unreachable")
 
 
 def build_query(categories: list[str], start_date: date, end_date: date) -> str:
