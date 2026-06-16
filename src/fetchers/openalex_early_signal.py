@@ -2,26 +2,29 @@
 """
 OpenAlex early-signal fetcher — daily batch sweep of level-3 academic concepts.
 
-Cycles through all ~24,749 level-3 concepts once per quarter (~65 working days).
+Cycles through all ~24,749 level-3 concepts once per quarter, partitioned by
+working day: on weekday N of the quarter, scans concepts[N*T/D : (N+1)*T/D]
+where T = total concepts and D = working days in the quarter. Concepts are
+sorted by ID so the partition is reproducible. No mutable state.
+
 Surfaces concepts with ≥200 papers in the trailing 12 months and 5–50× growth
-vs the same 12-month window 5 years prior.
+in *share of corpus* vs the same 12-month window 5 years prior. Normalizing
+against global corpus growth (~2.8× over 5 years) removes the false positives
+that raw-count thresholds produce for stagnant fields riding overall publication
+inflation.
 
 Always emits a batch summary item (even when nothing found) so the digest shows
 sweep progress. Individual signal items are emitted for each hit.
 
-State file:    data/openalex_sweep_state.json
 Concept cache: data/openalex_concepts_l3.json  (refreshed every 30 days)
 
 Usage:
-  python fetchers/openalex_early_signal.py [--batch-size N]
+  python fetchers/openalex_early_signal.py
 
 Output: JSON array of normalized items to stdout.
 """
 
-import argparse
-import calendar
 import json
-import math
 import os
 import sys
 import time
@@ -32,7 +35,6 @@ from datetime import datetime, date, timedelta, timezone
 
 DATA_DIR       = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data")
 CONCEPTS_CACHE = os.path.join(DATA_DIR, "openalex_concepts_l3.json")
-STATE_FILE     = os.path.join(DATA_DIR, "openalex_sweep_state.json")
 
 BASE   = "https://api.openalex.org"
 MAILTO = "jvalansi1@gmail.com"
@@ -83,7 +85,7 @@ def load_or_refresh_concepts() -> list[dict]:
 
 def count_papers(concept_id: str, from_date: date, to_date: date) -> int:
     params = urllib.parse.urlencode({
-        "filter": f"concepts.id:{concept_id},from_publication_date:{from_date},to_publication_date:{to_date}",
+        "filter": f"concepts.id:{concept_id},type:article|preprint,from_publication_date:{from_date},to_publication_date:{to_date}",
         "per-page": 1,
         "select": "id",
         "mailto": MAILTO,
@@ -95,8 +97,20 @@ def count_papers(concept_id: str, from_date: date, to_date: date) -> int:
         return -1
 
 
+def count_corpus(from_date: date, to_date: date) -> int:
+    params = urllib.parse.urlencode({
+        "filter": f"type:article|preprint,from_publication_date:{from_date},to_publication_date:{to_date}",
+        "per-page": 1,
+        "select": "id",
+        "mailto": MAILTO,
+    })
+    data = fetch_json(f"{BASE}/works?{params}")
+    return int(data["meta"]["count"])
+
+
 def check_concept(concept: dict, recent_from: date, recent_to: date,
-                  base_from: date, base_to: date) -> dict | None:
+                  base_from: date, base_to: date,
+                  total_recent: int, total_base: int) -> dict | None:
     cid = concept["id"]
     n_recent = count_papers(cid, recent_from, recent_to)
     if n_recent < MIN_PAPERS_RECENT:
@@ -104,64 +118,55 @@ def check_concept(concept: dict, recent_from: date, recent_to: date,
     n_base = count_papers(cid, base_from, base_to)
     if n_base < 0 or n_recent < 0:
         return None
-    ratio = n_recent / max(n_base, 1)
+    # Share of corpus: (n_recent/total_recent) / (n_base/total_base)
+    # Equivalent to raw ratio divided by the global corpus-growth factor.
+    share_recent = n_recent / total_recent
+    share_base   = n_base   / total_base if n_base > 0 else 0.5 / total_base
+    ratio        = share_recent / share_base
+    raw_ratio    = n_recent / max(n_base, 1)
     if ratio < MIN_RATIO or ratio > MAX_RATIO:
         return None
     return {"name": concept["name"], "id": concept["id"],
             "n_base": n_base, "n_recent": n_recent,
             "recent_from": recent_from.isoformat(), "recent_to": recent_to.isoformat(),
             "base_from": base_from.isoformat(), "base_to": base_to.isoformat(),
-            "ratio": ratio}
-
-
-def load_state() -> dict:
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE) as f:
-            return json.load(f)
-    return {"offset": 0, "cycle": 1}
-
-
-def save_state(state: dict):
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f, indent=2)
+            "ratio": ratio, "raw_ratio": raw_ratio}
 
 
 def get_quarter(d: date) -> str:
     return f"{d.year}-Q{(d.month - 1) // 3 + 1}"
 
 
-def quarter_working_days(d: date) -> int:
-    q = (d.month - 1) // 3
-    months = [q * 3 + 1, q * 3 + 2, q * 3 + 3]
-    total = 0
-    for m in months:
-        _, days_in_month = calendar.monthrange(d.year, m)
-        total += sum(1 for day in range(1, days_in_month + 1) if date(d.year, m, day).weekday() < 5)
-    return total
+def quarter_start(d: date) -> date:
+    return date(d.year, ((d.month - 1) // 3) * 3 + 1, 1)
 
 
-def next_quarter_start(d: date) -> date:
+def quarter_end(d: date) -> date:
     q = (d.month - 1) // 3
     if q == 3:
-        return date(d.year + 1, 1, 1)
-    return date(d.year, q * 3 + 4, 1)
+        return date(d.year + 1, 1, 1) - timedelta(days=1)
+    return date(d.year, q * 3 + 4, 1) - timedelta(days=1)
+
+
+def working_days_in_range(start: date, end: date) -> int:
+    """Count weekdays in [start, end] inclusive."""
+    count = 0
+    d = start
+    while d <= end:
+        if d.weekday() < 5:
+            count += 1
+        d += timedelta(days=1)
+    return count
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--batch-size", type=int, default=0,
-                        help="Concepts per run (default: 0 = auto, sized to fit the quarter)")
-    args = parser.parse_args()
-
     concepts = load_or_refresh_concepts()
-    state    = load_state()
-    offset   = state["offset"]
-    total    = len(concepts)
+    concepts.sort(key=lambda c: c["id"])
+    total = len(concepts)
 
     now             = datetime.now(timezone.utc).isoformat()
     today           = date.today()
     current_quarter = get_quarter(today)
-    cycle_quarter   = state.get("cycle_quarter", "")
 
     # Trailing 12 months ending yesterday, vs same window 5 years prior
     recent_to   = today - timedelta(days=1)
@@ -169,15 +174,15 @@ def main():
     base_to     = date(recent_to.year - 5, recent_to.month, recent_to.day)
     base_from   = date(recent_from.year - 5, recent_from.month, recent_from.day)
 
-    # If the cycle just completed (offset reset to 0) and we're still in the same
-    # quarter, wait — don't start the next cycle until the quarter rolls over.
-    if offset == 0 and cycle_quarter == current_quarter:
-        nq = next_quarter_start(today)
-        nq_label = get_quarter(nq)
-        print(f"  Sweep complete for {current_quarter} — waiting for {nq_label}", file=sys.stderr)
+    q_start    = quarter_start(today)
+    q_end      = quarter_end(today)
+    total_days = working_days_in_range(q_start, q_end)
+
+    if today.weekday() >= 5:
+        print(f"  Weekend — sweep paused for {current_quarter}", file=sys.stderr)
         items = [{
-            "title":        f"Early signal sweep — waiting for {nq_label}",
-            "summary":      f"This quarter's full sweep of {total:,} concepts is complete (cycle {state['cycle'] - 1}). Next sweep starts in {nq_label}.",
+            "title":        f"Early signal sweep — paused (weekend)",
+            "summary":      f"Sweep runs on weekdays only. {total:,} concepts partitioned across {total_days} working days of {current_quarter}.",
             "url":          "https://openalex.org/concepts",
             "source":       "OpenAlex Early Signal",
             "category":     "science",
@@ -188,48 +193,34 @@ def main():
         print(json.dumps(items, ensure_ascii=False))
         return
 
-    # Starting a new cycle (either first ever run, or the quarter has changed)
-    if offset == 0:
-        state["cycle_quarter"] = current_quarter
-        if args.batch_size == 0:
-            working_days = quarter_working_days(today)
-            state["batch_size"] = math.ceil(total / working_days)
-            print(f"  Auto batch size: {state['batch_size']} ({working_days} working days in {current_quarter})", file=sys.stderr)
+    day_idx       = working_days_in_range(q_start, today) - 1
+    start_concept = day_idx * total // total_days
+    end_concept   = (day_idx + 1) * total // total_days
+    batch         = concepts[start_concept:end_concept]
 
-    batch_size    = args.batch_size if args.batch_size > 0 else state.get("batch_size", math.ceil(total / 65))
-    batch         = concepts[offset: offset + batch_size]
-    batch_num     = offset // batch_size + 1
-    total_batches = math.ceil(total / batch_size)
-
-    print(f"  Sweeping concepts {offset}–{offset + len(batch) - 1} of {total} "
-          f"(batch {batch_num}/{total_batches}, cycle {state['cycle']}, "
+    print(f"  Sweeping concepts {start_concept}–{end_concept - 1} of {total} "
+          f"(day {day_idx + 1}/{total_days} of {current_quarter}, "
           f"{base_from}–{base_to} vs {recent_from}–{recent_to})", file=sys.stderr)
+
+    total_recent = count_corpus(recent_from, recent_to)
+    total_base   = count_corpus(base_from,   base_to)
+    corpus_growth = total_recent / total_base
+    print(f"  Corpus: {total_base:,} → {total_recent:,} works ({corpus_growth:.2f}× growth)", file=sys.stderr)
 
     hits = []
     with ThreadPoolExecutor(max_workers=10) as pool:
-        futures = {pool.submit(check_concept, c, recent_from, recent_to, base_from, base_to): c for c in batch}
+        futures = {pool.submit(check_concept, c, recent_from, recent_to, base_from, base_to,
+                               total_recent, total_base): c for c in batch}
         for future in as_completed(futures):
             result = future.result()
             if result:
                 hits.append(result)
     hits.sort(key=lambda h: h["ratio"], reverse=True)
 
-    # Advance state
-    next_offset = offset + batch_size
-    if next_offset >= total:
-        state["offset"] = 0
-        state["cycle"]  = state.get("cycle", 1) + 1
-        print(f"  Full sweep complete — starting cycle {state['cycle']}", file=sys.stderr)
-    else:
-        state["offset"] = next_offset
-    state["last_run"] = datetime.now(timezone.utc).date().isoformat()
-    save_state(state)
-
-    print(f"  {len(hits)} signals in batch {batch_num}/{total_batches}", file=sys.stderr)
+    print(f"  {len(hits)} signals in day {day_idx + 1}/{total_days}", file=sys.stderr)
 
     items = []
 
-    # Always emit a batch summary so the digest shows sweep progress
     if hits:
         top_names = ", ".join(h["name"] for h in hits[:3])
         summary_text = f"{len(hits)} signal{'s' if len(hits) != 1 else ''} found: {top_names}"
@@ -239,12 +230,12 @@ def main():
         summary_text = "No signals found"
 
     items.append({
-        "title":        f"Early signal sweep — batch {batch_num}/{total_batches}",
-        "summary":      f"{summary_text}. Scanned concepts {offset:,}–{offset + len(batch) - 1:,} of {total:,} (cycle {state['cycle'] - (1 if next_offset >= total else 0)}, threshold: ≥{MIN_PAPERS_RECENT} papers in trailing 12 months, {MIN_RATIO:.0f}–{MAX_RATIO:.0f}× growth vs same window 5 years prior).",
+        "title":        f"Early signal sweep — day {day_idx + 1}/{total_days} of {current_quarter}",
+        "summary":      f"{summary_text}. Scanned concepts {start_concept:,}–{end_concept - 1:,} of {total:,} (threshold: ≥{MIN_PAPERS_RECENT} papers in trailing 12 months, {MIN_RATIO:.0f}–{MAX_RATIO:.0f}× share-of-corpus growth vs same window 5 years prior; corpus grew {corpus_growth:.2f}×).",
         "url":          "https://openalex.org/concepts",
         "source":       "OpenAlex Early Signal",
         "category":     "science",
-        "engagement":   0.1,  # small non-zero so it doesn't get sorted out entirely
+        "engagement":   0.1,
         "fetched_at":   now,
         "published_at": None,
     })
@@ -254,7 +245,7 @@ def main():
         concept_slug = h["id"].split("/")[-1]
         items.append({
             "title":        h["name"],
-            "summary":      f"{h['n_base']:,} → {h['n_recent']:,} papers ({h['base_from']}–{h['base_to']} vs {h['recent_from']}–{h['recent_to']}, {h['ratio']:.1f}×)",
+            "summary":      f"{h['n_base']:,} → {h['n_recent']:,} papers ({h['base_from']}–{h['base_to']} vs {h['recent_from']}–{h['recent_to']}, {h['ratio']:.1f}× share, {h['raw_ratio']:.1f}× raw)",
             "url":          f"https://openalex.org/concepts/{concept_slug}",
             "source":       "OpenAlex Early Signal",
             "category":     "science",

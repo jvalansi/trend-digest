@@ -66,6 +66,20 @@ Global publication volume grows ~3–4%/year, so a 5-year baseline ratio is ~1.1
 
 Semaglutide's ratio over the same window: **316 → 1,419 = 4.5×** (and ~466× from its near-zero 2010 baseline).
 
+## Threshold: Share-of-Corpus, Not Raw Counts
+
+The OpenAlex corpus itself is growing fast: ~2.8× over rolling 5-year windows as of 2026. A raw 5× threshold therefore lets through any field that merely tracks publication inflation, producing false positives like "Robust control" (7× raw, 2.5× share) and "Hardware emulation" (5.6× raw, 2.0× share).
+
+The fetcher applies share-of-corpus normalization:
+
+```
+share_ratio = (n_recent / total_recent) / (n_base / total_base)
+```
+
+which is equivalent to dividing the raw concept ratio by the global corpus-growth factor. A `share_ratio` of 5× means the concept's share of all OpenAlex works grew 5-fold — that's a real change in field composition, not just background inflation.
+
+**Known artifact this does NOT filter: retroactive concept-tagging.** OpenAlex periodically reclassifies works in bulk, producing apparent step-changes that don't reflect field emergence. These show a flat year-by-year trace until one year jumps 5–10× by itself — e.g. Qualia, Sulfur cycle, and Audit trail each held ~100–150 papers/year from 2020–2024 then jumped to 1,100–1,800 in 2025 simultaneously. The piecewise-breakpoint check below catches some of these, but the simplest discriminator is a smoothness test: a real signal ramps over multiple consecutive years.
+
 ---
 
 ## Acceleration Detection: Piecewise Log-Linear Breakpoint
@@ -102,8 +116,7 @@ To surface *unknown* exploding fields rather than validating known ones, the pla
 - Output: ranked list of concepts by 2019→2024 growth ratio
 
 **Threshold for "exploding":**
-- ≥ 200 papers in 2024 (minimum signal floor)
-- 2024 / 2019 ratio ≥ 3–4× (above publication-volume baseline)
-- Interesting zone: **5–50×** — large enough to be real, small enough that mainstream hasn't noticed
+- ≥ 200 papers in the trailing 12 months (minimum signal floor)
+- Share-of-corpus ratio in **5–50×** band (see "Threshold: Share-of-Corpus, Not Raw Counts" above)
 
 **Known artifact to filter:** OpenAlex occasionally reassigns concept tags in bulk, causing apparent step-changes that aren't real. Extreme ratios (>100×) should be cross-checked against prior-year data before being treated as signals.
