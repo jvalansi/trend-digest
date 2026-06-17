@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """
-arXiv n-gram burst fetcher — surfaces emerging vocabulary in ML/CS/AI abstracts.
+arXiv n-gram burst fetcher — surfaces emerging vocabulary across arXiv subject categories.
 
-Pulls titles + abstracts from a recent window and a baseline window (default: same
-window 1 year prior), extracts 2- and 3-grams with content-word endpoints, and
-ranks by share-of-corpus growth:
+Cycles through all ~146 leaf categories from arxiv.org/category_taxonomy once per
+quarter, partitioned by working day: on weekday N of the quarter, scans
+categories[N*T/D : (N+1)*T/D] where T = total categories and D = working days in
+the quarter. Categories are sorted alphabetically so the partition is reproducible.
+No mutable state.
+
+For each day's category slice, pulls titles + abstracts from a recent window and
+a baseline window (default: same 90-day window 1 year prior), extracts 2- and
+3-grams with content-word endpoints, and ranks by share-of-corpus growth:
 
     ratio = (n_recent / total_tokens_recent) / ((n_base + 1) / (total_tokens_base + 1))
 
@@ -13,8 +19,14 @@ The +1 smoothing keeps never-before-seen terms scorable (and bounds the ratio).
 Filters: ≥MIN_RECENT_FREQ occurrences in recent window, content-word endpoints,
 length 2–3, not in PHRASE_STOPLIST.
 
+Always emits a sweep-progress summary item (even when nothing found) so the digest
+shows where in the cycle we are. Individual burst terms are emitted as separate items.
+
+Category cache: data/arxiv_categories.json  (refreshed every 30 days)
+
 Usage:
   python fetchers/arxiv_ngram_burst.py
+  python fetchers/arxiv_ngram_burst.py --categories cs.LG,cs.CL  # override rotation
   python fetchers/arxiv_ngram_burst.py --recent-from 2017-06-01 --recent-to 2017-08-31
 
 Output: JSON array of normalized items to stdout.
@@ -22,6 +34,7 @@ Output: JSON array of normalized items to stdout.
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -31,16 +44,19 @@ from collections import Counter
 from datetime import datetime, date, timedelta, timezone
 from xml.etree import ElementTree as ET
 
-ARXIV_API   = "https://export.arxiv.org/api/query"
-PAGE_SIZE   = 1000
-RATE_DELAY  = 3.0  # arXiv asks for ≥3 seconds between requests
+ARXIV_API      = "https://export.arxiv.org/api/query"
+TAXONOMY_URL   = "https://arxiv.org/category_taxonomy"
+DATA_DIR       = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data")
+CATEGORY_CACHE = os.path.join(DATA_DIR, "arxiv_categories.json")
+PAGE_SIZE      = 1000
+RATE_DELAY     = 3.0  # arXiv asks for ≥3 seconds between requests
 
-MIN_RECENT_FREQ = 20
+MIN_RECENT_FREQ = 5    # lowered from 20 since per-day category slice is much smaller
 MIN_RATIO       = 5.0
 NGRAM_LENGTHS   = (2, 3)
 TOP_N           = 20
 
-DEFAULT_CATEGORIES = ["cs.LG", "cs.CL", "cs.AI", "cs.CV"]
+CATEGORY_RE = re.compile(r"<h4>([a-zA-Z\-]+\.[a-zA-Z\-]+)\s*<span>\(([^)]+)\)</span></h4>")
 
 # Endpoint stop-words: bigrams/trigrams may not start or end with these.
 STOPWORDS = set("""
@@ -96,6 +112,55 @@ def fetch_xml(url: str, max_retries: int = 6) -> bytes:
         print(f"  arXiv API transient error ({last_err}); retrying in {backoff:.0f}s", file=sys.stderr)
         time.sleep(backoff)
     raise RuntimeError("unreachable")
+
+
+def load_or_refresh_categories() -> list[dict]:
+    if os.path.exists(CATEGORY_CACHE):
+        age_days = (time.time() - os.path.getmtime(CATEGORY_CACHE)) / 86400
+        if age_days < 30:
+            with open(CATEGORY_CACHE) as f:
+                cats = json.load(f)
+            print(f"  Loaded {len(cats)} cached arXiv categories ({age_days:.0f}d old)", file=sys.stderr)
+            return cats
+
+    print(f"  Fetching arXiv category taxonomy from {TAXONOMY_URL}...", file=sys.stderr)
+    req = urllib.request.Request(TAXONOMY_URL, headers={
+        "User-Agent": "trend-digest/1.0 (mailto:jvalansi1@gmail.com)",
+    })
+    with urllib.request.urlopen(req, timeout=30) as r:
+        html = r.read().decode()
+    cats = [{"id": m.group(1), "name": m.group(2).strip()} for m in CATEGORY_RE.finditer(html)]
+    if not cats:
+        raise RuntimeError("Failed to parse any categories from arXiv taxonomy page")
+    with open(CATEGORY_CACHE, "w") as f:
+        json.dump(cats, f, indent=2)
+    print(f"  Cached {len(cats)} arXiv categories", file=sys.stderr)
+    return cats
+
+
+def get_quarter(d: date) -> str:
+    return f"{d.year}-Q{(d.month - 1) // 3 + 1}"
+
+
+def quarter_start(d: date) -> date:
+    return date(d.year, ((d.month - 1) // 3) * 3 + 1, 1)
+
+
+def quarter_end(d: date) -> date:
+    q = (d.month - 1) // 3
+    if q == 3:
+        return date(d.year + 1, 1, 1) - timedelta(days=1)
+    return date(d.year, q * 3 + 4, 1) - timedelta(days=1)
+
+
+def working_days_in_range(start: date, end: date) -> int:
+    count = 0
+    d = start
+    while d <= end:
+        if d.weekday() < 5:
+            count += 1
+        d += timedelta(days=1)
+    return count
 
 
 def build_query(category: str, start_date: date, end_date: date) -> str:
@@ -199,26 +264,65 @@ def main():
     parser.add_argument("--recent-from", help="ISO date for recent window start (default: 90 days ago)")
     parser.add_argument("--recent-to",   help="ISO date for recent window end (default: today)")
     parser.add_argument("--lookback-years", type=int, default=1)
-    parser.add_argument("--categories", default=",".join(DEFAULT_CATEGORIES))
+    parser.add_argument("--categories", help="Comma-separated category override (default: today's slice of the quarterly rotation)")
     parser.add_argument("--top", type=int, default=TOP_N)
     parser.add_argument("--min-freq", type=int, default=MIN_RECENT_FREQ)
     parser.add_argument("--min-ratio", type=float, default=MIN_RATIO)
     args = parser.parse_args()
 
-    categories = [c.strip() for c in args.categories.split(",")]
-    today      = date.today()
+    today           = date.today()
+    now             = datetime.now(timezone.utc).isoformat()
+    current_quarter = get_quarter(today)
     recent_to   = date.fromisoformat(args.recent_to)   if args.recent_to   else today
     recent_from = date.fromisoformat(args.recent_from) if args.recent_from else recent_to - timedelta(days=90)
     base_to     = date(recent_to.year   - args.lookback_years, recent_to.month,   recent_to.day)
     base_from   = date(recent_from.year - args.lookback_years, recent_from.month, recent_from.day)
-    now         = datetime.now(timezone.utc).isoformat()
 
-    print(f"  Fetching arXiv {categories}", file=sys.stderr)
+    if args.categories:
+        categories = [c.strip() for c in args.categories.split(",")]
+        day_idx = total_days = None
+        slice_label = "+".join(categories)
+        partition_note = f"manual override ({slice_label})"
+    else:
+        all_cats = sorted(load_or_refresh_categories(), key=lambda c: c["id"])
+        total = len(all_cats)
+        q_start    = quarter_start(today)
+        q_end      = quarter_end(today)
+        total_days = working_days_in_range(q_start, q_end)
+
+        if today.weekday() >= 5:
+            print(f"  Weekend — sweep paused for {current_quarter}", file=sys.stderr)
+            items = [{
+                "title":        "arXiv burst sweep — paused (weekend)",
+                "summary":      f"Sweep runs on weekdays only. {total} arXiv categories partitioned across {total_days} working days of {current_quarter}.",
+                "url":          "https://arxiv.org/category_taxonomy",
+                "source":       "arXiv n-gram Burst",
+                "category":     "science",
+                "engagement":   0.1,
+                "fetched_at":   now,
+                "published_at": None,
+            }]
+            print(json.dumps(items, ensure_ascii=False))
+            return
+
+        day_idx   = working_days_in_range(q_start, today) - 1
+        start_cat = day_idx * total // total_days
+        end_cat   = (day_idx + 1) * total // total_days
+        batch     = all_cats[start_cat:end_cat]
+        categories = [c["id"] for c in batch]
+        slice_label = ", ".join(categories) if categories else "(empty slice)"
+        partition_note = (
+            f"day {day_idx + 1}/{total_days} of {current_quarter}, "
+            f"categories {start_cat}–{end_cat - 1} of {total}"
+        )
+
+    print(f"  Sweep: {partition_note}", file=sys.stderr)
+    print(f"  Categories: {slice_label}", file=sys.stderr)
     print(f"  Recent:   {recent_from} → {recent_to}", file=sys.stderr)
     print(f"  Baseline: {base_from} → {base_to}", file=sys.stderr)
 
-    recent_texts = fetch_window(categories, recent_from, recent_to)
-    base_texts   = fetch_window(categories, base_from,   base_to)
+    recent_texts = fetch_window(categories, recent_from, recent_to) if categories else []
+    base_texts   = fetch_window(categories, base_from,   base_to)   if categories else []
 
     print(f"  Tokenizing {len(recent_texts):,} recent + {len(base_texts):,} baseline abstracts",
           file=sys.stderr)
@@ -243,16 +347,24 @@ def main():
     top = scored[:args.top]
     print(f"  {len(scored)} terms passing thresholds; surfacing top {len(top)}", file=sys.stderr)
 
-    cat_label = "+".join(categories)
+    if day_idx is not None:
+        header_title = f"arXiv burst sweep — day {day_idx + 1}/{total_days} of {current_quarter}"
+    else:
+        header_title = f"arXiv burst sweep — {slice_label}"
+
     items = [{
-        "title":        f"arXiv burst sweep — {cat_label}",
+        "title":        header_title,
         "summary":      (
+            f"Scanned {slice_label}. "
             f"{len(top)} emerging term{'s' if len(top) != 1 else ''} in "
             f"{len(recent_texts):,} recent abstracts ({recent_from}→{recent_to}) vs "
             f"{len(base_texts):,} baseline ({base_from}→{base_to}). "
             f"Threshold: ≥{args.min_freq} occurrences, ≥{args.min_ratio:.0f}× share growth."
         ),
-        "url":          f"https://arxiv.org/list/{categories[0]}/recent",
+        "url":          (
+            f"https://arxiv.org/list/{categories[0]}/recent"
+            if categories else "https://arxiv.org/category_taxonomy"
+        ),
         "source":       "arXiv n-gram Burst",
         "category":     "science",
         "engagement":   0.1,
