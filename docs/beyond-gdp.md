@@ -314,6 +314,72 @@ The Indian-rape-reporting analogy — where statistics rose because reporting im
 
 ---
 
+## The long view — concentration as default, 1945–1980 as anomaly
+
+A common reading of the trends discussed above is that *concentration* (of wealth, capability, attention, political power) is a recent phenomenon. The long view says the opposite: **concentration is the historical default; the 1945–1980 distribution that frames our intuitions was a 35-year anomaly.**
+
+### The dual-use pattern and the iron law of oligarchy
+
+Every major communication and coordination technology has followed a two-phase pattern: initial distribution (low entry barriers, cheap experimentation) followed by consolidation (network effects, capital intensity, regulatory infrastructure favoring scale players).
+
+| Technology | Phase 1 — distributed | Phase 2 — consolidated |
+|---|---|---|
+| Printing press (1450) | Pamphlets break Church information monopoly | Nation-state and confessional consolidation (Westphalia 1648) |
+| Telegraph (1840s) | News flows distributed across cities | Military/state command centralizes; AP-style wire monopolies |
+| Radio (1920s) | Amateur ham operators, local stations | Mass propaganda regimes; Hitler, Stalin, FCC consolidation |
+| TV (1950s) | Many small broadcasters | 3-network US oligopoly within ~15 years |
+| Internet Web 1.0 (1995) | Personal websites, distributed publishing | Web 2.0 platforms (Google, Facebook, Amazon) by ~2010 |
+| Mobile (2007) | Open developer ecosystems | App store gatekeeping by Apple/Google |
+| AI (2017–) | Open research, distributed compute | Frontier model training requires ~10 organizations' capital |
+
+Robert Michels named this pattern in *Political Parties* (1911): the "iron law of oligarchy" — every organization, including those founded explicitly to distribute power, tends toward oligarchic consolidation as it scales. Each tech round produces a temporary public capability gain, then the system (state + capital) deploys at scale and captures the durable advantage. The public uses each tool; the system uses it better and longer.
+
+### Concentration as the historical baseline
+
+Across most of recorded history, power was severely concentrated:
+
+- Pre-industrial societies: monarchs, landed nobility, church hierarchies controlled most wealth and force.
+- Gilded Age (~1870–1920): top 1% US wealth share ~45%; Rockefeller/Carnegie/Morgan trusts; child labor; near-zero income tax; weak unions.
+- Inter-war (~1920–1940): partial reversal in democracies (income tax introduced, antitrust enforcement, early social insurance) but offset by fascist and Stalinist concentration elsewhere.
+
+Piketty's central finding: averaged over recorded history, **r ≈ 4–5%** (return on capital) while **g ≈ 0%** for ~99% of human history. r > g is the mathematical default and produces concentration over time. ([Piketty *Capital in the Twenty-First Century*, 2014](https://www.hup.harvard.edu/books/9780674979857)).
+
+### The 1945–1980 anomaly
+
+A unique set of conditions briefly produced g > r and substantial power distribution:
+
+- **Physical capital destruction.** WWII destroyed ~30% of European capital stock; combined with post-war reconstruction, g hit 4–6% in Western Europe.
+- **Top marginal tax rates 70–90%** in US, UK, Sweden, France compressed r.
+- **Strong unions.** US private-sector union density peaked at ~35% in 1954, ~50%+ in many European countries.
+- **Bretton Woods capital controls** limited cross-border capital mobility; states could tax and regulate without race-to-bottom.
+- **Cold War competition** incentivized welfare states as an anti-Communist measure.
+- **Cheap energy** (oil under $20/barrel in 2024 dollars through ~1973) and **demographic dividend** (large young working-age cohort).
+- **Living memory of Depression and fascism** sustained political support for redistribution.
+
+When those conditions ended around 1970–1980 (1971 Nixon shock ending Bretton Woods; 1973 and 1979 oil shocks; stagflation discrediting Keynesian consensus; capital mobility resuming; Reagan-Thatcher policy turn), the underlying r > g default reasserted.
+
+### Three nested timelines of current re-concentration
+
+The current cycle has been running at different speeds across three layers:
+
+| Timeline | Started | Peaked / current level | Source |
+|---|---|---|---|
+| Economic concentration | ~1980 | US top 0.1% wealth share ~18% in 2024 (1920s level was ~22%); industry HHI rising across 75% of sectors since 1980 | [Saez-Zucman](https://gabriel-zucman.eu/files/SaezZucman2020JEP.pdf); [Grullon-Larkin-Michaely 2019](https://academic.oup.com/rof/article/23/4/697/5477414) |
+| Democratic depth erosion | ~2010 | V-Dem LDI at 1985 levels; FH 18 consecutive years of decline | [V-Dem 2024](https://v-dem.net/documents/43/v-dem_dr2024_lowres.pdf); [FH 2024](https://freedomhouse.org/report/freedom-world/2024/mounting-damage-flawed-elections-and-armed-conflict) |
+| AI compute concentration | ~2017 | Frontier training requires ~10 organizations globally; >$100M per major training run | [Epoch AI compute trends](https://epochai.org/) |
+
+The **~25-30 year lag between economic concentration starting (1980) and democratic erosion (2010) is probably causal**: economic concentration accumulated for three decades; the 2008 GFC exposed the legitimacy crisis; populist responses emerged 2010–2012; formal democratic backsliding followed. The political system absorbed economic divergence for as long as it could before institutional decay became visible.
+
+AI compute concentration starting 2017 is the most extreme version of the pattern yet — the capital threshold for frontier participation is rising faster than any prior technology — and the political/regulatory response is still pre-2010-democracy-equivalent (early populist anger, no consolidated institutional response). If the lag pattern holds, expect ~2040–2045 for AI-driven democratic legitimacy crisis to crystallize politically.
+
+### What this implies for the framing
+
+The right question is not "why is concentration happening" — that's the default. The right question is **"what specifically broke down in the 1970s that ended the brief distribution, and is any subset of those conditions reproducible?"** Most of them aren't (no one wants war-induced capital destruction; cheap-energy era is over; demographic dividend has reversed in advanced economies). The reproducible candidates are tax policy (returning to mid-century top marginal rates), capital controls (limited Tobin-tax revivals exist), antitrust revival (Khan-era FTC, EU DMA), and international tax coordination (OECD 15% minimum corporate tax). Each is contested and partial. None individually replicates the 1945–1980 distribution package.
+
+The dual-use pattern then continues to play out underneath, with each tech round delivering temporary public capability and durable system consolidation, until or unless the structural conditions for distribution are reconstructed.
+
+---
+
 ## The dashboard, not a single number
 
 GDP is a *flow* of *market-priced* *current* *output*, with no adjustment for *distribution*, *sustainability*, *welfare*, *capability*, or *stock position*. Each gap corresponds to one missing dimension:
