@@ -51,10 +51,10 @@ CATEGORY_CACHE = os.path.join(DATA_DIR, "arxiv_categories.json")
 PAGE_SIZE      = 1000
 RATE_DELAY     = 3.0  # arXiv asks for ≥3 seconds between requests
 
-MIN_RECENT_FREQ = 5    # lowered from 20 since per-day category slice is much smaller
-MIN_RATIO       = 5.0
+MIN_RECENT_FREQ = 8    # lowered from 20 since per-day category slice is much smaller
+MIN_RATIO       = 8.0
 NGRAM_LENGTHS   = (2, 3)
-TOP_N           = 20
+TOP_N           = 10
 
 CATEGORY_RE = re.compile(r"<h4>([a-zA-Z\-]+\.[a-zA-Z\-]+)\s*<span>\(([^)]+)\)</span></h4>")
 
@@ -83,6 +83,12 @@ PHRASE_STOPLIST = {
     "llm agents increasingly", "agents increasingly rely",
     "increasingly rely on", "increasingly used",
     "distillation opd", "on-policy distillation opd",
+    "study we propose", "study we present", "study we show",
+    "study we develop", "study we introduce", "study we demonstrate",
+    "paper we propose", "paper we present", "paper we show",
+    "paper we introduce", "paper we develop", "paper we demonstrate",
+    "similarity analysis", "feature selection", "natural images",
+    "elemental composition",
 }
 
 TOKEN_RE = re.compile(r"[a-z][a-z0-9-]*")
@@ -240,7 +246,14 @@ def good_ngram(ngram: tuple[str, ...]) -> bool:
     if any(YEAR_RE.search(tok) for tok in ngram):
         return False
     phrase = " ".join(ngram)
-    return phrase not in PHRASE_STOPLIST
+    if phrase in PHRASE_STOPLIST:
+        return False
+    # Reject trigrams whose inner bigrams are stoplisted (catches e.g.
+    # "study we propose" via the "we propose" bigram).
+    if len(ngram) == 3:
+        if " ".join(ngram[:2]) in PHRASE_STOPLIST or " ".join(ngram[1:]) in PHRASE_STOPLIST:
+            return False
+    return True
 
 
 def count_ngrams(texts: list[str]) -> tuple[Counter, int]:
@@ -344,8 +357,24 @@ def main():
         scored.append((ng, cnt, base_cnt, ratio))
 
     scored.sort(key=lambda x: x[3], reverse=True)
-    top = scored[:args.top]
-    print(f"  {len(scored)} terms passing thresholds; surfacing top {len(top)}", file=sys.stderr)
+
+    # Suppress lower-ranked variants that share a contiguous 2-token substring
+    # with a higher-ranked term (e.g. "on-policy distillation opd" given
+    # "on-policy distillation" already passed).
+    def bigrams(ng: tuple[str, ...]) -> set[tuple[str, str]]:
+        return {(ng[i], ng[i + 1]) for i in range(len(ng) - 1)}
+
+    deduped: list = []
+    kept_bigrams: set[tuple[str, str]] = set()
+    for entry in scored:
+        bg = bigrams(entry[0])
+        if bg & kept_bigrams:
+            continue
+        deduped.append(entry)
+        kept_bigrams |= bg
+
+    top = deduped[:args.top]
+    print(f"  {len(scored)} terms passing thresholds, {len(deduped)} after dedup; surfacing top {len(top)}", file=sys.stderr)
 
     if day_idx is not None:
         header_title = f"arXiv burst sweep — day {day_idx + 1}/{total_days} of {current_quarter}"
