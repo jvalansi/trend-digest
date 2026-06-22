@@ -28,6 +28,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -44,10 +45,17 @@ MIN_RATIO         = 5.0
 MAX_RATIO         = 50.0   # above this is likely a bulk tag-reassignment artifact
 
 
-def fetch_json(url: str) -> dict:
+def fetch_json(url: str, retries: int = 3) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": f"trend-digest/1.0 (mailto:{MAILTO})"})
-    with urllib.request.urlopen(req, timeout=15) as r:
-        return json.loads(r.read())
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read())
+        except (TimeoutError, urllib.error.URLError) as e:
+            if attempt == retries - 1:
+                raise
+            print(f"  fetch_json retry {attempt + 1}/{retries - 1} after {type(e).__name__}", file=sys.stderr)
+            time.sleep(2 ** attempt)
 
 
 def load_or_refresh_concepts() -> list[dict]:
