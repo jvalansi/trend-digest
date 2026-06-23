@@ -141,6 +141,14 @@ def check_concept(concept: dict, recent_from: date, recent_to: date,
             "ratio": ratio, "raw_ratio": raw_ratio}
 
 
+def shift_years(d: date, years: int) -> date:
+    """Subtract `years` from d, mapping Feb 29 to Feb 28 in non-leap target years."""
+    try:
+        return d.replace(year=d.year - years)
+    except ValueError:
+        return d.replace(year=d.year - years, day=28)
+
+
 def get_quarter(d: date) -> str:
     return f"{d.year}-Q{(d.month - 1) // 3 + 1}"
 
@@ -178,9 +186,9 @@ def main():
 
     # Trailing 12 months ending yesterday, vs same window 5 years prior
     recent_to   = today - timedelta(days=1)
-    recent_from = date(recent_to.year - 1, recent_to.month, recent_to.day)
-    base_to     = date(recent_to.year - 5, recent_to.month, recent_to.day)
-    base_from   = date(recent_from.year - 5, recent_from.month, recent_from.day)
+    recent_from = shift_years(recent_to, 1)
+    base_to     = shift_years(recent_to, 5)
+    base_from   = shift_years(recent_from, 5)
 
     q_start    = quarter_start(today)
     q_end      = quarter_end(today)

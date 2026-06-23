@@ -144,6 +144,14 @@ def load_or_refresh_categories() -> list[dict]:
     return cats
 
 
+def shift_years(d: date, years: int) -> date:
+    """Subtract `years` from d, mapping Feb 29 to Feb 28 in non-leap target years."""
+    try:
+        return d.replace(year=d.year - years)
+    except ValueError:
+        return d.replace(year=d.year - years, day=28)
+
+
 def get_quarter(d: date) -> str:
     return f"{d.year}-Q{(d.month - 1) // 3 + 1}"
 
@@ -288,8 +296,8 @@ def main():
     current_quarter = get_quarter(today)
     recent_to   = date.fromisoformat(args.recent_to)   if args.recent_to   else today
     recent_from = date.fromisoformat(args.recent_from) if args.recent_from else recent_to - timedelta(days=90)
-    base_to     = date(recent_to.year   - args.lookback_years, recent_to.month,   recent_to.day)
-    base_from   = date(recent_from.year - args.lookback_years, recent_from.month, recent_from.day)
+    base_to     = shift_years(recent_to,   args.lookback_years)
+    base_from   = shift_years(recent_from, args.lookback_years)
 
     if args.categories:
         categories = [c.strip() for c in args.categories.split(",")]
