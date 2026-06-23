@@ -89,7 +89,9 @@ def generate_descriptions_claude(items: list[dict]) -> dict:
         start = text.find("{")
         end = text.rfind("}") + 1
         if start >= 0 and end > start:
-            return json.loads(text[start:end])
+            parsed = json.loads(text[start:end])
+            if isinstance(parsed, dict):
+                return {k: v for k, v in parsed.items() if isinstance(v, str)}
         if result.returncode != 0:
             print(f"  WARNING: Claude exited {result.returncode}: {result.stderr[:200]}", file=sys.stderr)
     except Exception as e:
