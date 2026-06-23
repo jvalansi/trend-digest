@@ -1,135 +1,224 @@
 # Trend Digest
 
-A system that discovers trending topics across the web, curates them against a personal interest profile, and delivers them to Slack daily.
+A system that discovers trending topics across the web — news, science papers, markets, GitHub repos, prediction markets, social platforms — curates them against a personal interest profile, and delivers a daily digest to Slack / Discord / Telegram / Medium.
 
 ---
 
 ## Pipeline
 
 ```
-# Tech digest
-aggregate.py | curate.py --mode tech | deliver.py --mode tech
-
-# News digest
-aggregate.py | curate.py --mode news | deliver.py --mode news
+run_digest.sh <mode>
+   ├─ src/aggregate.py  →  fetches from N sources, scores, ranks
+   ├─ src/curate.py     →  Claude scores each item 0–1 for relevance, re-ranks
+   └─ src/deliver.py    →  Claude writes one-sentence descriptions, posts to channel
 ```
 
-### Phase 1 — Fetch & Aggregate (`aggregate.py`)
-
-Runs all fetchers in parallel, merges output, groups near-duplicate stories, and scores each item:
+Cron (UTC, weekdays + Sunday):
 
 ```
-score = (engagement_z + cross_source_bonus) * authority * recency
+13:00  tech
+13:15  news
+13:30  finance
+13:45  science
 ```
 
-- **Engagement** — normalized z-score via Welford running stats (per source), stored in `data/engagement_stats.json`
-- **Cross-source bonus** — `log(1 + mentions - 1)`: if multiple sources cover the same story, score rises
-- **Authority** — per-source weight (MIT Tech Review = 1.2, HN = 1.3, ZDNet = 0.7, etc.)
-- **Recency** — exponential decay, score halves every 12h
+---
 
-### Phase 2 — Curate (`curate.py`)
+## Modes
 
-Sends top N items to Claude with the interest profile. Claude scores each item 0–1 for relevance. Final score:
+Each mode picks a different fetcher mix and interest profile.
 
-```
-final_score = engagement_score * (0.3 + 0.7 * relevance)
-```
-
-Interest profile: AI/ML, geopolitics, science, startups, finance, self-improvement.
-
-### Phase 3 — Deliver (`deliver.py`)
-
-Claude generates a one-sentence description per item. Posts to `#proj-trend-digest` as a formatted Slack message.
+| Mode | Profile | Default channel |
+|---|---|---|
+| `tech` | AI/ML, dev tools, startups, security, hardware, science | `#proj-trend-digest` |
+| `news` | World events, geopolitics, elections, markets, climate, culture | `#proj-news-digest` |
+| `science` | Bio, physics, climate, neuroscience, medicine, preprints | `#proj-trend-digest` |
+| `finance` | Markets, macro, unusual flow, central banks, prediction odds | `#proj-trend-digest` |
 
 ---
 
 ## Fetchers
 
-| Fetcher | Source | Engagement Signal | Notes |
-|---|---|---|---|
-| `fetchers/rss.py` | 8 tech RSS feeds | Cross-source mentions + recency | feedparser |
-| `fetchers/hn.py` | Hacker News top/new/best | HN score | Firebase REST API, no auth |
-| `fetchers/youtube.py` | 6 curated channels | View count | playlistItems (1 unit/channel), 24h cache |
-| `fetchers/github.py` | GitHub Trending | Stars today | HTML scrape |
+21 fetchers, all output the same normalized format:
 
-All fetchers output the same normalized format:
 ```json
-{ "title", "summary", "url", "source", "category", "engagement", "fetched_at", "published_at" }
+{ "title", "summary", "url", "source", "category",
+  "engagement", "engagement_raw", "fetched_at", "published_at" }
 ```
 
-### `fetchers/stats.py`
+| Family | Fetcher | Source |
+|---|---|---|
+| RSS | `rss.py` | Per-category feed lists in `docs/sources/*.md` |
+| News aggregators | `hn.py` | Hacker News (top/new/best) |
+| Trends | `trends_google.py` / `trends_google_global.py` | Google Trends (US + global) |
+| Trends | `trends_wikipedia.py` | Wikipedia top-viewed articles |
+| Trends | `trends_reddit.py` | Per-mode subreddit lists |
+| Trends | `trends_bilibili.py` | Bilibili trending (Chinese) |
+| Video | `youtube.py` | Curated channels, by category |
+| Social | `x.py` | X/Twitter via Grok |
+| Code | `github.py` | GitHub Trending (daily + weekly) |
+| Papers | `arxiv.py` | arXiv recent |
+| Papers | `arxiv_ngram_burst.py` | n-gram burst detection across arXiv taxonomy |
+| Papers | `biorxiv.py` | bioRxiv recent |
+| Papers | `openalex.py` / `openalex_early_signal.py` | OpenAlex concept-share early-signal sweep |
+| Papers | `semantic_scholar.py` | Highly-cited recent papers |
+| Papers | `altmetric.py` | High-attention papers |
+| AI | `hf_papers.py` / `hf_models.py` | HuggingFace daily papers + trending models |
+| Finance | `etf_volume.py` | Unusual ETF volume relative to 30d baseline |
+| Markets | `polymarket.py` | Recent prediction-market probability moves |
 
-Shared Welford running-stats module. Maintains per-source mean/variance in `data/engagement_stats.json`, updated on every fetch. Used by all fetchers to produce a comparable engagement z-score.
+### Two output classes
+
+`aggregate.py` produces a sectioned format:
+
+```json
+{
+  "rss": [ ... merged, deduped RSS pool ... ],
+  "sections": {
+    "Hacker News":            [ ... ],
+    "GitHub Trending":        [ ... ],
+    "arXiv n-gram Burst":     [ ... ],
+    "OpenAlex Early Signal":  [ ... ],
+    ...
+  }
+}
+```
+
+- **RSS pool** — feeds from multiple sources are *merged* (near-duplicate stories cluster together by title-word Jaccard ≥ 0.25), then scored by cross-source agreement.
+- **Sections** — each fetcher is its own discovery channel. Items are deduped by URL within a section but kept distinct; the section identity is itself the signal.
+
+### Burst-detection fetchers
+
+`arxiv_ngram_burst.py` and `openalex_early_signal.py` are stateful discovery channels, not feeds. They sweep across the full arXiv (146 categories) / OpenAlex (24,749 L3 concepts) taxonomy on a deterministic daily slice, track per-concept paper share over time with Welford running stats, and flag concepts whose recent share is anomalous vs. their historical baseline. Sweep state in `data/openalex_sweep_state.json`. See `docs/early-signal-methodology.md`.
 
 ---
 
-## Social Platform Coverage
+## Scoring
 
-Evaluated platforms for trending signal accessibility (as of May 2026):
+### Phase 1 — Aggregate (`aggregate.py`)
+
+**RSS pool:**
 
 ```
-Platform    MAU      Trending  API         Science   Used
-──────────────────────────────────────────────────────────────
-Facebook    3.07B    Yes       Restricted  Low       No  — trending endpoint shut down 2018
-WhatsApp    2.80B    No        No          None      No  — private messaging
-YouTube     2.70B    Yes       Yes         Medium    Yes
-Instagram   2.40B    Yes       Restricted  Low       No  — app review required, trending not exposed
-TikTok      1.90B    Yes       Restrictive Low       No  — Research API requires approval
-WeChat      1.40B    Yes       China-only  None      No
-Telegram    0.95B    No        No          None      No
-Messenger   0.94B    No        No          None      No  — private messaging
-Snapchat    0.85B    Discover  No          None      No
-Kuaishou    0.70B    Yes       China-only  None      No
-Reddit      0.61B    Yes       Yes         High      Yes
-Weibo       0.60B    Yes       China-only  None      No
-X/Twitter   0.56B    Yes       Yes         High      Yes
-Pinterest   0.54B    Yes       Yes         Low       No
-Threads     0.40B    No        Limited     None      No  — API too early, trending not exposed
-LinkedIn    0.31B    Yes       Restricted  Medium    No  — partner approval required
-Discord     0.26B    No        No          None      No
-Twitch      0.14B    Yes       Yes         Low       No
+score = (1 + cross_source_bonus) × authority × recency
+cross_source_bonus = log(1 + n_sources - 1)
+authority          = per-source weight (see SOURCE_AUTHORITY in aggregate.py)
+recency            = exp(-Δhours · ln(2)/12)   # halves every 12h
 ```
 
-**Conclusion:** Reddit, X, and YouTube are the only platforms combining high MAU, accessible trending APIs, and meaningful signal. The rest are either locked down, China-only, or private messaging.
+RSS items have no native engagement signal, so cross-source agreement is the signal.
+
+**Sections:**
+
+Each fetcher z-scores its own items via `fetchers/stats.py` (Welford online stats persisted in `data/engagement_stats.json`), clamped to [-3, 3]. `engagement` is the z-score; `engagement_raw` is the original count. Sections are deduped by URL and top-N within each section.
+
+### Phase 2 — Curate (`curate.py`)
+
+Claude scores every item 0.0–1.0 for relevance to the mode's profile. Final score:
+
+```
+score = base × (0.3 + 0.7 × relevance)
+```
+
+where `base` is the aggregate score for RSS items, or `max(0, engagement)` for section items. Both RSS and sections are now re-ranked by this final score. For `news` mode, Claude also translates non-English titles to English.
+
+### Phase 3 — Deliver (`deliver.py`)
+
+Claude generates a one-sentence description per item. Items are annotated with `days_since_first_seen` (from `data/seen_items.json`) so repeats are visible. Posts to the configured Slack / Discord / Telegram / Medium channel.
 
 ---
 
-## Sources
+## Delivery targets
 
-Per-interest source lists (RSS feeds, subreddits, channels):
+`deliver.py` flags:
 
-| Interest | Sources |
+| Flag | Target |
 |---|---|
-| Tech | [docs/sources/tech.md](docs/sources/tech.md) |
-| AI / ML | [docs/sources/ai-ml.md](docs/sources/ai-ml.md) |
-| Science | [docs/sources/science.md](docs/sources/science.md) |
-| Finance | [docs/sources/finance.md](docs/sources/finance.md) |
-| Geopolitics | [docs/sources/geopolitics.md](docs/sources/geopolitics.md) |
-| Startups | [docs/sources/startups.md](docs/sources/startups.md) |
-| Self-improvement | [docs/sources/self-improvement.md](docs/sources/self-improvement.md) |
-| News | [docs/sources/news.md](docs/sources/news.md) |
+| (default) | Slack |
+| `--discord` | Discord (header + threaded items) |
+| `--telegram` | Telegram via cc-connect |
+| `--publish` | Medium post + cross-posts to Bluesky / LinkedIn / Reddit |
+| `--dry-run` | Print to stdout, no network |
+
+Publishers live in `src/publishers/`: `medium.py`, `bluesky.py`, `linkedin.py`, `reddit.py`.
 
 ---
 
 ## Setup
 
 ```bash
-pip install feedparser
-export SLACK_BOT_TOKEN=...
-export YOUTUBE_API_KEY=...
+pip install feedparser deep-translator langdetect
 ```
 
-Run the full pipeline:
+Environment (in `~/.env` or repo-level `.env`):
+
+```
+# Core
+SLACK_BOT_TOKEN=...
+YOUTUBE_API_KEY=...
+XAI_API_KEY=...                 # x.py uses Grok
+FMP_API_KEY=...                 # etf_volume.py
+PEXELS_API_KEY=...              # OG-image fallback
+REDDIT_PROXY_URL=...            # Reddit blocks AWS IPs; needs proxy
+
+# Delivery targets (optional, per-flag)
+DISCORD_BOT_TOKEN=...           # --discord
+MEDIUM_TOKEN=...                # --publish
+BSKY_HANDLE=... BSKY_APP_PASSWORD=...
+LINKEDIN_ACCESS_TOKEN=... LINKEDIN_PERSON_URN=...
+REDDIT_CLIENT_ID=... REDDIT_CLIENT_SECRET=...
+REDDIT_USERNAME=... REDDIT_PASSWORD=...
+```
+
+The `claude` CLI is invoked as a subprocess by `curate.py` and `deliver.py`; path is `CLAUDE_PATH` (defaults to `/home/ubuntu/.local/bin/claude`).
+
+Run a full pipeline:
+
 ```bash
-python src/aggregate.py | python src/deliver.py
+./run_digest.sh tech                  # hardcodes --discord --publish
+python src/deliver.py --input curated.json --mode tech --dry-run  # preview only
 ```
 
 ---
 
-## Next Steps
+## Layout
 
-- [ ] **Daily cron** — schedule the pipeline to run once per day
-- [ ] **Reddit** — blocked from AWS IPs; needs proxy (`REDDIT_PROXY_URL` in `.env`) or API approval
-- [ ] **Dev.to / Bluesky / Stack Overflow** — free APIs, ready to add fetchers
-- [ ] **Other interest areas** — fetchers currently only cover tech; add science, finance, geopolitics sources
-- [ ] **Delivery formats** — currently Slack only; newsletter, web page, or audio are future options
+```
+src/
+  aggregate.py            fetcher orchestration + RSS merge + scoring
+  curate.py               Claude relevance scoring
+  deliver.py              description generation + channel posting
+  fetchers/               22 fetcher modules + stats.py (Welford)
+  publishers/             medium / bluesky / linkedin / reddit
+data/
+  engagement_stats.json   Welford state per source
+  seen_items.json         URL → first_seen / last_seen / count
+  openalex_sweep_state.json  burst-sweep cursor across concept taxonomy
+  global_trends/          daily Google Trends Global archive (for clustering)
+docs/
+  sources/                per-mode source lists
+  early-signal-methodology.md   burst-detection design
+  beyond-gdp.md / gdp-monitoring-design.md / ...   essays
+research/                 standalone analysis scripts
+```
+
+---
+
+## Social platform coverage
+
+Reddit, X, and YouTube are the only platforms that combine high MAU, an accessible trending API, and meaningful signal. The rest are locked down, China-only, or private messaging.
+
+```
+Platform    MAU     Trending  API          Used
+─────────────────────────────────────────────────────
+YouTube     2.70B   yes       yes          ✓
+Reddit      0.61B   yes       yes          ✓ (via proxy — AWS IPs blocked)
+X/Twitter   0.56B   yes       yes (Grok)   ✓
+Facebook    3.07B   yes       restricted   ✗  trending endpoint shut 2018
+Instagram   2.40B   yes       restricted   ✗  app review required
+TikTok      1.90B   yes       restricted   ✗  Research API requires approval
+WeChat/Weibo/Bilibili/Kuaishou      yes   China-only  Bilibili used; rest no
+LinkedIn    0.31B   yes       restricted   ✗  partner approval required
+Threads     0.40B   no        limited      ✗  trending not exposed
+WhatsApp / Telegram / Messenger / Discord / Snapchat — private, no trending
+```
