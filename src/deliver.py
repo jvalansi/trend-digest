@@ -237,7 +237,9 @@ _NEWS_DOMAIN_MAP = [
 
 def _extract_keywords(item: dict) -> str:
     """Map a paper title to a Pexels-friendly search query."""
-    text = (item.get("title", "") + " " + (item.get("summary") or "")[:300]).lower()
+    title = item.get("title_en") or item.get("title", "")
+    summary = item.get("summary_en") or item.get("summary") or ""
+    text = (title + " " + summary[:300]).lower()
     for patterns, query in _SCIENCE_DOMAIN_MAP:
         if any(p in text for p in patterns):
             return query
@@ -245,13 +247,15 @@ def _extract_keywords(item: dict) -> str:
     skip = {"study", "research", "analysis", "novel", "using", "based", "role",
             "effect", "impact", "review", "data", "model", "results", "method",
             "human", "associated", "potential", "increased", "decreased", "between"}
-    words = [w for w in re.findall(r'\b[a-zA-Z]{5,}\b', item.get("title", "").lower()) if w not in skip]
-    return " ".join(words[:2]) if words else item.get("title", "")[:40]
+    words = [w for w in re.findall(r'\b[a-zA-Z]{5,}\b', title.lower()) if w not in skip]
+    return " ".join(words[:2]) if words else title[:40]
 
 
 def _extract_keywords_news(item: dict) -> str:
     """Map a news/trend item to a Pexels-friendly search query."""
-    text = (item.get("title", "") + " " + (item.get("summary") or "")[:300]).lower()
+    title = item.get("title_en") or item.get("title", "")
+    summary = item.get("summary_en") or item.get("summary") or ""
+    text = (title + " " + summary[:300]).lower()
     for patterns, query in _NEWS_DOMAIN_MAP:
         if any(p in text for p in patterns):
             return query
@@ -260,7 +264,7 @@ def _extract_keywords_news(item: dict) -> str:
             "update", "breaking", "report", "shows", "could", "would", "should", "their",
             "have", "been", "that", "this", "also", "more", "than", "will", "were"}
     words = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', text) if w not in skip][:3]
-    return " ".join(words) if words else item.get("title", "")[:40]
+    return " ".join(words) if words else title[:40]
 
 
 def _pexels_search(query: str, api_key: str) -> str | None:
@@ -420,7 +424,7 @@ def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
         {
             "index": i,
             "title": item.get("title_en") or item["title"],
-            "summary": item.get("summary", "")[:300],
+            "summary": (item.get("summary_en") or item.get("summary", ""))[:300],
         }
         for i, item in enumerate(items)
     ]
