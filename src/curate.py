@@ -2,7 +2,7 @@
 """
 Curation — scores items by relevance using Claude, then re-ranks.
 
-For non-English items (news mode), Claude also translates titles/summaries to English.
+Translation is handled upstream by src/translate.py.
 
 Final score:
   final_score = engagement_score * (0.3 + 0.7 * relevance)
@@ -50,31 +50,23 @@ INTEREST_PROFILES = {
 
 def curate_batch(items: list[dict], mode: str) -> list[dict]:
     profile = INTEREST_PROFILES.get(mode, INTEREST_PROFILES["tech"])
-    translate = mode == "news"
 
     compact = [
         {
             "index": i,
-            "title": item["title"],
-            "summary": item.get("summary", "")[:200],
+            "title": item.get("title_en") or item["title"],
+            "summary": (item.get("summary_en") or item.get("summary", ""))[:200],
             "source": item.get("source", ""),
         }
         for i, item in enumerate(items)
     ]
 
-    translate_instruction = (
-        " If the title or summary is not in English, translate them to English first, "
-        "then score. Include the translated title in your response as 'title_en'."
-        if translate else ""
-    )
-
     prompt = (
         f"You are curating a digest for someone interested in: {profile}\n\n"
-        f"Score each item 0.0–1.0 for relevance to that interest profile.{translate_instruction}\n"
+        f"Score each item 0.0–1.0 for relevance to that interest profile.\n"
         f"Return ONLY a JSON array. Each object must have:\n"
         f"  'index' (int), 'relevance' (float 0-1)"
-        + (", 'title_en' (string, English title — same as title if already English)" if translate else "")
-        + f"\n\nItems:\n{json.dumps(compact, ensure_ascii=False)}"
+        f"\n\nItems:\n{json.dumps(compact, ensure_ascii=False)}"
     )
 
     env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
@@ -98,8 +90,6 @@ def curate_batch(items: list[dict], mode: str) -> list[dict]:
         s = score_map.get(i, {})
         relevance = float(s.get("relevance", 0.5))
         item["relevance"] = round(relevance, 3)
-        if translate and "title_en" in s:
-            item["title_en"] = s["title_en"]
         # Re-score: engagement * (0.3 + 0.7 * relevance)
         base = item.get("score", 0.0)
         item["score"] = round(base * (0.3 + 0.7 * relevance), 4)

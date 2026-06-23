@@ -25,12 +25,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-try:
-    from deep_translator import GoogleTranslator
-    from langdetect import detect, LangDetectException
-    TRANSLATION_AVAILABLE = True
-except ImportError:
-    TRANSLATION_AVAILABLE = False
+from translate import translate_items, translate_to_english
 
 PYTHON = sys.executable
 
@@ -145,17 +140,6 @@ def run_fetcher(cmd: list[str]) -> list[dict]:
     return json.loads(result.stdout)
 
 
-def translate_to_english(text: str) -> str:
-    if not TRANSLATION_AVAILABLE or not text:
-        return text
-    try:
-        if detect(text) == "en":
-            return text
-        return GoogleTranslator(source="auto", target="en").translate(text) or text
-    except Exception:
-        return text
-
-
 def title_words(title: str) -> set[str]:
     stopwords = {"a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or", "is", "are", "was", "were",
                  "has", "have", "been", "will", "would", "could", "should", "that", "this", "with", "from", "by",
@@ -181,19 +165,14 @@ def recency_score(published_at: str | None) -> float:
         return 0.5
 
 
-def merge_rss(items: list[dict]) -> list[dict]:
-    """
-    Merge/dedup RSS items. Score = cross_source_count × authority × recency.
-    No z-score — cross-source mention count is the engagement signal for RSS.
-    """
+def _group_by_title(items: list[dict]) -> list[list[dict]]:
+    """Group items whose title-word sets overlap (>0.25 Jaccard). Operates on
+    `title_en` if present, else `title`. Pre-translate via translate_items()
+    before calling so cross-language duplicates merge."""
     groups: list[list[dict]] = []
     group_words: list[set] = []
-
     for item in items:
-        title_en = translate_to_english(item["title"])
-        if title_en != item["title"]:
-            item["title_en"] = title_en
-        words = title_words(title_en)
+        words = title_words(item.get("title_en") or item.get("title", ""))
         matched = None
         for i, gw in enumerate(group_words):
             if similarity(words, gw) > 0.25:
@@ -205,6 +184,16 @@ def merge_rss(items: list[dict]) -> list[dict]:
         else:
             groups.append([item])
             group_words.append(words)
+    return groups
+
+
+def merge_rss(items: list[dict]) -> list[dict]:
+    """
+    Merge/dedup RSS items. Score = cross_source_count × authority × recency.
+    No z-score — cross-source mention count is the engagement signal for RSS.
+    """
+    translate_items(items)
+    groups = _group_by_title(items)
 
     results = []
     for group in groups:
@@ -223,6 +212,17 @@ def merge_rss(items: list[dict]) -> list[dict]:
         results.append(canonical)
 
     return results
+
+
+def dedup_section(items: list[dict]) -> list[dict]:
+    """Merge near-duplicate section items by title similarity. Keeps the
+    highest-engagement representative per group; no re-scoring."""
+    translate_items(items)
+    groups = _group_by_title(items)
+    return [
+        max(g, key=lambda x: x.get("engagement", x.get("score", 0)) or 0)
+        for g in groups
+    ]
 
 
 def main():
@@ -256,18 +256,22 @@ def main():
             print(f"  {section}: +{len(items)} items", file=sys.stderr)
 
     for section, pool in section_pools.items():
-        # Dedup by URL, preserving order (highest-engagement first from each fetcher)
+        # Dedup by URL first to drop exact-link repeats, then by title similarity
+        # (translation-aware) so the same story from different sources/languages merges.
         seen_urls = set()
-        unique = []
+        url_unique = []
         for item in pool:
             url = item.get("url", "")
-            if url not in seen_urls:
-                seen_urls.add(url)
-                unique.append(item)
-        top = unique[:section_limits.get(section, args.section_limit)]
+            if not url or url not in seen_urls:
+                if url:
+                    seen_urls.add(url)
+                url_unique.append(item)
+        deduped = dedup_section(url_unique)
+        deduped.sort(key=lambda x: x.get("engagement", x.get("score", 0)) or 0, reverse=True)
+        top = deduped[:section_limits.get(section, args.section_limit)]
         if top:
             sections[section] = top
-        print(f"  {section}: {len(top)} unique items (from {len(pool)} pooled)", file=sys.stderr)
+        print(f"  {section}: {len(top)} unique items (from {len(pool)} pooled, {len(url_unique)} after URL dedup)", file=sys.stderr)
 
     print(f"\nRSS raw: {len(rss_items)} items", file=sys.stderr)
     rss_merged = merge_rss(rss_items)
