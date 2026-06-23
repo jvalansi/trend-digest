@@ -89,7 +89,7 @@ Each mode picks a different fetcher mix and interest profile.
 
 ### Burst-detection fetchers
 
-`arxiv_ngram_burst.py` and `openalex_early_signal.py` are stateful discovery channels, not feeds. They sweep across the full arXiv (146 categories) / OpenAlex (24,749 L3 concepts) taxonomy on a deterministic daily slice, track per-concept paper share over time with Welford running stats, and flag concepts whose recent share is anomalous vs. their historical baseline. Sweep state in `data/openalex_sweep_state.json`. See `docs/early-signal-methodology.md`.
+`arxiv_ngram_burst.py` and `openalex_early_signal.py` are discovery channels, not feeds. They sweep the full arXiv (146 categories) / OpenAlex (24,749 L3 concepts) taxonomy by deterministic daily partition — on weekday N of the quarter, the slice `concepts[N·T/D : (N+1)·T/D]` runs (sorted by ID for reproducibility). Each scan compares paper share in a recent window to a historical baseline (1y prior for arxiv, 5y prior for openalex) and flags concepts whose share has grown 5–50× while normalizing against overall corpus growth. No mutable state — same date + same code → same partition. See `docs/early-signal-methodology.md`.
 
 ---
 
@@ -191,9 +191,10 @@ src/
   fetchers/               22 fetcher modules + stats.py (Welford)
   publishers/             medium / bluesky / linkedin / reddit
 data/
-  engagement_stats.json   Welford state per source
+  engagement_stats.json   Welford state per source (per-fetcher z-score)
   seen_items.json         URL → first_seen / last_seen / count
-  openalex_sweep_state.json  burst-sweep cursor across concept taxonomy
+  openalex_concepts_l3.json  cached L3 concept list (refreshed every 30d)
+  arxiv_categories.json   cached arXiv taxonomy
   global_trends/          daily Google Trends Global archive (for clustering)
 docs/
   sources/                per-mode source lists
