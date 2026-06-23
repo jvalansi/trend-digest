@@ -100,14 +100,8 @@ def curate_batch(items: list[dict], mode: str) -> list[dict]:
         item["relevance"] = round(relevance, 3)
         if translate and "title_en" in s:
             item["title_en"] = s["title_en"]
-        # Re-score: base * (0.3 + 0.7 * relevance). Sections fetchers strip
-        # `score` in stats.py and expose `engagement` (z-score) instead, so
-        # fall back to that. Clamp at 0 because engagement z-scores can be
-        # negative — without this, multiplying by a sub-1 factor would
-        # invert the ranking (less-engaging items would beat more-engaging ones).
-        base = item.get("score")
-        if base is None:
-            base = max(0.0, item.get("engagement", 0.0))
+        # Re-score: engagement * (0.3 + 0.7 * relevance)
+        base = item.get("score", 0.0)
         item["score"] = round(base * (0.3 + 0.7 * relevance), 4)
 
     return items
@@ -134,14 +128,7 @@ def main():
         rss = curate_batch(rss, args.mode)
         rss = sorted(rss, key=lambda x: x.get("score", 0), reverse=True)
         print(f"  Curation done.", file=sys.stderr)
-        sections = data.get("sections", {})
-        for name, items in sections.items():
-            if not items:
-                continue
-            print(f"  Curating {len(items)} items in section '{name}'...", file=sys.stderr)
-            curated = curate_batch(items, args.mode)
-            sections[name] = sorted(curated, key=lambda x: x.get("score", 0), reverse=True)
-        output_data = {"rss": rss, "sections": sections}
+        output_data = {"rss": rss, "sections": data.get("sections", {})}
     else:
         # Legacy flat list
         items = sorted(data, key=lambda x: x.get("score", 0), reverse=True)[:args.top]
