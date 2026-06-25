@@ -29,15 +29,45 @@ from translate import translate_items, translate_to_english
 
 PYTHON = sys.executable
 
+# Weights are popularity-based proxies for "what's trending in the world":
+# Similarweb monthly-visit tiers map roughly to >20M→1.3, 5-20M→1.1, 1-5M→0.9, else→0.8.
+# Sources with unverified traffic are left at prior values and noted below.
 SOURCE_AUTHORITY = {
-    "The Verge":       1.0,
-    "TechCrunch":      1.0,
-    "Ars Technica":    1.1,
-    "Wired":           0.9,
-    "MIT Tech Review": 1.2,
-    "VentureBeat":     0.8,
-    "Engadget":        0.8,
-    "ZDNet":           0.7,
+    # Tech RSS
+    "The Verge":       1.1,   # ~12.6M visits
+    "TechCrunch":      1.1,   # ~14M
+    "Ars Technica":    1.1,   # ~10.6M
+    "Wired":           1.3,   # ~20M
+    "MIT Tech Review": 0.9,   # ~1.3M
+    "VentureBeat":     0.9,   # ~1.4M
+    "Engadget":        1.1,   # ~6.5M
+    "ZDNet":           0.9,   # ~1.9M
+    # News RSS (Similarweb global news ranks, docs/sources/news.md)
+    "Yahoo Japan":     1.3,   # #1
+    "Globo":           1.3,   # #3
+    "New York Times":  1.3,   # #5
+    "BBC News":        1.1,   # #6
+    "CNN":             1.1,   # #8
+    "The Guardian":    1.1,   # #11
+    "Times of India":  1.1,   # #12
+    "Google News":     1.1,   # #14
+    "Fox News":        1.1,   # #15
+    "UOL":             0.9,   # #16
+    "Infobae":         0.9,   # #17
+    # Finance RSS
+    "Yahoo Finance":   1.3,   # top-10 news publisher
+    "investing.com":   1.3,   # ~161M
+    "MarketWatch":     1.0,   # mid-tier, declining
+    "Reuters Business":1.3,   # reuters.com ~24M (business subsection)
+    # Science RSS
+    "Nature":             1.3,   # ~35M
+    "Science":            1.1,   # ~7M
+    "New Scientist":      0.9,   # ~4.8M
+    "Scientific American":0.9,   # ~4.8M
+    "Ars Technica Science":1.1,  # parity with Ars main
+    "bioRxiv":            0.9,   # ~2.4M
+    # Sections (used when section items leak into the RSS path; sections normally
+    # use per-fetcher engagement z-scores, not authority)
     "Hacker News":     1.3,
     "GitHub Trending (daily)":  0.7,
     "GitHub Trending (weekly)": 0.6,
@@ -45,40 +75,15 @@ SOURCE_AUTHORITY = {
     "HF Papers":       1.2,
     "HF Models":       1.0,
     "YouTube Trending": 1.0,
-    "Yahoo Japan":     1.1,
-    "Yahoo News":      1.0,
-    "Globo":           0.9,
-    "New York Times":  1.2,
-    "BBC News":        1.2,
-    "CNN":             1.1,
-    "MSN News":        0.8,
-    "QQ News":         0.9,
-    "The Guardian":    1.1,
-    "Times of India":  0.9,
-    "Google News":     1.0,
-    "Fox News":        1.0,
-    "UOL":             0.8,
-    "Infobae":         0.8,
-    "Naver News":      0.9,
     "Google Trends":        1.1,
     "Google Trends Global": 1.3,
     "Wikipedia Trending": 1.0,
     "Reddit":             1.1,
     "Bilibili Trending":  0.9,
-    "Yahoo Finance":      1.2,
-    "investing.com":      1.0,
-    "MarketWatch":        1.0,
-    "Reuters Business":   1.1,
     "ETF Volume":         1.3,
     "Polymarket":         1.2,
     "OpenAlex Early Signal": 1.3,
     "arXiv n-gram Burst": 1.3,
-    "Nature":             1.4,
-    "Science":            1.4,
-    "New Scientist":      1.1,
-    "Scientific American":1.1,
-    "Ars Technica Science":1.1,
-    "arXiv":              1.3,
     "Semantic Scholar":   1.0,
     "Altmetric":          1.3,
 }

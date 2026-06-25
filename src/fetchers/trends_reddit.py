@@ -21,7 +21,7 @@ from stats import score_items
 
 SUBREDDITS = {
     "tech": ["technology", "programming", "learnprogramming", "compsci", "webdev", "MachineLearning", "Futurology"],
-    "finance": ["investing", "stocks", "wallstreetbets", "economics", "finance", "geopolitics"],
+    "finance": ["investing", "stocks", "wallstreetbets", "economics"],
     "science": ["science"],
 }
 BASE_SUB = "https://www.reddit.com/r/{sub}/hot.json?limit={limit}"
