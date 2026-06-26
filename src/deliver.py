@@ -50,17 +50,12 @@ def save_seen_items(seen: dict) -> None:
 
 
 def annotate_seen(items: list[dict], seen: dict) -> None:
-    today = datetime.now(timezone.utc).date().isoformat()
     for item in items:
         url = item.get("url", "")
         if url in seen:
-            first = seen[url]["first_seen"]
-            try:
-                delta = (datetime.now(timezone.utc).date() - datetime.fromisoformat(first).date()).days
-            except Exception:
-                delta = 0
-            if delta > 0:
-                item["days_since_first_seen"] = delta
+            count = seen[url].get("count", 0)
+            if count > 1:
+                item["days_appeared"] = count
 
 
 def update_seen(items: list[dict], seen: dict) -> None:
@@ -463,7 +458,7 @@ def format_item_telegram(item: dict, description: str) -> str:
     desc_str = f"\n  {description}" if description else ""
     prob = item.get("probability")
     prob_str = f" · Yes {prob}%" if prob is not None else ""
-    days = item.get("days_since_first_seen")
+    days = item.get("days_appeared")
     seen_str = f" · ↩ {days}d" if days else ""
     return f"• [{title}]({url}){desc_str}\n  _{source_str}{prob_str}{seen_str}_"
 
@@ -532,7 +527,7 @@ def format_item(item: dict, description: str) -> str:
         engagement_str = f" · {int(raw)} pts · z={eng:+.2f}"
     prob = item.get("probability")
     prob_str = f" · Yes {prob}%" if prob is not None else ""
-    days = item.get("days_since_first_seen")
+    days = item.get("days_appeared")
     seen_str = f" · ↩ {days}d" if days else ""
     return f"*<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}{prob_str}{seen_str}_"
 
@@ -677,7 +672,9 @@ def main():
         return
 
     seen = load_seen_items()
+    update_seen(all_items, seen)
     annotate_seen(all_items, seen)
+    save_seen_items(seen)
 
     print("Generating descriptions...", file=sys.stderr)
     descriptions = generate_descriptions(all_items, args.mode)
@@ -713,8 +710,6 @@ def main():
             print("\n---\n" + msg)
         for msg, _ in section_messages:
             print("\n---\n" + msg)
-        update_seen(all_items, seen)
-        save_seen_items(seen)
         return
 
     if args.telegram:
@@ -742,7 +737,7 @@ def main():
             sources = item.get("sources", [item["source"]])
             source_str = " · ".join(sources)
             desc_str = f"\n  {desc}" if desc else ""
-            days = item.get("days_since_first_seen")
+            days = item.get("days_appeared")
             seen_str = f" · ↩ {days}d" if days else ""
             post_to_discord(f"**[{title}](<{url}>)**{desc_str}\n  _{source_str}{seen_str}_", token, thread_id)
         desc_idx = 0
@@ -756,7 +751,7 @@ def main():
                 desc_str = f"\n  {section_descs[desc_idx]}" if section_descs[desc_idx] else ""
                 prob = item.get("probability")
                 prob_str = f" · Yes {prob}%" if prob is not None else ""
-                days = item.get("days_since_first_seen")
+                days = item.get("days_appeared")
                 seen_str = f" · ↩ {days}d" if days else ""
                 post_to_discord(f"**[{title}](<{url}>)**{desc_str}\n  _{source_str}{prob_str}{seen_str}_", token, thread_id)
                 desc_idx += 1
@@ -774,8 +769,6 @@ def main():
         for msg, attachments in section_messages:
             post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=attachments is None, attachments=attachments)
         print(f"Posted {total_items} items to #{channel}", file=sys.stderr)
-    update_seen(all_items, seen)
-    save_seen_items(seen)
 
     if args.publish:
         _publish_to_socials(label, date_str, rss_items, rss_descs, sections, section_descs, args.mode)
