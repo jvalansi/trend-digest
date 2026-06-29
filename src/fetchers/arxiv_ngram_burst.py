@@ -107,14 +107,19 @@ def fetch_xml(url: str, max_retries: int = 6) -> bytes:
             with urllib.request.urlopen(req, timeout=60) as r:
                 return r.read()
         except urllib.error.HTTPError as e:
-            if e.code < 500 or attempt == max_retries - 1:
+            if (e.code < 500 and e.code != 429) or attempt == max_retries - 1:
                 raise
             last_err = e
+            retry_after = e.headers.get("Retry-After") if e.headers else None
         except urllib.error.URLError as e:
             if attempt == max_retries - 1:
                 raise
             last_err = e
-        backoff = RATE_DELAY * (2 ** attempt)
+            retry_after = None
+        try:
+            backoff = max(float(retry_after), RATE_DELAY) if retry_after else RATE_DELAY * (2 ** attempt)
+        except (TypeError, ValueError):
+            backoff = RATE_DELAY * (2 ** attempt)
         print(f"  arXiv API transient error ({last_err}); retrying in {backoff:.0f}s", file=sys.stderr)
         time.sleep(backoff)
     raise RuntimeError("unreachable")
