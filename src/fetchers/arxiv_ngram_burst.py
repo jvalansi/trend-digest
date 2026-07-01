@@ -65,10 +65,21 @@ do does did of in on at to for with by from about into through during without
 this that these those it its their his her our we us they them you your
 not no nor only just also too very much more most some any all every each
 which what who when where why how
-can could may might must will would should shall
+can could may might must will would should shall cannot
 new our both other another such same most one two three
 use uses using used can also however thus therefore moreover furthermore
 than rather either neither between among while across via
+here there yet still already often always sometimes never ever indeed hence
+alone itself themselves ourselves within upon toward towards beyond
+""".split())
+
+# Words banned from the middle position of trigrams — reject prose scaffolding
+# like "work we derive", "results our approach", "method it uses".
+TRIGRAM_MIDDLE_STOP = set("""
+we our us they them it you your their his her he she i my me one ones
+here there also just still yet only even
+is are was were be been being have has had do does did can could may might
+must will would should shall
 """.split())
 
 # Phrase-level boilerplate to drop entirely.
@@ -89,6 +100,11 @@ PHRASE_STOPLIST = {
     "paper we introduce", "paper we develop", "paper we demonstrate",
     "similarity analysis", "feature selection", "natural images",
     "elemental composition",
+    "statistically robust", "statistically significant", "highly accurate",
+    "recently proposed", "widely used", "well known", "well established",
+    "novel approach", "novel method", "novel framework",
+    "significant improvement", "significant improvements",
+    "substantial improvement", "substantial improvements",
 }
 
 TOKEN_RE = re.compile(r"[a-z][a-z0-9-]*")
@@ -262,8 +278,11 @@ def good_ngram(ngram: tuple[str, ...]) -> bool:
     if phrase in PHRASE_STOPLIST:
         return False
     # Reject trigrams whose inner bigrams are stoplisted (catches e.g.
-    # "study we propose" via the "we propose" bigram).
+    # "study we propose" via the "we propose" bigram) or whose middle token
+    # is prose scaffolding (catches e.g. "work we derive").
     if len(ngram) == 3:
+        if ngram[1] in TRIGRAM_MIDDLE_STOP:
+            return False
         if " ".join(ngram[:2]) in PHRASE_STOPLIST or " ".join(ngram[1:]) in PHRASE_STOPLIST:
             return False
     return True
