@@ -380,6 +380,41 @@ The dual-use pattern then continues to play out underneath, with each tech round
 
 ---
 
+## Two axes — personal optionality and organizational control
+
+The trends above compress into two coupled axes rather than one:
+
+- **Personal axis** — individuals maximize *optionality* (career, consumption, identity, mobility, information, relationships). Sen's capability framework is the analytical form.
+- **Organizational axis** — states and firms maximize *control* (denial options, market share, network effects, regulatory moats, coordination capability).
+
+These aren't opposites; they're the demand side and the supply side of the same system. Consumer optionality requires organizational concentration to deliver — Amazon's product variety requires its logistics dominance; smartphone app variety requires the Apple/Google duopoly; global travel requires airline alliances and Boeing/Airbus; every modern device's compute requires TSMC. Scale economies, network effects, and data flywheels mean that broad consumer variety and supply-side concentration co-produce each other.
+
+### Where the coupling breaks — the market vs. political asymmetry
+
+But the coupling only holds when the concentrated organization is *disciplined by exit*. Amazon has to deliver real value because I can defect — order elsewhere, and revenue drops. Market-concentrated systems must generate consumer surface to survive; if the surface degrades, users leave and the concentration erodes.
+
+**Political concentration has no such constraint.** I can't switch tax codes, opt out of ACA mandates, or choose an FDA-free drug. When exit isn't available, the Olson (1965) / Stigler (1971) dynamic — concentrated interests vs. diffuse interests — runs to completion with no consumer pushback constraint. Regulatory complexity accumulates as the compliance surface for organized incumbents while delivering diffuse, invisible, and often net-negative outcomes for individuals.
+
+Concrete pattern:
+
+| Case | Consumer surface | Actual median outcome |
+|---|---|---|
+| Amazon | Real (variety, convenience, low prices) | Net positive, with real costs (worker conditions, local retail destruction, seller extraction) |
+| Tax code (~70K pages regs) | Nominal options (credits, deductions) | Most individuals can't claim; captured by corporate tax departments; net *upward* redistribution |
+| Dodd-Frank | CFPB protections, mortgage standards | Regional banking killed, TBTF banks 30% → 45% of assets, fees passed through |
+| ACA | Exchange plans, pre-existing coverage | Middle-class premiums roughly doubled 2013–2023; hospital consolidation drove prices up |
+| FDA | Safer approved drugs | $2B+ approval cost as regulatory moat; drug prices as monopoly rent |
+
+Market concentration is partly disciplined by exit and produces real consumer surface. Political concentration isn't, and produces mostly compliance surface with pure extraction underneath. This is why democratic decline (a form of political concentration) tracks welfare loss more directly than industry concentration usually does.
+
+### The Debord/Marcuse framing has a specific domain
+
+The critical tradition (Debord's *Society of the Spectacle* 1967, Marcuse's "repressive tolerance" 1965, Fisher's *Capitalist Realism* 2009) argues visible optionality is the mechanism that makes extraction tolerable — the variety dampens demand for structural control. This framing overstates the market case (Amazon's benefits are real, not pure spectacle) but is roughly correct for the political case (the ACA's 200-plan choice surface, the tax code's credit menu, the FDA's approved-drug list are mostly compliance artifacts, not consumer value).
+
+The cleaner statement: **market concentration expands the menu at the cost of the meta-menu (who gets to set the terms); political concentration expands the menu with no corresponding delivery of value, because political systems lack the exit-based feedback loop that forces market systems to keep the consumer surface real.**
+
+---
+
 ## The dashboard, not a single number
 
 GDP is a *flow* of *market-priced* *current* *output*, with no adjustment for *distribution*, *sustainability*, *welfare*, *capability*, or *stock position*. Each gap corresponds to one missing dimension:
