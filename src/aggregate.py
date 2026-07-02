@@ -202,10 +202,13 @@ def merge_rss(items: list[dict]) -> list[dict]:
 
     results = []
     for group in groups:
+        sources = list({i["source"] for i in group})
+        if len(sources) < 2:
+            continue
+
         canonical = max(group, key=lambda x: len(x.get("summary", "")))
         canonical = dict(canonical)
 
-        sources = list({i["source"] for i in group})
         canonical["sources"] = sources
         canonical["mention_count"] = len(group)
 
