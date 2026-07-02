@@ -71,6 +71,9 @@ use uses using used can also however thus therefore moreover furthermore
 than rather either neither between among while across via
 here there yet still already often always sometimes never ever indeed hence
 alone itself themselves ourselves within upon toward towards beyond
+little great good bad various different particular additional further
+actual entire whole real important useful helpful interesting initial final
+thing things way ways stuff kind kinds sort sorts
 """.split())
 
 # Words banned from the middle position of trigrams — reject prose scaffolding
