@@ -413,6 +413,67 @@ The critical tradition (Debord's *Society of the Spectacle* 1967, Marcuse's "rep
 
 The cleaner statement: **market concentration expands the menu at the cost of the meta-menu (who gets to set the terms); political concentration expands the menu with no corresponding delivery of value, because political systems lack the exit-based feedback loop that forces market systems to keep the consumer surface real.**
 
+### What the personal axis actually optimizes — from optionality to endorsed freedom
+
+The earlier "individuals maximize optionality" claim is directionally right but empirically wrong at the moment-to-moment level. Revealed choice contradicts DRM (Day Reconstruction Method, Kahneman et al. 2004, [*Science*](https://www.science.org/doi/10.1126/science.1103572)) in specific ways that require a sharper model.
+
+**What DRM says people experience as good.** Top-affect activities across DRM and experience-sampling replications (Bryson & MacKerron *Mappiness*, ~3M momentary reports, [2013](https://eprints.lse.ac.uk/49376/)):
+
+| Activity | DRM net affect |
+|---|---|
+| Intimate relations | 4.74 |
+| Socializing after work | 4.12 |
+| Dinner | 3.96 |
+| Exercising | 3.82 |
+| Watching TV | 3.62 |
+| Working | 2.65 |
+| Morning commute | 2.03 |
+
+Being outdoors adds ~+2 (0–100 scale); being with friends adds ~+4; being with children adds ~0 moment-to-moment.
+
+**Why revealed behavior contradicts this.** US leisure hours rose ~4–8/week since 1965 (Aguiar & Hurst 2007, [*QJE*](https://academic.oup.com/qje/article/122/3/969/1879149)) and went almost entirely to screens, not to socializing or outdoors. Socializing time collapsed from ~1.5 hrs/day (1965) to ~0.5 (2023). The DRM ranking predicts the opposite.
+
+The reconciling model is **optimal foraging applied to affect** (MacArthur & Pianka 1966 extended). Humans have a fixed metabolic budget (Pontzer 2016, [*Current Biology*](https://www.cell.com/current-biology/fulltext/S0960-9822%2815%2901577-8)) and the brain treats cognitive effort as costly (Kool et al. 2010, [*JEP:G*](https://pubmed.ncbi.nlm.nih.gov/20853993/); Shenhav et al. 2017, [*Annu. Rev. Neurosci.*](https://www.annualreviews.org/doi/10.1146/annurev-neuro-072116-031526)). So the actual objective is not raw DRM but **DRM per unit effort**:
+
+| Activity | Raw DRM | Effort cost | DRM / effort |
+|---|---|---|---|
+| Watching TV / doomscroll | 3.0–3.6 | very low | high |
+| Close-friend socializing | 4.1 | high (coordination + travel) | moderate |
+| Exercise | 3.8 | high | low–moderate |
+| Working | 2.65 | high | low |
+
+Screens win on the ratio, not on raw affect. This is the supernormal-stimulus mechanism (Tinbergen 1948) — engineered signals exploiting the ratio the organism evolved to maximize. Attention-economy platforms are the current instance; junk food is the same principle in a different domain. Fogg Behavior Model formalizes it: B = Motivation × Ability × Trigger, where "ability" is effort's inverse and platform design has driven activation cost to zero.
+
+**Implication:** the intervention target isn't more free time (Aguiar-Hurst shows added leisure defaults to screens from a depleted state) but **lowering the effort cost of high-DRM activities and raising the effort cost of low-DRM traps**. Walkable cities, third places within 5 minutes, communal meals, predictable schedules, and screen-time friction are the concrete levers. Klinenberg's *Palaces for the People* (2018) is the empirical case; Goodin's *Discretionary Time* ([2008](https://www.cambridge.org/core/books/discretionary-time/2DAFDBA6E01A5A0AC97E9B14F87DB84D)) shows Nordic welfare states deliver ~20% more discretionary time than the US at similar output.
+
+**But DRM isn't the terminal target either.** Kahneman's experiencing self / remembering self split (also Nozick's experience machine, 1974) shows people reflectively endorse effortful low-DRM activities the moment-to-moment ranking demotes — childcare (DRM ~3.0, remembered-value very high), meaningful work, mastery arcs. Deci-Ryan self-determination theory and Ryff's psychological wellbeing scales operationalize the eudaimonic dimension.
+
+So the target reduces to: **maximize DRM subject to remembering-self endorsement**, with the two selves aligned where possible (Csikszentmihalyi flow is the empirical case where the gap closes).
+
+**Which lands on freedom — but a specific kind.** After the DRM/effort correction and the two-selves split, the terminal objective on the personal axis is best stated as capability-under-conditions: guarantee the conditions, let each person pick their own hedonic/eudaimonic mix (Sen 1999, [*Development as Freedom*](https://global.oup.com/academic/product/development-as-freedom-9780198297581)). The conditions decompose into three:
+
+| Dimension | What it covers | Candidate measures |
+|---|---|---|
+| Floor | Security, health, political rights, mental-health access — below this, choice isn't possible | MPI ([OPHI](https://ophi.org.uk/global-mpi)), preventable-mortality rate, mental-health treatment coverage |
+| Environment | Discretionary time, walkable third-place access, protection from attention capture — conditions for choice to track preference rather than fatigue or extraction | ATUS discretionary hours, 15-min-walk third-place density, median hours in engagement-optimized apps |
+| Endorsement | Access to activities the remembering self will value — meaningful work, mastery, deep relationships | Job-quality indices, participation in skill/craft activities, close-friend counts |
+
+The subjective summary sits on top — Gallup "freedom to make life choices" ([WHR data](https://worldhappiness.report/data-sharing/)) plus WHR life-evaluation — as a check on whether the structural conditions are delivering. Not a fourth dimension; a lagging aggregate signal.
+
+### Why no measure is ground truth for freedom
+
+Every structural indicator embeds a normative theory of what freedom is. V-Dem's Liberal Democracy Index specifically encodes liberal-democratic institutions (multiparty elections, judicial independence, civil liberties) as the definition, which is one theory of freedom, not a neutral yardstick. Freedom House the same. The correlation between Gallup freedom-to-choose and V-Dem LDI is r ≈ 0.5–0.6, so R² ≈ 0.25–0.36 — 65–75% of Gallup variance isn't explained by V-Dem.
+
+The China case is the canonical ambiguity: standard reading is adaptive-preference bias masking constraint (Sen's tramp, Nussbaum on patriarchal cultures); alternative reading is that respondents don't experience absence of multiparty elections as personal-freedom constraint — they experience freedom as economic mobility, career choice, family choice, which have expanded. Both readings are defensible; the data doesn't discriminate.
+
+This is Berlin's positive/negative liberty distinction returning ([*Two Concepts of Liberty*, 1958](https://cactus.utahtech.edu/green/B_Readings/I_Berlin%20Two%20Concpets%20of%20Liberty.pdf)). Positive liberty (rational self-government) lets outsiders tell you what "real" freedom is and override your self-report as false consciousness. Negative liberty (absence of felt interference) trusts the respondent. Berlin argued positive liberty is historically dangerous precisely for this reason.
+
+The Floor / Environment / Endorsement dashboard doesn't escape the problem — it just makes the embedded theory more elaborate. Floor assumes health and political rights are freedom-constitutive; Endorsement assumes eudaimonic activities matter; both are contestable across cultures and philosophical traditions. Adaptation attenuates the subjective-to-structural mapping rather than eliminating it (Gallup does track structural conditions at r ≈ 0.5–0.6), so subjective is a noisy leading-adaptation-biased signal rather than useless.
+
+**The honest position:** track both. Use the structural dashboard *if* you accept its embedded theory, and pair it with the subjective survey as the respondent-trusting counterweight. When they diverge (China: high subjective, low V-Dem; or the converse case of high-material-freedom-low-satisfaction rich democracies), the divergence is diagnostic information — it exposes the normative question that any single measure would hide. There is no external position from which to declare one right and the other biased; the choice reflects which theory of freedom you're operating under.
+
+This is the same move the doc makes elsewhere: **don't collapse; expose the dimensions and let the tradeoffs be visible.**
+
 ---
 
 ## The dashboard, not a single number
