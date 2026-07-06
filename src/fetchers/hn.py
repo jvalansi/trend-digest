@@ -45,7 +45,7 @@ def normalize(item: dict) -> dict:
     return {
         "title": item.get("title", "").strip(),
         "summary": item.get("text", "") or "",
-        "url": item.get("url") or f"https://news.ycombinator.com/item?id={item['id']}",
+        "url": f"https://news.ycombinator.com/item?id={item['id']}",
         "source": "Hacker News",
         "category": "tech",
         "score": item.get("score", 0),
