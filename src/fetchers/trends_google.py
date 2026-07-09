@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-Google Trends fetcher — scrapes trending searches from trends.google.com/trending
-by parsing the inlined AF_initDataCallback('ds:0') payload from the page HTML.
+Google Trends fetcher — pulls trending searches from the official public RSS
+feed at trends.google.com/trending/rss?geo=XX. Each item includes an approx
+traffic figure and one or more news headlines picked by Google, so no
+separate news lookup is needed.
 
 Usage:
   python fetchers/trends_google.py [--geo GEO] [--limit N]
@@ -14,90 +16,72 @@ import json
 import re
 import sys
 import urllib.parse
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
-import feedparser
 import requests
 
 from stats import score_items
 
-NEWS_RSS = "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
-
+HT_NS = "https://trends.google.com/trending/rss"
 USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 
-DS0_RE = re.compile(
-    r"AF_initDataCallback\(\{key: 'ds:0'[^,]*, hash: '[^']*'[^,]*, data:(.*?), sideChannel:",
-    re.DOTALL,
-)
 
-
-def fetch_trending_page(geo: str) -> list:
-    """Return the raw trend rows from the /trending page for the given geo, or []."""
-    r = requests.get(
-        f"https://trends.google.com/trending?geo={geo}&hl=en-US",
-        headers={"user-agent": USER_AGENT, "accept-language": "en-US,en;q=0.9"},
-        timeout=20,
-    )
-    m = DS0_RE.search(r.text)
+def parse_traffic(text: str | None) -> float:
+    """Turn '2,000+' / '20K+' / '1M+' into a float."""
+    if not text:
+        return 0.0
+    s = text.strip().replace(",", "").replace("+", "").upper()
+    m = re.match(r"^([\d.]+)\s*([KM]?)$", s)
     if not m:
-        return []
-    data = json.loads(m.group(1))
-    return (data[1] if len(data) > 1 else None) or []
-
-
-def fetch_headline(query: str) -> tuple[str, str]:
-    try:
-        rss_url = NEWS_RSS.format(query=urllib.parse.quote(query))
-        feed = feedparser.parse(rss_url)
-        if feed.entries:
-            e = feed.entries[0]
-            return e.title, e.get("link", "")
-    except Exception:
-        pass
-    return "", ""
+        return 0.0
+    n = float(m.group(1))
+    mult = {"K": 1_000, "M": 1_000_000}.get(m.group(2), 1)
+    return n * mult
 
 
 def fetch(geo: str, limit: int) -> list[dict]:
-    trends = fetch_trending_page(geo)
+    url = f"https://trends.google.com/trending/rss?geo={geo}"
+    r = requests.get(url, headers={"user-agent": USER_AGENT}, timeout=20)
+    if r.status_code != 200 or not r.text.strip().startswith("<?xml"):
+        print(f"  ERROR: {geo} returned {r.status_code}", file=sys.stderr)
+        return []
 
+    root = ET.fromstring(r.text)
     now = datetime.now(timezone.utc).isoformat()
     items = []
-    for t in trends[:limit]:
-        query = t[0]
-        traffic = t[6] if len(t) > 6 and t[6] else 0
-        timestamp = t[3][0] if len(t) > 3 and t[3] else None
-        published = (
-            datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
-            if timestamp
-            else None
-        )
-        url = f"https://trends.google.com/trending?geo={geo}&q={urllib.parse.quote(query)}"
+    for item in root.findall(".//item"):
+        query = (item.findtext("title") or "").strip()
+        if not query:
+            continue
+        traffic = parse_traffic(item.findtext(f"{{{HT_NS}}}approx_traffic"))
+        try:
+            pub = parsedate_to_datetime(item.findtext("pubDate") or "")
+            published = pub.astimezone(timezone.utc).isoformat() if pub else None
+        except Exception:
+            published = None
+
+        news = item.find(f"{{{HT_NS}}}news_item")
+        headline = (news.findtext(f"{{{HT_NS}}}news_item_title") or "").strip() if news is not None else ""
+        article_url = (news.findtext(f"{{{HT_NS}}}news_item_url") or "").strip() if news is not None else ""
+        link = article_url or f"https://trends.google.com/trending?geo={geo}&q={urllib.parse.quote(query)}"
 
         items.append({
             "title": query,
-            "summary": "",
-            "url": url,
+            "summary": headline,
+            "url": link,
             "source": "Google Trends",
             "category": "news",
-            "traffic": float(traffic),
+            "traffic": traffic,
             "fetched_at": now,
             "published_at": published,
         })
-
-    # Fetch top news headline for each trend in parallel
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        futures = {pool.submit(fetch_headline, item["title"]): i for i, item in enumerate(items)}
-        for future in as_completed(futures):
-            idx = futures[future]
-            headline, article_url = future.result()
-            items[idx]["summary"] = headline
-            if article_url:
-                items[idx]["url"] = article_url
-
+        if len(items) >= limit:
+            break
     return items
 
 

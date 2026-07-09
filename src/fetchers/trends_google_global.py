@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Google Trends global fetcher — fetches trending searches across all ~125 countries
-by parsing the inlined AF_initDataCallback('ds:0') payload from each country's
-/trending page. Aggregates by cross-country appearance count to surface genuinely
-global trends.
+Google Trends global fetcher — pulls trending searches across ~125 countries
+from the official public per-country RSS feed at
+trends.google.com/trending/rss?geo=XX. Aggregates by cross-country appearance
+count to surface genuinely global trends.
 
 Usage:
   python fetchers/trends_google_global.py [--limit N]
@@ -16,6 +16,7 @@ import json
 import re
 import sys
 import urllib.parse
+import xml.etree.ElementTree as ET
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -67,33 +68,52 @@ COUNTRIES = [
 ]
 
 
+HT_NS = "https://trends.google.com/trending/rss"
 USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 
-DS0_RE = re.compile(
-    r"AF_initDataCallback\(\{key: 'ds:0'[^,]*, hash: '[^']*'[^,]*, data:(.*?), sideChannel:",
-    re.DOTALL,
-)
+
+def parse_traffic(text: str | None) -> float:
+    if not text:
+        return 0.0
+    s = text.strip().replace(",", "").replace("+", "").upper()
+    m = re.match(r"^([\d.]+)\s*([KM]?)$", s)
+    if not m:
+        return 0.0
+    n = float(m.group(1))
+    mult = {"K": 1_000, "M": 1_000_000}.get(m.group(2), 1)
+    return n * mult
 
 
 def fetch_country(code: str) -> list[dict]:
-    r = requests.get(
-        f"https://trends.google.com/trending?geo={code}&hl=en-US",
-        headers={"user-agent": USER_AGENT, "accept-language": "en-US,en;q=0.9"},
-        timeout=15,
-    )
-    m = DS0_RE.search(r.text)
-    if not m:
+    url = f"https://trends.google.com/trending/rss?geo={code}"
+    try:
+        r = requests.get(url, headers={"user-agent": USER_AGENT}, timeout=15)
+    except Exception:
         return []
-    data = json.loads(m.group(1))
-    trends = (data[1] if len(data) > 1 else None) or []
+    if r.status_code != 200 or not r.text.strip().startswith("<?xml"):
+        return []
+    try:
+        root = ET.fromstring(r.text)
+    except ET.ParseError:
+        return []
     items = []
-    for t in trends[:20]:
-        query = t[0]
-        traffic = float(t[6]) if len(t) > 6 and t[6] else 0.0
-        items.append({"title": query, "traffic": traffic})
+    for item in root.findall(".//item"):
+        query = (item.findtext("title") or "").strip()
+        if not query:
+            continue
+        traffic = parse_traffic(item.findtext(f"{{{HT_NS}}}approx_traffic"))
+        news = item.find(f"{{{HT_NS}}}news_item")
+        headline = (news.findtext(f"{{{HT_NS}}}news_item_title") or "").strip() if news is not None else ""
+        article_url = (news.findtext(f"{{{HT_NS}}}news_item_url") or "").strip() if news is not None else ""
+        items.append({
+            "title": query,
+            "traffic": traffic,
+            "headline": headline,
+            "article_url": article_url,
+        })
     return items
 
 
@@ -141,7 +161,7 @@ def fetch_global(limit: int) -> list[dict]:
             print(f"  {name} ({code}): ERROR {e}", file=sys.stderr, flush=True)
             return name, []
 
-    with ThreadPoolExecutor(max_workers=20) as pool:
+    with ThreadPoolExecutor(max_workers=10) as pool:
         futures = {pool.submit(fetch_one, code, name): (code, name) for code, name in COUNTRIES}
         for future in as_completed(futures):
             country_name, items = future.result()
