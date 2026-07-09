@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 Google Trends global fetcher — fetches trending searches across all ~125 countries
-using a single playwright session for tokens, then parallel HTTP requests per country.
-Aggregates by cross-country appearance count to surface genuinely global trends.
+by parsing the inlined AF_initDataCallback('ds:0') payload from each country's
+/trending page. Aggregates by cross-country appearance count to surface genuinely
+global trends.
 
 Usage:
   python fetchers/trends_google_global.py [--limit N]
@@ -23,7 +24,6 @@ import feedparser
 import requests
 from deep_translator import GoogleTranslator
 from langdetect import detect, LangDetectException
-from playwright.sync_api import sync_playwright
 
 from stats import score_items
 
@@ -67,52 +67,28 @@ COUNTRIES = [
 ]
 
 
-def get_session_tokens() -> dict:
-    """Load the trends page once to capture f.sid, bl, and cookies."""
-    captured = {}
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
 
-        def on_request(req):
-            if "batchexecute" in req.url and "i0OFE" in req.url and "url" not in captured:
-                captured["url"] = req.url
-
-        page.on("request", on_request)
-        page.goto("https://trends.google.com/trending?geo=US&hl=en-US",
-                  wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(12000)
-        captured["cookies"] = {c["name"]: c["value"] for c in context.cookies()}
-        browser.close()
-    return captured
+DS0_RE = re.compile(
+    r"AF_initDataCallback\(\{key: 'ds:0'[^,]*, hash: '[^']*'[^,]*, data:(.*?), sideChannel:",
+    re.DOTALL,
+)
 
 
-def fetch_country(code: str, fsid: str, bl: str, cookies: dict) -> list[dict]:
-    endpoint = (
-        "https://trends.google.com/_/TrendsUi/data/batchexecute"
-        f"?rpcids=i0OFE&source-path=%2Ftrending&f.sid={fsid}&bl={bl}&hl=en-US&rt=c"
+def fetch_country(code: str) -> list[dict]:
+    r = requests.get(
+        f"https://trends.google.com/trending?geo={code}&hl=en-US",
+        headers={"user-agent": USER_AGENT, "accept-language": "en-US,en;q=0.9"},
+        timeout=15,
     )
-    inner = json.dumps([None, None, code, 0, "en-US", 24, 1])
-    freq = json.dumps([[["i0OFE", inner, None, "generic"]]])
-    body = urllib.parse.urlencode({"f.req": freq})
-    headers = {
-        "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-        "referer": "https://trends.google.com/",
-        "x-same-domain": "1",
-        "user-agent": (
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        ),
-    }
-    r = requests.post(endpoint, data=body, headers=headers, cookies=cookies, timeout=15)
-    lines = r.text.splitlines()
-    json_line = next((l for l in lines if l.startswith("[[")), "")
-    if not json_line:
+    m = DS0_RE.search(r.text)
+    if not m:
         return []
-    outer = json.loads(json_line)
-    inner_data = json.loads(outer[0][2])
-    trends = inner_data[1] or []
+    data = json.loads(m.group(1))
+    trends = (data[1] if len(data) > 1 else None) or []
     items = []
     for t in trends[:20]:
         query = t[0]
@@ -154,21 +130,11 @@ def fetch_headline(query: str) -> tuple[str, str]:
 
 
 def fetch_global(limit: int) -> list[dict]:
-    print("  Getting session tokens...", file=sys.stderr)
-    session = get_session_tokens()
-    base_url = session.get("url", "")
-    if not base_url:
-        print("  ERROR: could not capture session tokens", file=sys.stderr)
-        return []
-    fsid = re.search(r"f\.sid=([^&]+)", base_url).group(1)
-    bl = re.search(r"bl=([^&]+)", base_url).group(1)
-    cookies = session["cookies"]
-
     raw_results: list[tuple[str, list[dict]]] = []
 
     def fetch_one(code, name):
         try:
-            items = fetch_country(code, fsid, bl, cookies)
+            items = fetch_country(code)
             print(f"  {name} ({code}): {len(items)} items", file=sys.stderr, flush=True)
             return name, items
         except Exception as e:

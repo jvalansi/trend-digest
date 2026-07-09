@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Google Trends fetcher — scrapes trending searches via the internal batchexecute API
-using a headless browser to match what appears on trends.google.com/trending.
+Google Trends fetcher — scrapes trending searches from trends.google.com/trending
+by parsing the inlined AF_initDataCallback('ds:0') payload from the page HTML.
 
 Usage:
   python fetchers/trends_google.py [--geo GEO] [--limit N]
@@ -11,16 +11,42 @@ Output: JSON array of normalized items to stdout.
 
 import argparse
 import json
+import re
 import sys
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
 import feedparser
+import requests
 
 from stats import score_items
 
 NEWS_RSS = "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
+
+DS0_RE = re.compile(
+    r"AF_initDataCallback\(\{key: 'ds:0'[^,]*, hash: '[^']*'[^,]*, data:(.*?), sideChannel:",
+    re.DOTALL,
+)
+
+
+def fetch_trending_page(geo: str) -> list:
+    """Return the raw trend rows from the /trending page for the given geo, or []."""
+    r = requests.get(
+        f"https://trends.google.com/trending?geo={geo}&hl=en-US",
+        headers={"user-agent": USER_AGENT, "accept-language": "en-US,en;q=0.9"},
+        timeout=20,
+    )
+    m = DS0_RE.search(r.text)
+    if not m:
+        return []
+    data = json.loads(m.group(1))
+    return (data[1] if len(data) > 1 else None) or []
 
 
 def fetch_headline(query: str) -> tuple[str, str]:
@@ -36,44 +62,7 @@ def fetch_headline(query: str) -> tuple[str, str]:
 
 
 def fetch(geo: str, limit: int) -> list[dict]:
-    from playwright.sync_api import sync_playwright
-
-    trend_data = {}
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-
-        def on_response(resp):
-            if "batchexecute" in resp.url and "i0OFE" in resp.url:
-                try:
-                    trend_data["body"] = resp.text()
-                except Exception:
-                    pass
-
-        page.on("response", on_response)
-        page.goto(
-            f"https://trends.google.com/trending?geo={geo}&hl=en-US",
-            wait_until="domcontentloaded",
-            timeout=30000,
-        )
-        page.wait_for_timeout(10000)
-        browser.close()
-
-    body = trend_data.get("body", "")
-    if not body:
-        return []
-
-    lines = body.splitlines()
-    # Response format: )]}'\n\n<size>\n<json>\n...
-    # The JSON line is at index 3
-    json_line = next((l for l in lines if l.startswith("[[")), "")
-    if not json_line:
-        return []
-
-    outer = json.loads(json_line)
-    inner = json.loads(outer[0][2])
-    trends = inner[1] or []
+    trends = fetch_trending_page(geo)
 
     now = datetime.now(timezone.utc).isoformat()
     items = []
