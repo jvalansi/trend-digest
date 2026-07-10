@@ -444,8 +444,8 @@ def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
     if result.returncode != 0:
         return [""] * len(items)
     response_text = json.loads(result.stdout).get("result", "")
-    start, end = response_text.find("["), response_text.rfind("]") + 1
-    descs = json.loads(response_text[start:end])
+    start = response_text.find("[")
+    descs, _ = json.JSONDecoder().raw_decode(response_text[start:])
     desc_map = {d["index"]: d["description"] for d in descs}
     return [desc_map.get(i, "") for i in range(len(items))]
 
