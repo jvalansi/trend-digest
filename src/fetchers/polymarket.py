@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Polymarket fetcher — surfaces markets with unusual volume or large odds shifts.
+Polymarket fetcher — surfaces events with unusual 24h volume.
 
-Uses the public Gamma API (no auth required).
+Uses the public Gamma API (no auth required). Fetches events (the cards shown on
+polymarket.com), not individual per-outcome markets, so aggregated volume ranking
+matches the homepage.
 
 Usage:
   python fetchers/polymarket.py [--limit N]
@@ -16,52 +18,69 @@ import sys
 import urllib.request
 from datetime import datetime, timezone
 
-API_URL = "https://gamma-api.polymarket.com/markets"
+API_URL = "https://gamma-api.polymarket.com/events"
 
 
-def fetch_markets(limit: int) -> list[dict]:
-    url = f"{API_URL}?limit=100&order=volume24hr&ascending=false&active=true&closed=false"
+def fetch_events(limit: int) -> list[dict]:
+    url = f"{API_URL}?limit={limit}&order=volume24hr&ascending=false&active=true&closed=false"
     req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read())
 
 
-def normalize(market: dict) -> dict | None:
-    question = market.get("question", "").strip()
-    if not question:
+def _yes_price(market: dict) -> float | None:
+    raw = market.get("outcomePrices")
+    if not raw:
+        return None
+    try:
+        prices = json.loads(raw) if isinstance(raw, str) else raw
+        return float(prices[0]) if prices else None
+    except Exception:
         return None
 
-    volume_24h = float(market.get("volume24hr", 0) or 0)
-    volume_total = float(market.get("volume", 0) or 0)
-    slug = market.get("slug", "")
+
+def normalize(event: dict) -> dict | None:
+    title = event.get("title", "").strip()
+    if not title:
+        return None
+
+    volume_24h = float(event.get("volume24hr", 0) or 0)
+    volume_total = float(event.get("volume", 0) or 0)
+    slug = event.get("slug", "")
     url = f"https://polymarket.com/event/{slug}" if slug else "https://polymarket.com"
 
-    # Get probability from outcomes
-    outcomes_raw = market.get("outcomePrices") or market.get("outcomes", "[]")
-    try:
-        if isinstance(outcomes_raw, str):
-            prices = json.loads(outcomes_raw)
-        else:
-            prices = outcomes_raw
-        # First outcome is typically "Yes"
-        prob = round(float(prices[0]) * 100, 1) if prices else None
-    except Exception:
-        prob = None
+    markets = event.get("markets") or []
+    # For multi-outcome events (e.g. World Cup Winner), show top options by Yes price.
+    # For a single binary market, show its Yes probability.
+    outcomes = []
+    for m in markets:
+        price = _yes_price(m)
+        if price is None:
+            continue
+        label = (m.get("groupItemTitle") or "").strip()
+        outcomes.append((label, price))
+    outcomes.sort(key=lambda x: x[1], reverse=True)
 
-    prob_str = f" — Yes: {prob}%" if prob is not None else ""
-    summary = (
-        f"24h volume: ${volume_24h:,.0f} | Total: ${volume_total:,.0f}{prob_str}"
-    )
+    if len(markets) == 1 and outcomes:
+        prob = round(outcomes[0][1] * 100, 1)
+        odds_str = f" — Yes: {prob}%"
+    elif outcomes:
+        top = [f"{label or 'Yes'}: {round(price * 100, 1)}%" for label, price in outcomes[:3]]
+        odds_str = " — " + ", ".join(top)
+    else:
+        odds_str = ""
+
+    summary = f"24h volume: ${volume_24h:,.0f} | Total: ${volume_total:,.0f}{odds_str}"
 
     return {
-        "title": question,
+        "title": title,
         "summary": summary,
         "url": url,
         "source": "Polymarket",
         "category": "finance",
         "engagement": volume_24h,
         "engagement_raw": volume_24h,
-        "probability": prob,
+        "probability": round(outcomes[0][1] * 100, 1) if outcomes else None,
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "published_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -69,24 +88,24 @@ def normalize(market: dict) -> dict | None:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=10, help="Top N markets to return (default: 10)")
+    parser.add_argument("--limit", type=int, default=10, help="Top N events to return (default: 10)")
     args = parser.parse_args()
 
-    print("  Fetching Polymarket top markets by 24h volume...", file=sys.stderr)
+    print("  Fetching Polymarket top events by 24h volume...", file=sys.stderr)
     try:
-        markets = fetch_markets(100)
+        events = fetch_events(100)
     except Exception as e:
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
     results = []
-    for m in markets:
-        item = normalize(m)
+    for e in events:
+        item = normalize(e)
         if item and item["engagement"] > 0:
             results.append(item)
 
     results = results[:args.limit]
-    print(f"  Got {len(results)} markets", file=sys.stderr)
+    print(f"  Got {len(results)} events", file=sys.stderr)
     print(json.dumps(results, indent=2, ensure_ascii=False))
 
 
