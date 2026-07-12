@@ -30,15 +30,19 @@ SKIP = {
 }
 
 
-def fetch_thumbnail(title: str) -> str | None:
+def fetch_summary(title: str) -> dict:
     url = f"{SUMMARY_BASE}/{urllib.parse.quote(title, safe='')}"
     req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read())
-        return data.get("thumbnail", {}).get("source")
+        return {
+            "thumbnail": data.get("thumbnail", {}).get("source"),
+            "description": data.get("description"),
+            "extract": data.get("extract"),
+        }
     except Exception:
-        return None
+        return {}
 
 
 def fetch(date: str, limit: int) -> list[dict]:
@@ -50,6 +54,7 @@ def fetch(date: str, limit: int) -> list[dict]:
 
     articles = data["items"][0]["articles"]
     items = []
+    titles = []
     for art in articles:
         title = art["article"]
         if title in SKIP or title.startswith("Special:"):
@@ -66,21 +71,32 @@ def fetch(date: str, limit: int) -> list[dict]:
             "fetched_at": datetime.now(timezone.utc).isoformat(),
             "published_at": None,
         })
+        titles.append(title)
         if len(items) >= limit:
             break
 
-    # Fetch thumbnails concurrently
-    title_to_item = {art["article"]: item for art, item in zip(
-        [a for a in articles if a["article"] not in SKIP and not a["article"].startswith("Special:")],
-        items
-    )}
+    # Fetch summaries (thumbnail + description + extract) concurrently
+    title_to_item = dict(zip(titles, items))
     with ThreadPoolExecutor(max_workers=10) as ex:
-        future_to_title = {ex.submit(fetch_thumbnail, title): title for title in title_to_item}
+        future_to_title = {ex.submit(fetch_summary, title): title for title in title_to_item}
         for future in as_completed(future_to_title):
             title = future_to_title[future]
-            thumb = future.result()
-            if thumb and title in title_to_item:
-                title_to_item[title]["thumbnail"] = thumb
+            info = future.result()
+            item = title_to_item.get(title)
+            if not item or not info:
+                continue
+            if info.get("thumbnail"):
+                item["thumbnail"] = info["thumbnail"]
+            desc = info.get("description")
+            extract = info.get("extract")
+            if desc or extract:
+                parts = []
+                if desc:
+                    parts.append(desc)
+                if extract:
+                    parts.append(extract)
+                parts.append(f"{item['views']:,} views on Wikipedia.")
+                item["summary"] = " ".join(parts)
 
     return items
 
