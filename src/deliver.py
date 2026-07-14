@@ -463,7 +463,8 @@ def format_item_telegram(item: dict, description: str) -> str:
     source_str = " · ".join(sources)
     desc_str = f"\n  {description}" if description else ""
     prob = item.get("probability")
-    prob_str = f" · Yes {prob}%" if prob is not None else ""
+    prob_label = item.get("probability_label") or "Yes"
+    prob_str = f" · {prob_label} {prob}%" if prob is not None else ""
     days = item.get("days_appeared")
     seen_str = f" · ↩ {days}d" if days else ""
     return f"• [{title}]({url}){desc_str}\n  _{source_str}{prob_str}{seen_str}_"
@@ -532,7 +533,8 @@ def format_item(item: dict, description: str) -> str:
     if raw is not None and eng is not None:
         engagement_str = f" · {int(raw)} pts · z={eng:+.2f}"
     prob = item.get("probability")
-    prob_str = f" · Yes {prob}%" if prob is not None else ""
+    prob_label = item.get("probability_label") or "Yes"
+    prob_str = f" · {prob_label} {prob}%" if prob is not None else ""
     days = item.get("days_appeared")
     seen_str = f" · ↩ {days}d" if days else ""
     return f"*<{url}|{title}>*{desc_str}\n   _{source_str}{engagement_str}{prob_str}{seen_str}_"
@@ -756,7 +758,8 @@ def main():
                 source_str = " · ".join(sources)
                 desc_str = f"\n  {section_descs[desc_idx]}" if section_descs[desc_idx] else ""
                 prob = item.get("probability")
-                prob_str = f" · Yes {prob}%" if prob is not None else ""
+                prob_label = item.get("probability_label") or "Yes"
+                prob_str = f" · {prob_label} {prob}%" if prob is not None else ""
                 days = item.get("days_appeared")
                 seen_str = f" · ↩ {days}d" if days else ""
                 post_to_discord(f"**[{title}](<{url}>)**{desc_str}\n  _{source_str}{prob_str}{seen_str}_", token, thread_id)

@@ -61,7 +61,9 @@ def normalize(event: dict) -> dict | None:
         outcomes.append((label, price))
     outcomes.sort(key=lambda x: x[1], reverse=True)
 
-    if len(markets) == 1 and outcomes:
+    top_label = outcomes[0][0] if outcomes else ""
+    is_binary = len(markets) == 1
+    if is_binary and outcomes:
         prob = round(outcomes[0][1] * 100, 1)
         odds_str = f" — Yes: {prob}%"
     elif outcomes:
@@ -81,6 +83,7 @@ def normalize(event: dict) -> dict | None:
         "engagement": volume_24h,
         "engagement_raw": volume_24h,
         "probability": round(outcomes[0][1] * 100, 1) if outcomes else None,
+        "probability_label": "Yes" if is_binary else (top_label or "Yes"),
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "published_at": datetime.now(timezone.utc).isoformat(),
     }
