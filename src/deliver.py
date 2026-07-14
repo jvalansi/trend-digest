@@ -439,14 +439,20 @@ def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
     env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
     result = subprocess.run(
         [CLAUDE_PATH, "-p", prompt, "--output-format", "json", "--dangerously-skip-permissions"],
-        capture_output=True, text=True, env=env
+        input="", capture_output=True, text=True, env=env
     )
     if result.returncode != 0:
+        print(f"  DESC FAIL rc={result.returncode} stderr={result.stderr[-500:]!r} "
+              f"stdout={result.stdout[:500]!r}", file=sys.stderr)
         return [""] * len(items)
-    response_text = json.loads(result.stdout).get("result", "")
-    start = response_text.find("[")
-    descs, _ = json.JSONDecoder().raw_decode(response_text[start:])
-    desc_map = {d["index"]: d["description"] for d in descs}
+    try:
+        response_text = json.loads(result.stdout).get("result", "")
+        start = response_text.find("[")
+        descs, _ = json.JSONDecoder().raw_decode(response_text[start:])
+        desc_map = {d["index"]: d["description"] for d in descs}
+    except Exception as e:
+        print(f"  DESC PARSE FAIL {e!r} stdout={result.stdout[:800]!r}", file=sys.stderr)
+        return [""] * len(items)
     return [desc_map.get(i, "") for i in range(len(items))]
 
 

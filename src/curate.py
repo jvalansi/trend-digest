@@ -72,10 +72,11 @@ def curate_batch(items: list[dict], mode: str) -> list[dict]:
     env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
     result = subprocess.run(
         [CLAUDE_PATH, "-p", prompt, "--output-format", "json", "--dangerously-skip-permissions"],
-        capture_output=True, text=True, env=env
+        input="", capture_output=True, text=True, env=env
     )
     if result.returncode != 0:
-        print(f"  Claude error: {result.stderr[-200:]}", file=sys.stderr)
+        print(f"  Claude error: rc={result.returncode} stderr={result.stderr[-300:]!r} "
+              f"stdout={result.stdout[:500]!r}", file=sys.stderr)
         return items
 
     response_text = json.loads(result.stdout).get("result", "")
