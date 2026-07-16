@@ -52,6 +52,7 @@ PAGE_SIZE      = 1000
 RATE_DELAY     = 3.0  # arXiv asks for ≥3 seconds between requests
 
 MIN_RECENT_FREQ = 8    # lowered from 20 since per-day category slice is much smaller
+MIN_RECENT_FREQ_NEW = 15  # higher bar for zero-baseline terms (0→N is a huge ratio; guard against single-paper coinages)
 MIN_RATIO       = 8.0
 NGRAM_LENGTHS   = (2, 3)
 TOP_N           = 10
@@ -315,6 +316,8 @@ def main():
     parser.add_argument("--categories", help="Comma-separated category override (default: today's slice of the quarterly rotation)")
     parser.add_argument("--top", type=int, default=TOP_N)
     parser.add_argument("--min-freq", type=int, default=MIN_RECENT_FREQ)
+    parser.add_argument("--min-freq-new", type=int, default=MIN_RECENT_FREQ_NEW,
+                        help="Minimum recent occurrences for zero-baseline terms (default: %(default)s)")
     parser.add_argument("--min-ratio", type=float, default=MIN_RATIO)
     args = parser.parse_args()
 
@@ -384,6 +387,8 @@ def main():
         if cnt < args.min_freq:
             continue
         base_cnt     = base_counts.get(ng, 0)
+        if base_cnt == 0 and cnt < args.min_freq_new:
+            continue
         recent_share = cnt / recent_total
         base_share   = (base_cnt + 1) / (base_total + 1)
         ratio        = recent_share / base_share
@@ -423,7 +428,7 @@ def main():
             f"{len(top)} emerging term{'s' if len(top) != 1 else ''} in "
             f"{len(recent_texts):,} recent abstracts ({recent_from}→{recent_to}) vs "
             f"{len(base_texts):,} baseline ({base_from}→{base_to}). "
-            f"Threshold: ≥{args.min_freq} occurrences, ≥{args.min_ratio:.0f}× share growth."
+            f"Threshold: ≥{args.min_freq} occurrences (≥{args.min_freq_new} if new), ≥{args.min_ratio:.0f}× share growth."
         ),
         "url":          (
             f"https://arxiv.org/list/{categories[0]}/recent"
