@@ -17,7 +17,10 @@ a baseline window (default: same 90-day window 1 year prior), extracts 2- and
 The +1 smoothing keeps never-before-seen terms scorable (and bounds the ratio).
 
 Filters: ≥MIN_RECENT_FREQ occurrences in recent window, content-word endpoints,
-length 2–3, not in PHRASE_STOPLIST.
+length 2–3, not in PHRASE_STOPLIST, and not generic per the historical n-gram
+background table (data/arxiv_ngram_background.json; rebuild with
+--build-background). The background is sampled from a window years in the past so
+perennial boilerplate scores high while genuinely-new terms score ~0.
 
 Always emits a sweep-progress summary item (even when nothing found) so the digest
 shows where in the cycle we are. Individual burst terms are emitted as separate items.
@@ -48,6 +51,7 @@ ARXIV_API      = "https://export.arxiv.org/api/query"
 TAXONOMY_URL   = "https://arxiv.org/category_taxonomy"
 DATA_DIR       = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data")
 CATEGORY_CACHE = os.path.join(DATA_DIR, "arxiv_categories.json")
+BACKGROUND_CACHE = os.path.join(DATA_DIR, "arxiv_ngram_background.json")
 PAGE_SIZE      = 1000
 RATE_DELAY     = 3.0  # arXiv asks for ≥3 seconds between requests
 
@@ -56,6 +60,18 @@ MIN_RECENT_FREQ_NEW = 15  # higher bar for zero-baseline terms (0→N is a huge 
 MIN_RATIO       = 8.0
 NGRAM_LENGTHS   = (2, 3)
 TOP_N           = 10
+
+# Background-genericness gate. A phrase that was already common across all of
+# arXiv years ago is perennial boilerplate ("theoretical results", "significant
+# improvement"), not emerging vocabulary. We sample n-gram document frequency
+# over a historical window spanning every category and drop candidates whose
+# background DF exceeds GENERIC_DF_THRESHOLD. Sampling from the *past* is
+# deliberate: genuinely new terms had ~0 DF then, so they sail through.
+BACKGROUND_YEARS_AGO   = 3      # historical window ends this many years before build date
+BACKGROUND_WINDOW_DAYS = 90
+BACKGROUND_MAX_PER_CAT = 1000   # one API page of abstracts per category
+BACKGROUND_MIN_DF      = 0.002  # only store phrases appearing in ≥0.2% of sampled abstracts
+GENERIC_DF_THRESHOLD   = 0.005  # drop candidates present in ≥0.5% of background abstracts
 
 CATEGORY_RE = re.compile(r"<h4>([a-zA-Z\-]+\.[a-zA-Z\-]+)\s*<span>\(([^)]+)\)</span></h4>")
 
@@ -275,20 +291,28 @@ def is_content_endpoint(token: str) -> bool:
     return token not in STOPWORDS and len(token) >= 3 and not token.isdigit()
 
 
-def good_ngram(ngram: tuple[str, ...]) -> bool:
+def good_ngram_shape(ngram: tuple[str, ...]) -> bool:
+    """Structural validity only (content endpoints, no year, no prose-scaffold
+    trigram middle) — independent of the phrase stoplist, so the background
+    table can measure genericness for phrases the stoplist would otherwise hide."""
     if not is_content_endpoint(ngram[0]) or not is_content_endpoint(ngram[-1]):
         return False
     if any(YEAR_RE.search(tok) for tok in ngram):
+        return False
+    if len(ngram) == 3 and ngram[1] in TRIGRAM_MIDDLE_STOP:
+        return False
+    return True
+
+
+def good_ngram(ngram: tuple[str, ...]) -> bool:
+    if not good_ngram_shape(ngram):
         return False
     phrase = " ".join(ngram)
     if phrase in PHRASE_STOPLIST:
         return False
     # Reject trigrams whose inner bigrams are stoplisted (catches e.g.
-    # "study we propose" via the "we propose" bigram) or whose middle token
-    # is prose scaffolding (catches e.g. "work we derive").
+    # "study we propose" via the "we propose" bigram).
     if len(ngram) == 3:
-        if ngram[1] in TRIGRAM_MIDDLE_STOP:
-            return False
         if " ".join(ngram[:2]) in PHRASE_STOPLIST or " ".join(ngram[1:]) in PHRASE_STOPLIST:
             return False
     return True
@@ -310,6 +334,98 @@ def count_ngrams(texts: list[str]) -> tuple[Counter, int]:
     return counter, total_tokens
 
 
+def count_ngram_df(texts: list[str], df: Counter) -> None:
+    """Accumulate document frequency: for each abstract, count each distinct
+    good n-gram once. Mutates `df` in place."""
+    for text in texts:
+        present: set[tuple[str, ...]] = set()
+        tokens = tokenize(text)
+        for n in NGRAM_LENGTHS:
+            if len(tokens) < n:
+                continue
+            for i in range(len(tokens) - n + 1):
+                ng = tuple(tokens[i:i+n])
+                if good_ngram_shape(ng):
+                    present.add(ng)
+        for ng in present:
+            df[ng] += 1
+
+
+def fetch_category_sample(category: str, start_date: date, end_date: date,
+                          cap: int) -> list[str]:
+    """One capped page of abstracts for a category — a representative sample for
+    background estimation, not the exhaustive pull fetch_category does."""
+    url = (
+        f"{ARXIV_API}?search_query={build_query(category, start_date, end_date)}"
+        f"&start=0&max_results={min(cap, PAGE_SIZE)}"
+        f"&sortBy=submittedDate&sortOrder=ascending"
+    )
+    root = ET.fromstring(fetch_xml(url))
+    texts = []
+    for entry in root.findall("atom:entry", ATOM_NS):
+        title   = entry.findtext("atom:title",   default="", namespaces=ATOM_NS) or ""
+        summary = entry.findtext("atom:summary", default="", namespaces=ATOM_NS) or ""
+        texts.append(title + " " + summary)
+    return texts
+
+
+def build_background() -> dict:
+    """Sample n-gram document frequency across every category from a historical
+    window and write it to BACKGROUND_CACHE."""
+    cats = sorted(load_or_refresh_categories(), key=lambda c: c["id"])
+    end   = shift_years(date.today(), BACKGROUND_YEARS_AGO)
+    start = end - timedelta(days=BACKGROUND_WINDOW_DAYS)
+    print(f"  Building n-gram background from {start} → {end} across {len(cats)} categories",
+          file=sys.stderr)
+
+    df: Counter = Counter()
+    n_abstracts = 0
+    for i, c in enumerate(cats):
+        texts = fetch_category_sample(c["id"], start, end, BACKGROUND_MAX_PER_CAT)
+        n_abstracts += len(texts)
+        count_ngram_df(texts, df)
+        print(f"  ... [{i+1}/{len(cats)}] {c['id']}: +{len(texts)} abstracts "
+              f"({n_abstracts:,} total, {len(df):,} n-grams)", file=sys.stderr)
+        time.sleep(RATE_DELAY)
+
+    if n_abstracts == 0:
+        raise RuntimeError("Background build fetched zero abstracts")
+
+    table = {" ".join(ng): round(cnt / n_abstracts, 6)
+             for ng, cnt in df.items() if cnt / n_abstracts >= BACKGROUND_MIN_DF}
+    payload = {
+        "built_from": [start.isoformat(), end.isoformat()],
+        "n_abstracts": n_abstracts,
+        "df": dict(sorted(table.items(), key=lambda kv: kv[1], reverse=True)),
+    }
+    with open(BACKGROUND_CACHE, "w") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=1)
+    print(f"  Wrote {len(table):,} background phrases (DF ≥ {BACKGROUND_MIN_DF}) "
+          f"from {n_abstracts:,} abstracts to {BACKGROUND_CACHE}", file=sys.stderr)
+    return table
+
+
+def load_background() -> dict:
+    if not os.path.exists(BACKGROUND_CACHE):
+        print("  No n-gram background table found — genericness gate disabled", file=sys.stderr)
+        return {}
+    with open(BACKGROUND_CACHE) as f:
+        return json.load(f).get("df", {})
+
+
+def is_generic(ng: tuple[str, ...], background: dict, threshold: float) -> bool:
+    """True if the phrase — or, for a trigram, either constituent bigram — was
+    common across arXiv in the historical background sample."""
+    if background.get(" ".join(ng), 0.0) >= threshold:
+        return True
+    if len(ng) == 3:
+        if background.get(" ".join(ng[:2]), 0.0) >= threshold:
+            return True
+        if background.get(" ".join(ng[1:]), 0.0) >= threshold:
+            return True
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--recent-from", help="ISO date for recent window start (default: 90 days ago)")
@@ -321,7 +437,15 @@ def main():
     parser.add_argument("--min-freq-new", type=int, default=MIN_RECENT_FREQ_NEW,
                         help="Minimum recent occurrences for zero-baseline terms (default: %(default)s)")
     parser.add_argument("--min-ratio", type=float, default=MIN_RATIO)
+    parser.add_argument("--generic-df", type=float, default=GENERIC_DF_THRESHOLD,
+                        help="Drop candidates with background document frequency ≥ this (0 disables the gate; default: %(default)s)")
+    parser.add_argument("--build-background", action="store_true",
+                        help="Rebuild the historical n-gram background table and exit")
     args = parser.parse_args()
+
+    if args.build_background:
+        build_background()
+        return
 
     today           = date.today()
     now             = datetime.now(timezone.utc).isoformat()
@@ -384,9 +508,15 @@ def main():
     print(f"  {len(recent_counts):,} unique recent n-grams over {recent_total:,} tokens",
           file=sys.stderr)
 
+    background = load_background() if args.generic_df > 0 else {}
+
     scored = []
+    n_generic = 0
     for ng, cnt in recent_counts.items():
         if cnt < args.min_freq:
+            continue
+        if background and is_generic(ng, background, args.generic_df):
+            n_generic += 1
             continue
         base_cnt     = base_counts.get(ng, 0)
         if base_cnt == 0 and cnt < args.min_freq_new:
@@ -416,7 +546,8 @@ def main():
         kept_bigrams |= bg
 
     top = deduped[:args.top]
-    print(f"  {len(scored)} terms passing thresholds, {len(deduped)} after dedup; surfacing top {len(top)}", file=sys.stderr)
+    print(f"  {len(scored)} terms passing thresholds ({n_generic} dropped as generic), "
+          f"{len(deduped)} after dedup; surfacing top {len(top)}", file=sys.stderr)
 
     if day_idx is not None:
         header_title = f"arXiv burst sweep — day {day_idx + 1}/{total_days} of {current_quarter}"
