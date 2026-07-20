@@ -109,6 +109,8 @@ PHRASE_STOPLIST = {
     "novel approach", "novel method", "novel framework",
     "significant improvement", "significant improvements",
     "substantial improvement", "substantial improvements",
+    "theoretical results", "theoretical analysis", "theoretical guarantees",
+    "empirical results", "numerical results", "numerical experiments",
 }
 
 TOKEN_RE = re.compile(r"[a-z][a-z0-9-]*")
