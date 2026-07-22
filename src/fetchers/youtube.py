@@ -113,7 +113,7 @@ def main():
             print(f"  ERROR: {e}", file=sys.stderr)
             sys.exit(1)
 
-    results = score_items(results, f"YouTube Trending ({args.category})", "score")
+    results = score_items(results, f"YouTube Trending ({args.category})", "score", "views")
     print(f"  YouTube Trending ({args.category}): {len(results)} videos", file=sys.stderr)
     print(json.dumps(results, indent=2, ensure_ascii=False))
 

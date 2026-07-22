@@ -119,7 +119,7 @@ def main():
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    items = score_items(items, "Altmetric", "score")
+    items = score_items(items, "Altmetric", "score", "citations")
     items = sorted(items, key=lambda x: x["engagement"], reverse=True)[:args.limit]
     print(f"  {len(items)} papers fetched", file=sys.stderr)
     print(json.dumps(items, ensure_ascii=False))

@@ -93,7 +93,7 @@ def main():
 
     items = fetch(args.geo, args.limit)
     print(f"  Google Trends ({args.geo}): {len(items)} items", file=sys.stderr)
-    items = score_items(items, "Google Trends", "traffic")
+    items = score_items(items, "Google Trends", "traffic", "searches")
     print(json.dumps(items, indent=2, ensure_ascii=False))
 
 

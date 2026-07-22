@@ -42,8 +42,12 @@ def _update_stats(source: str, raw_value: float) -> None:
     _save(stats)
 
 
-def score_items(items: list[dict], source: str, raw_field: str) -> list[dict]:
-    """Normalize engagement within the current batch (z-score), update historical stats."""
+def score_items(items: list[dict], source: str, raw_field: str, label: str = "") -> list[dict]:
+    """Normalize engagement within the current batch (z-score), update historical stats.
+
+    `label` names the unit of the raw metric (e.g. "points", "stars today") and is
+    carried through to the digest so each entry can show the number it was ranked by.
+    """
     drop_fields = {"score", "comments", "stars", "stars_today"} - {raw_field}
 
     raws = [float(item.get(raw_field, 0) or 0) for item in items]
@@ -62,7 +66,9 @@ def score_items(items: list[dict], source: str, raw_field: str) -> list[dict]:
     for item, raw in zip(items, raws):
         z = (raw - mean) / std if std > 0 else 0.0
         item["engagement_raw"] = raw
+        item["engagement_label"] = label
         item["engagement"] = max(-3.0, min(3.0, round(z, 3)))
+        item["engagement_z"] = item["engagement"]
         for f in drop_fields:
             item.pop(f, None)
         item.pop(raw_field, None)

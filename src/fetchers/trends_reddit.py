@@ -101,7 +101,7 @@ def main():
             except Exception as e:
                 print(f"  Reddit r/{sub}: ERROR — {e}", file=sys.stderr)
 
-    all_items = score_items(all_items, "Reddit", "score")
+    all_items = score_items(all_items, "Reddit", "score", "upvotes")
     all_items = sorted(all_items, key=lambda x: x["engagement"], reverse=True)[:20]
     print(f"  Reddit total (capped): {len(all_items)} items", file=sys.stderr)
 

@@ -56,7 +56,7 @@ def main():
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    items = score_items(items, "HF Papers", "upvotes")
+    items = score_items(items, "HF Papers", "upvotes", "upvotes")
     items = sorted(items, key=lambda x: x["engagement"], reverse=True)
     print(f"  Got {len(items)} papers", file=sys.stderr)
     print(json.dumps(items, indent=2, ensure_ascii=False))

@@ -586,6 +586,8 @@ def main():
             "source":       "arXiv n-gram Burst",
             "category":     "science",
             "engagement":   round(min(ratio, 100), 2),
+            "engagement_raw": round(ratio, 2),
+            "engagement_label": "× share growth",
             "fetched_at":   now,
             "published_at": None,
         })

@@ -266,6 +266,8 @@ def main():
             "source":       "OpenAlex Early Signal",
             "category":     "science",
             "engagement":   round(h["ratio"], 2),
+            "engagement_raw": round(h["ratio"], 2),
+            "engagement_label": "× share growth",
             "fetched_at":   now,
             "published_at": None,
         })

@@ -456,18 +456,43 @@ def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
     return [desc_map.get(i, "") for i in range(len(items))]
 
 
+def _format_number(v: float) -> str:
+    if abs(v - round(v)) < 0.005:
+        return f"{int(round(v)):,}"
+    return f"{v:,.1f}"
+
+
+def format_engagement(item: dict) -> str:
+    """Raw metric the item was ranked by, e.g. ' · 412 points · z=+1.83'.
+    Empty when the item carries no raw metric (RSS items ranked by cross-source score)."""
+    raw = item.get("engagement_raw")
+    if raw is None:
+        return ""
+    label = item.get("engagement_label") or "pts"
+    num = _format_number(float(raw))
+    if label.startswith("×"):      # "3.4× normal volume" — suffix, not a unit
+        metric = f"{num}{label}"
+    elif label.startswith("$"):    # "$1,234,567 24h volume" — currency prefix
+        metric = f"${num} {label[1:]}"
+    else:
+        metric = f"{num} {label}"
+    z = item.get("engagement_z")
+    return f" · {metric}" + (f" · z={z:+.2f}" if z is not None else "")
+
+
 def format_item_telegram(item: dict, description: str) -> str:
     title = item.get("title_en") or item["title"]
     url = item["url"]
     sources = item.get("sources", [item["source"]])
     source_str = " · ".join(sources)
     desc_str = f"\n  {description}" if description else ""
+    engagement_str = format_engagement(item)
     prob = item.get("probability")
     prob_label = item.get("probability_label") or "Yes"
     prob_str = f" · {prob_label} {prob}%" if prob is not None else ""
     days = item.get("days_appeared")
     seen_str = f" · ↩ {days}d" if days else ""
-    return f"• [{title}]({url}){desc_str}\n  _{source_str}{prob_str}{seen_str}_"
+    return f"• [{title}]({url}){desc_str}\n  _{source_str}{engagement_str}{prob_str}{seen_str}_"
 
 
 def post_to_telegram(text: str) -> None:
@@ -527,11 +552,7 @@ def format_item(item: dict, description: str) -> str:
     title = item.get("title_en") or item["title"]
     url = item["url"]
     desc_str = f"\n   {description}" if description else ""
-    raw = item.get("engagement_raw")
-    eng = item.get("engagement")
-    engagement_str = ""
-    if raw is not None and eng is not None:
-        engagement_str = f" · {int(raw)} pts · z={eng:+.2f}"
+    engagement_str = format_engagement(item)
     prob = item.get("probability")
     prob_label = item.get("probability_label") or "Yes"
     prob_str = f" · {prob_label} {prob}%" if prob is not None else ""

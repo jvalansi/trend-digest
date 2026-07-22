@@ -86,7 +86,7 @@ def main():
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    items = score_items(items, args.server, "score")
+    items = score_items(items, args.server, "score", "citations")
     items = sorted(items, key=lambda x: x.get("published_at") or "", reverse=True)[:args.limit]
     print(f"  {len(items)} papers fetched", file=sys.stderr)
     print(json.dumps(items, ensure_ascii=False))

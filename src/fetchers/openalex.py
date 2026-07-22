@@ -107,7 +107,7 @@ def main():
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    items = score_items(items, "OpenAlex", "citations")
+    items = score_items(items, "OpenAlex", "citations", "citations")
     items = sorted(items, key=lambda x: x.get("citations", 0), reverse=True)
 
     # Dedup by URL

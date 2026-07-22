@@ -186,6 +186,7 @@ def main():
                 "category": "finance",
                 "engagement": today_vol,
                 "engagement_raw": today_vol,
+                "engagement_label": "shares today",
                 "fetched_at": now,
                 "published_at": now,
             })
@@ -201,6 +202,7 @@ def main():
                 "category": "finance",
                 "engagement": round(ratio, 2),
                 "engagement_raw": ratio,
+                "engagement_label": "× normal volume",
                 "fetched_at": now,
                 "published_at": now,
             })

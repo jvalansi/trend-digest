@@ -58,7 +58,7 @@ def main():
 
     items = fetch(args.limit)
     print(f"  Bilibili Trending: {len(items)} items", file=sys.stderr)
-    items = score_items(items, "Bilibili Trending", "views")
+    items = score_items(items, "Bilibili Trending", "views", "views")
     print(json.dumps(items, indent=2, ensure_ascii=False))
 
 

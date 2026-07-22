@@ -73,7 +73,7 @@ def main():
                 results.append(normalize(item))
 
     results.sort(key=lambda x: x["score"], reverse=True)
-    results = score_items(results, "Hacker News", "score")
+    results = score_items(results, "Hacker News", "score", "points")
     print(f"  Got {len(results)} stories", file=sys.stderr)
     print(json.dumps(results, indent=2, ensure_ascii=False))
 

@@ -108,7 +108,7 @@ def main():
         sys.exit(1)
 
     results = [normalize(item) for item in raw if item.get("title")]
-    results = score_items(results, "X (via Grok)", "score")
+    results = score_items(results, "X (via Grok)", "score", "engagement pts")
     print(f"  Got {len(results)} posts", file=sys.stderr)
     print(json.dumps(results, indent=2, ensure_ascii=False))
 

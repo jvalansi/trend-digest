@@ -110,7 +110,7 @@ def main():
     date = args.date or (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     items = fetch(date, args.limit)
     print(f"  Wikipedia Trending ({date}): {len(items)} items", file=sys.stderr)
-    items = score_items(items, "Wikipedia Trending", "views")
+    items = score_items(items, "Wikipedia Trending", "views", "views")
     print(json.dumps(items, indent=2, ensure_ascii=False))
 
 

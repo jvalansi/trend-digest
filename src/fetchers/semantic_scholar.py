@@ -120,7 +120,7 @@ def main():
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    items = score_items(items, "Semantic Scholar", "citations")
+    items = score_items(items, "Semantic Scholar", "citations", "citations")
     items = sorted(items, key=lambda x: x["engagement"], reverse=True)
     items = items[:args.limit]
 

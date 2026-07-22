@@ -233,7 +233,7 @@ def main():
 
     items = fetch_global(args.limit)
     print(f"  Google Trends Global: {len(items)} items", file=sys.stderr)
-    items = score_items(items, "Google Trends Global", "country_count")
+    items = score_items(items, "Google Trends Global", "country_count", "countries")
     print(json.dumps(items, indent=2, ensure_ascii=False))
 
 
