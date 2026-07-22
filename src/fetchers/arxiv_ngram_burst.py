@@ -149,7 +149,9 @@ def fetch_xml(url: str, max_retries: int = 6) -> bytes:
                 raise
             last_err = e
             retry_after = e.headers.get("Retry-After") if e.headers else None
-        except urllib.error.URLError as e:
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+            # Read timeouts inside getresponse() surface as bare TimeoutError,
+            # not URLError, so catch the raw socket errors too.
             if attempt == max_retries - 1:
                 raise
             last_err = e
