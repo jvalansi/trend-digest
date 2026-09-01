@@ -199,7 +199,7 @@ data/
 docs/
   sources/                per-mode source lists
   early-signal-methodology.md   burst-detection design
-  beyond-gdp.md / gdp-monitoring-design.md / ...   essays
+  gdp-monitoring-design.md / early-signal-methodology.md ...  design docs (general essays live in llm-wiki/wiki/topics/)
 research/                 standalone analysis scripts
 ```
 

@@ -35,7 +35,7 @@ print(json.dumps(gt, ensure_ascii=False))
 fi
 
 $PYTHON src/curate.py --mode "$MODE" --input "$TMPFILE" --top 50 --output "$CURATED"
-$PYTHON src/deliver.py --mode "$MODE" --input "$CURATED" --telegram --publish
+$PYTHON src/deliver.py --mode "$MODE" --input "$CURATED" --discord --publish
 
 rm -f "$TMPFILE" "$CURATED"
 echo "[$(date)] $MODE digest done."

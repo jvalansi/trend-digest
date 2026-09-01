@@ -209,5 +209,5 @@ Productivity gains in existing sectors tend to be competed away into lower price
 
 ---
 
-*For broader theoretical context — welfare beyond GDP, civilization trajectory, historical frameworks, r > g inequality dynamics, and how to think about predicting history — see [history-theory.md](history-theory.md).*
+*For broader theoretical context — welfare beyond GDP, civilization trajectory, historical frameworks, r > g inequality dynamics, and how to think about predicting history — see `llm-wiki/wiki/topics/history-theory.md`.*
 
