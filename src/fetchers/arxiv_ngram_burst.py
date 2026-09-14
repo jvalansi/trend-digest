@@ -230,10 +230,9 @@ def build_query(category: str, start_date: date, end_date: date) -> str:
     return f"cat:{category}+AND+{date_clause}"
 
 
-def fetch_category(category: str, start_date: date, end_date: date,
-                   seen_ids: set[str]) -> list[str]:
+def fetch_category(category: str, start_date: date, end_date: date) -> list[tuple[str, str]]:
     query = build_query(category, start_date, end_date)
-    texts = []
+    entries_out: list[tuple[str, str]] = []
     start = 0
     while True:
         url = (
@@ -247,19 +246,16 @@ def fetch_category(category: str, start_date: date, end_date: date,
             break
         for entry in entries:
             entry_id = entry.findtext("atom:id", default="", namespaces=ATOM_NS) or ""
-            if entry_id in seen_ids:
-                continue
-            seen_ids.add(entry_id)
             title   = entry.findtext("atom:title",   default="", namespaces=ATOM_NS) or ""
             summary = entry.findtext("atom:summary", default="", namespaces=ATOM_NS) or ""
-            texts.append(title + " " + summary)
-        print(f"  ... {category}: {len(seen_ids):,} total abstracts ({start_date} → {end_date})",
+            entries_out.append((entry_id, title + " " + summary))
+        print(f"  ... {category}: {len(entries_out):,} abstracts ({start_date} → {end_date})",
               file=sys.stderr)
         if len(entries) < PAGE_SIZE:
             break
         start += PAGE_SIZE
         time.sleep(RATE_DELAY)
-    return texts
+    return entries_out
 
 
 def month_chunks(start_date: date, end_date: date) -> list[tuple[date, date]]:
@@ -274,14 +270,42 @@ def month_chunks(start_date: date, end_date: date) -> list[tuple[date, date]]:
     return chunks
 
 
-def fetch_window(categories: list[str], start_date: date, end_date: date) -> list[str]:
-    seen_ids: set[str] = set()
-    texts: list[str] = []
+def fetch_window(categories: list[str], start_date: date, end_date: date
+                 ) -> tuple[dict[str, list[tuple[str, str]]], set[str]]:
+    """Fetch each category's abstracts, tolerating per-category fetch failures.
+
+    Returns (entries per category, categories that failed). A category that
+    raises partway through is dropped whole rather than kept half-fetched: a
+    truncated baseline deflates that category's n-gram counts and fabricates a
+    burst."""
+    per_cat: dict[str, list[tuple[str, str]]] = {}
+    failed: set[str] = set()
     chunks = month_chunks(start_date, end_date)
     for category in categories:
-        for chunk_start, chunk_end in chunks:
-            texts.extend(fetch_category(category, chunk_start, chunk_end, seen_ids))
-            time.sleep(RATE_DELAY)
+        collected: list[tuple[str, str]] = []
+        try:
+            for chunk_start, chunk_end in chunks:
+                collected.extend(fetch_category(category, chunk_start, chunk_end))
+                time.sleep(RATE_DELAY)
+        except Exception as e:
+            print(f"  {category} failed ({start_date} → {end_date}): {e} — dropping category",
+                  file=sys.stderr)
+            failed.add(category)
+            continue
+        per_cat[category] = collected
+    return per_cat, failed
+
+
+def pool_texts(per_cat: dict[str, list[tuple[str, str]]], categories: list[str]) -> list[str]:
+    """Flatten the kept categories, counting cross-listed papers once."""
+    seen_ids: set[str] = set()
+    texts: list[str] = []
+    for category in categories:
+        for entry_id, text in per_cat.get(category, []):
+            if entry_id in seen_ids:
+                continue
+            seen_ids.add(entry_id)
+            texts.append(text)
     return texts
 
 
@@ -500,8 +524,23 @@ def main():
     print(f"  Recent:   {recent_from} → {recent_to}", file=sys.stderr)
     print(f"  Baseline: {base_from} → {base_to}", file=sys.stderr)
 
-    recent_texts = fetch_window(categories, recent_from, recent_to) if categories else []
-    base_texts   = fetch_window(categories, base_from,   base_to)   if categories else []
+    recent_per_cat, recent_failed = fetch_window(categories, recent_from, recent_to)
+    base_per_cat,   base_failed   = fetch_window(categories, base_from,   base_to)
+
+    # Drop a category from both windows if either window failed for it, so the
+    # recent/baseline comparison stays like-for-like.
+    failed = recent_failed | base_failed
+    usable = [c for c in categories if c not in failed]
+    if failed:
+        print(f"  Dropped {len(failed)}/{len(categories)} categories after fetch failures: "
+              f"{', '.join(sorted(failed))}", file=sys.stderr)
+    if categories and not usable:
+        print("  No categories fetched successfully — no burst candidates", file=sys.stderr)
+        print(json.dumps([], ensure_ascii=False))
+        return
+
+    recent_texts = pool_texts(recent_per_cat, usable)
+    base_texts   = pool_texts(base_per_cat,   usable)
 
     print(f"  Tokenizing {len(recent_texts):,} recent + {len(base_texts):,} baseline abstracts",
           file=sys.stderr)
