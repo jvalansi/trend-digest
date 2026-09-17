@@ -145,7 +145,9 @@ def fetch_xml(url: str, max_retries: int = 6) -> bytes:
             with urllib.request.urlopen(req, timeout=60) as r:
                 return r.read()
         except urllib.error.HTTPError as e:
-            if (e.code < 500 and e.code != 429) or attempt == max_retries - 1:
+            # arXiv's CDN intermittently answers valid queries with an empty-body
+            # 406, so treat it as transient alongside 429/5xx.
+            if (e.code < 500 and e.code not in (406, 429)) or attempt == max_retries - 1:
                 raise
             last_err = e
             retry_after = e.headers.get("Retry-After") if e.headers else None
@@ -536,8 +538,10 @@ def main():
               f"{', '.join(sorted(failed))}", file=sys.stderr)
     if categories and not usable:
         print("  No categories fetched successfully — no burst candidates", file=sys.stderr)
-        print(json.dumps([], ensure_ascii=False))
-        return
+    failure_note = (
+        f" Skipped {len(failed)}/{len(categories)} categories after fetch failures: "
+        f"{', '.join(sorted(failed))}."
+    ) if failed else ""
 
     recent_texts = pool_texts(recent_per_cat, usable)
     base_texts   = pool_texts(base_per_cat,   usable)
@@ -603,6 +607,7 @@ def main():
             f"{len(recent_texts):,} recent abstracts ({recent_from}→{recent_to}) vs "
             f"{len(base_texts):,} baseline ({base_from}→{base_to}). "
             f"Threshold: ≥{args.min_freq} occurrences (≥{args.min_freq_new} if new), ≥{args.min_ratio:.0f}× share growth."
+            + failure_note
         ),
         "url":          (
             f"https://arxiv.org/list/{categories[0]}/recent"
