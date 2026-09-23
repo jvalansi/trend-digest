@@ -1,5 +1,11 @@
-fetchers/__pycache__
+__pycache__/
+*.pyc
+
+# Runtime state and caches - rewritten on every run
 data/engagement_stats.json
+data/seen_items.json
+data/youtube_cache.json
+data/global_trends/
 
 # Symlink to /home/ubuntu/.env - never track this
 .env
