@@ -1,2 +1,5 @@
 fetchers/__pycache__
 data/engagement_stats.json
+
+# Symlink to /home/ubuntu/.env - never track this
+.env
