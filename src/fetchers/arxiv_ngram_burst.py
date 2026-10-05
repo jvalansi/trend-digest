@@ -14,10 +14,9 @@ a baseline window (default: same 90-day window 1 year prior), extracts 2- and
 
     ratio = (n_recent / total_tokens_recent) / ((n_base + 1) / (total_tokens_base + 1))
 
-The +1 smoothing bounds the ratio for rare baseline terms.
+The +1 smoothing keeps never-before-seen terms scorable (and bounds the ratio).
 
-Filters: ≥MIN_RECENT_FREQ occurrences in recent window, ≥MIN_BASE_FREQ in baseline
-(so 0→N single-paper coinages don't dominate), content-word endpoints,
+Filters: ≥MIN_RECENT_FREQ occurrences in recent window, content-word endpoints,
 length 2–3, not in PHRASE_STOPLIST, and not generic per the historical n-gram
 background table (data/arxiv_ngram_background.json; rebuild with
 --build-background). The background is sampled from a window years in the past so
@@ -56,8 +55,7 @@ BACKGROUND_CACHE = os.path.join(DATA_DIR, "arxiv_ngram_background.json")
 PAGE_SIZE      = 1000
 RATE_DELAY     = 3.0  # arXiv asks for ≥3 seconds between requests
 
-MIN_RECENT_FREQ = 8    # lowered from 20 since per-day category slice is much smaller
-MIN_BASE_FREQ   = 3    # baseline must already mention the term; 0→N jumps are mostly single-paper coinages / noise
+MIN_RECENT_FREQ = 30   # 0→20 jumps are mostly single-paper coinages; require real recent volume
 MIN_RATIO       = 8.0
 NGRAM_LENGTHS   = (2, 3)
 TOP_N           = 10
@@ -463,8 +461,6 @@ def main():
     parser.add_argument("--categories", help="Comma-separated category override (default: today's slice of the quarterly rotation)")
     parser.add_argument("--top", type=int, default=TOP_N)
     parser.add_argument("--min-freq", type=int, default=MIN_RECENT_FREQ)
-    parser.add_argument("--min-base-freq", type=int, default=MIN_BASE_FREQ,
-                        help="Minimum baseline occurrences (default: %(default)s)")
     parser.add_argument("--min-ratio", type=float, default=MIN_RATIO)
     parser.add_argument("--generic-df", type=float, default=GENERIC_DF_THRESHOLD,
                         help="Drop candidates with background document frequency ≥ this (0 disables the gate; default: %(default)s)")
@@ -565,8 +561,6 @@ def main():
             n_generic += 1
             continue
         base_cnt     = base_counts.get(ng, 0)
-        if base_cnt < args.min_base_freq:
-            continue
         recent_share = cnt / recent_total
         base_share   = (base_cnt + 1) / (base_total + 1)
         ratio        = recent_share / base_share
@@ -607,7 +601,7 @@ def main():
             f"{len(top)} emerging term{'s' if len(top) != 1 else ''} in "
             f"{len(recent_texts):,} recent abstracts ({recent_from}→{recent_to}) vs "
             f"{len(base_texts):,} baseline ({base_from}→{base_to}). "
-            f"Threshold: ≥{args.min_freq} occurrences (≥{args.min_base_freq} in baseline), ≥{args.min_ratio:.0f}× share growth."
+            f"Threshold: ≥{args.min_freq} occurrences, ≥{args.min_ratio:.0f}× share growth."
             + failure_note
         ),
         "url":          (
