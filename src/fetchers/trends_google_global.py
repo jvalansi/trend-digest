@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Google Trends global fetcher — pulls trending searches across ~125 countries
-from the official public per-country RSS feed at
-trends.google.com/trending/rss?geo=XX. Aggregates by cross-country appearance
+Google Trends global fetcher — pulls each of ~125 countries' past-24h
+"Trending now" list (top PER_COUNTRY by volume, via trends_google.fetch_trending)
+and aggregates by cross-country appearance
 count to surface genuinely global trends.
 
 Usage:
@@ -16,17 +16,16 @@ import json
 import re
 import sys
 import urllib.parse
-import xml.etree.ElementTree as ET
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
 import feedparser
-import requests
 from deep_translator import GoogleTranslator
 from langdetect import detect, LangDetectException
 
 from stats import score_items
+from trends_google import fetch_trending
 
 NEWS_RSS = "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
 
@@ -68,53 +67,19 @@ COUNTRIES = [
 ]
 
 
-HT_NS = "https://trends.google.com/trending/rss"
-USER_AGENT = (
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-)
-
-
-def parse_traffic(text: str | None) -> float:
-    if not text:
-        return 0.0
-    s = text.strip().replace(",", "").replace("+", "").upper()
-    m = re.match(r"^([\d.]+)\s*([KM]?)$", s)
-    if not m:
-        return 0.0
-    n = float(m.group(1))
-    mult = {"K": 1_000, "M": 1_000_000}.get(m.group(2), 1)
-    return n * mult
+# Each country's 24h list has hundreds of entries; keep the top N by volume
+# so translation stays tractable and long-tail noise doesn't drive country counts
+PER_COUNTRY = 25
 
 
 def fetch_country(code: str) -> list[dict]:
-    url = f"https://trends.google.com/trending/rss?geo={code}"
     try:
-        r = requests.get(url, headers={"user-agent": USER_AGENT}, timeout=15)
+        rows = fetch_trending(code)
     except Exception:
         return []
-    if r.status_code != 200 or not r.text.strip().startswith("<?xml"):
-        return []
-    try:
-        root = ET.fromstring(r.text)
-    except ET.ParseError:
-        return []
-    items = []
-    for item in root.findall(".//item"):
-        query = (item.findtext("title") or "").strip()
-        if not query:
-            continue
-        traffic = parse_traffic(item.findtext(f"{{{HT_NS}}}approx_traffic"))
-        news = item.find(f"{{{HT_NS}}}news_item")
-        headline = (news.findtext(f"{{{HT_NS}}}news_item_title") or "").strip() if news is not None else ""
-        article_url = (news.findtext(f"{{{HT_NS}}}news_item_url") or "").strip() if news is not None else ""
-        items.append({
-            "title": query,
-            "traffic": traffic,
-            "headline": headline,
-            "article_url": article_url,
-        })
-    return items
+    rows = [r for r in rows if r and r[0]]
+    rows.sort(key=lambda r: r[6] or 0, reverse=True)
+    return [{"title": r[0].strip(), "traffic": float(r[6] or 0)} for r in rows[:PER_COUNTRY]]
 
 
 def translate_to_english(title: str) -> str:
