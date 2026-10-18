@@ -33,6 +33,14 @@ def fetch_etf_quotes(fmp_key: str) -> list[dict]:
     return resp.json()
 
 
+def fresh_quotes(quotes: list[dict], max_age_days: int = 4) -> list[dict]:
+    """Drop quotes that stopped updating. FMP keeps serving the last quote of
+    delisted ETFs (e.g. TVIX, frozen since 2020), whose stale volume looks like a
+    huge anomaly. Age is measured from the newest quote, so weekends don't matter."""
+    newest = max((q.get("timestamp") or 0 for q in quotes), default=0)
+    return [q for q in quotes if (q.get("timestamp") or 0) >= newest - max_age_days * 86400]
+
+
 def fetch_etf_description(ticker: str, fmp_key: str) -> str:
     """Return a short description of what the ETF tracks, or empty string on failure."""
     try:
@@ -77,8 +85,8 @@ def generate_descriptions_claude(items: list[dict]) -> dict:
     prompt = "\n".join(lines)
 
     claude_path = os.environ.get("CLAUDE_PATH", "/home/ubuntu/.local/bin/claude")
-    env = os.environ.copy()
-    env.pop("CLAUDECODE", None)
+    # ANTHROPIC_API_KEY in .env is stale and overrides the subscription login
+    env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "CLAUDECODE")}
 
     try:
         result = subprocess.run(
@@ -93,7 +101,7 @@ def generate_descriptions_claude(items: list[dict]) -> dict:
             if isinstance(parsed, dict):
                 return {k: v for k, v in parsed.items() if isinstance(v, str)}
         if result.returncode != 0:
-            print(f"  WARNING: Claude exited {result.returncode}: {result.stderr[:200]}", file=sys.stderr)
+            print(f"  WARNING: Claude exited {result.returncode}: stdout={text[:200]!r} stderr={result.stderr[:200]!r}", file=sys.stderr)
     except Exception as e:
         print(f"  WARNING: Claude description generation failed: {e}", file=sys.stderr)
     return {}
@@ -116,7 +124,7 @@ def main():
     quotes = fetch_etf_quotes(fmp_key)
     print(f"  Total ETFs: {len(quotes)}", file=sys.stderr)
 
-    us_quotes = [q for q in quotes if q.get("exchange") in US_EXCHANGES]
+    us_quotes = [q for q in fresh_quotes(quotes) if q.get("exchange") in US_EXCHANGES]
     print(f"  US-listed ETFs: {len(us_quotes)}", file=sys.stderr)
 
     ratios = []

@@ -18,8 +18,8 @@ Cron (UTC, weekdays + Sunday):
 ```
 13:00  tech
 13:15  news
-13:30  finance
 13:45  science
+21:30  finance   (Mon–Fri only, after the US close so volume is full-day)
 ```
 
 ---

@@ -58,7 +58,11 @@ SOURCE_AUTHORITY = {
     "Yahoo Finance":   1.3,   # top-10 news publisher
     "investing.com":   1.3,   # ~161M
     "MarketWatch":     1.0,   # mid-tier, declining
-    "Reuters Business":1.3,   # reuters.com ~24M (business subsection)
+    "CNBC":            1.3,   # authority values below are assumed, not Similarweb-sourced
+    "Bloomberg":       1.3,
+    "FT":              1.3,
+    "Reuters":         1.3,
+    "Seeking Alpha":   1.0,
     # Science RSS
     "Nature":             1.3,   # ~35M
     "Science":            1.1,   # ~7M
@@ -115,7 +119,7 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "finance"], "is_rss": True},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "finance"], "section": "Reddit Finance"},
         {"cmd": ["python", "src/fetchers/x.py", "--limit", "10", "--category", "finance"], "section": "X Finance"},
-        {"cmd": ["python", "src/fetchers/etf_volume.py", "--limit", "5", "--min-ratio", "0"], "section": "ETF Volume Anomalies"},
+        {"cmd": ["python", "src/fetchers/etf_volume.py", "--limit", "5"], "section": "ETF Volume Anomalies"},
         {"cmd": ["python", "src/fetchers/polymarket.py", "--limit", "10"], "section": "Polymarket"},
     ],
     "news": [

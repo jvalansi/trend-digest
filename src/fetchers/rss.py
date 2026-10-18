@@ -28,10 +28,15 @@ DEFAULT_FEEDS = [
     {"source": "ZDNet",           "url": "https://www.zdnet.com/news/rss.xml",                   "category": "tech"},
 
     # Finance feeds — top finance news sites by Similarweb traffic (2026)
-    {"source": "Yahoo Finance",  "url": "https://finance.yahoo.com/news/rssindex",                              "category": "finance"},
+    {"source": "Yahoo Finance",  "url": "https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US", "category": "finance"},
     {"source": "investing.com",  "url": "https://www.investing.com/rss/news.rss",                              "category": "finance"},
     {"source": "MarketWatch",    "url": "https://feeds.content.dowjones.io/public/rss/mw_marketpulse",         "category": "finance"},
-    {"source": "Reuters Business","url": "https://feeds.reuters.com/reuters/businessNews",                     "category": "finance"},
+    {"source": "CNBC",           "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html",               "category": "finance"},
+    {"source": "Bloomberg",      "url": "https://feeds.bloomberg.com/markets/news.rss",                        "category": "finance"},
+    {"source": "FT",             "url": "https://www.ft.com/markets?format=rss",                               "category": "finance"},
+    {"source": "Seeking Alpha",  "url": "https://seekingalpha.com/market_currents.xml",                        "category": "finance"},
+    # Reuters retired its public RSS feeds; Google News site search is the working substitute
+    {"source": "Reuters",        "url": "https://news.google.com/rss/search?q=site:reuters.com+markets&hl=en-US&gl=US&ceid=US:en", "category": "finance"},
 
     # Science feeds — top journals and preprint servers
     {"source": "Nature",            "url": "https://www.nature.com/nature.rss",                                 "category": "science"},
