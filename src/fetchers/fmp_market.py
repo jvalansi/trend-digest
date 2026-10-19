@@ -86,6 +86,13 @@ def useful_news(news: list[dict]) -> list[dict]:
     return [n for n in news if n.get("site") not in SPAM_SITES and not SPAM_TITLE.search(n.get("title", ""))]
 
 
+def short_name(name: str) -> str:
+    """'Kinder Morgan, Inc.' → 'Kinder Morgan'. Shared suffixes like 'Inc' would
+    otherwise make aggregate's title-similarity dedup merge unrelated movers."""
+    return re.sub(r"[,\s]+(Inc|Corp|Corporation|Company|Co|Ltd|Limited|plc|L\.?P|N\.?V|S\.?A|AG|SE|Holdings)\.?$",
+                  "", name, flags=re.I).strip() or name
+
+
 def pct(v: float) -> str:
     return f"{v:+.1f}%"
 
@@ -113,6 +120,7 @@ def snapshot(key: str) -> list[dict]:
     return [{
         "title": f"Market close {session}: " + ", ".join(parts[:3]),
         "summary": "; ".join(parts),
+        "description": "; ".join(parts[3:]),  # shown verbatim, not rewritten by Claude
         "url": "https://finance.yahoo.com/quote/%5EGSPC/",
         "source": "FMP Market",
         "category": "finance",
@@ -163,7 +171,7 @@ def movers(key: str, limit: int, min_z: float) -> list[dict]:
         except Exception:
             news = []
         why = " | ".join(n["title"] for n in news) or "No headline found for this move."
-        name = universe.get(sym, {}).get("companyName") or q.get("name", sym)
+        name = short_name(universe.get(sym, {}).get("companyName") or q.get("name", sym))
         items.append({
             "title": f"{sym} ({name}) {pct(q['changesPercentage'])}",
             "summary": f"{universe.get(sym, {}).get('sector', '')}, market cap ${q['marketCap'] / 1e9:,.0f}B. "
@@ -214,6 +222,7 @@ def calendar(key: str, limit: int) -> list[dict]:
     return [{
         "title": f"Coming up {day}: " + (", ".join(e["symbol"] for e in earnings[:5]) or mc[0]),
         "summary": " — ".join(parts),
+        "description": " — ".join(parts),  # shown verbatim, not rewritten by Claude
         "url": "https://financialmodelingprep.com/economic-calendar",
         "source": "FMP Calendar",
         "category": "finance",

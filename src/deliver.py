@@ -427,7 +427,9 @@ def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
         instruction = (
             "Write a single plain-text sentence (max 30 words) describing each ETF/financial item below. "
             "For ETFs that track a specific asset, index, or company, briefly explain what that underlying is "
-            "(e.g. what the company does, what the index measures). Be specific and factual. "
+            "(e.g. what the company does, what the index measures). "
+            "For a stock move, give the likely cause using only the headlines in its summary; "
+            "if none of them explains the move, say the cause is unclear rather than guessing. Be specific and factual. "
             "Return ONLY a JSON array of objects with 'index' and 'description' fields."
         )
     else:
@@ -707,6 +709,8 @@ def main():
 
     print("Generating descriptions...", file=sys.stderr)
     descriptions = generate_descriptions(all_items, args.mode)
+    # Items carrying their own description (e.g. market numbers) are shown verbatim
+    descriptions = [item.get("description") or d for item, d in zip(all_items, descriptions)]
     rss_descs = descriptions[:len(rss_items)]
     section_descs = descriptions[len(rss_items):]
 

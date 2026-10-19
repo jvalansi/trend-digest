@@ -116,6 +116,9 @@ FETCHERS = {
         {"cmd": ["python", "src/fetchers/arxiv_ngram_burst.py"], "section": "arXiv n-gram Burst", "section_limit": 8},
     ],
     "finance": [
+        {"cmd": ["python", "src/fetchers/fmp_market.py", "--part", "snapshot"], "section": "Market Close", "section_limit": 1},
+        {"cmd": ["python", "src/fetchers/fmp_market.py", "--part", "movers", "--limit", "8"], "section": "Top Movers", "section_limit": 8},
+        {"cmd": ["python", "src/fetchers/fmp_market.py", "--part", "calendar"], "section": "Coming Up", "section_limit": 1},
         {"cmd": ["python", "src/fetchers/rss.py", "--limit", "20", "--category", "finance"], "is_rss": True},
         {"cmd": ["python", "src/fetchers/trends_reddit.py", "--limit", "25", "--mode", "finance"], "section": "Reddit Finance"},
         {"cmd": ["python", "src/fetchers/x.py", "--limit", "10", "--category", "finance"], "section": "X Finance"},

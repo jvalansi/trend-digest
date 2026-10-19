@@ -1,4 +1,4 @@
-from fmp_market import daily_vol, rank_movers, useful_news
+from fmp_market import daily_vol, rank_movers, short_name, useful_news
 
 if __name__ == "__main__":
     # alternating ±1% days → ~1% daily vol
@@ -15,4 +15,7 @@ if __name__ == "__main__":
     news = [{"site": "defenseworld.net", "title": "x"}, {"site": "reuters.com", "title": "Acme Fund Sells 1,200 Shares of FOO"},
             {"site": "reuters.com", "title": "FOO cuts guidance"}]
     assert [n["title"] for n in useful_news(news)] == ["FOO cuts guidance"]
+    assert short_name("Kinder Morgan, Inc.") == "Kinder Morgan"
+    assert short_name("Enterprise Products Partners L.P.") == "Enterprise Products Partners"
+    assert short_name("Inc") == "Inc"
     print("ok")
