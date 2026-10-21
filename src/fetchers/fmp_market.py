@@ -4,11 +4,11 @@ Market fetcher (FMP) — what moved, why, and what's coming.
 
 Parts (one aggregate section each):
   snapshot  one item: indices, VIX, 2Y/10Y yields, oil, gold, dollar, BTC, best/worst sector
-  movers    US large caps (≥ $10B) ranked by |today's move| / their own 60-day daily volatility,
+  movers    US large caps (≥ $10B) ranked by |last session's move| / their own 60-day daily volatility,
             each with the latest FMP headlines for the ticker as the "why"
-  calendar  one item: next session's large-cap earnings and high-impact US macro releases
+  calendar  one item: upcoming session's large-cap earnings and high-impact US macro releases
 
-Meant to run after the US close, so quotes carry the full session.
+Run outside market hours (the digest runs pre-open), so quotes carry the last full session.
 
 Usage:
   python fetchers/fmp_market.py --part snapshot|movers|calendar [--limit N] [--min-z F]
@@ -22,6 +22,7 @@ import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import requests
 from etf_volume import fresh_quotes
@@ -189,17 +190,23 @@ def movers(key: str, limit: int, min_z: float) -> list[dict]:
     return items
 
 
-def next_session(today: date) -> date:
-    d = today + timedelta(days=1)
+def upcoming_session(now: datetime) -> date:
+    """Today's session if it hasn't closed yet (4 PM ET), else the next weekday. Ignores exchange holidays."""
+    et = now.astimezone(ZoneInfo("America/New_York"))
+    d = et.date() if et.hour < 16 else et.date() + timedelta(days=1)
     while d.weekday() >= 5:
         d += timedelta(days=1)
     return d
 
 
 def calendar(key: str, limit: int) -> list[dict]:
-    day = next_session(datetime.now(timezone.utc).date()).isoformat()
+    now_dt = datetime.now(timezone.utc)
+    day = upcoming_session(now_dt).isoformat()
+    same_day = day == now_dt.astimezone(ZoneInfo("America/New_York")).date().isoformat()
     universe = large_caps(key)
-    earnings = [e for e in get("v3/earning_calendar", key, **{"from": day, "to": day}) if e["symbol"] in universe]
+    # same-day pre-market reports and already-released macro prints aren't "coming up" any more
+    earnings = [e for e in get("v3/earning_calendar", key, **{"from": day, "to": day})
+                if e["symbol"] in universe and not (same_day and e.get("time") == "bmo")]
     earnings.sort(key=lambda e: universe[e["symbol"]]["marketCap"], reverse=True)
     when = {"bmo": "pre-market", "amc": "after close"}
     er = [f"{e['symbol']} ({when.get(e.get('time'), 'time n/a')}"
@@ -207,7 +214,8 @@ def calendar(key: str, limit: int) -> list[dict]:
           for e in earnings[:limit]]
 
     macro = [m for m in get("v3/economic_calendar", key, **{"from": day, "to": day})
-             if m.get("country") == "US" and m.get("impact") == "High"]
+             if m.get("country") == "US" and m.get("impact") == "High"
+             and m["date"] > now_dt.strftime("%Y-%m-%d %H:%M:%S")]
     mc = [f"{m['event']} {m['date'][11:16]} UTC" + (f" (est {m['estimate']})" if m.get("estimate") is not None else "")
           for m in sorted(macro, key=lambda m: m["date"])]
 

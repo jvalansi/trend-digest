@@ -16,10 +16,10 @@ run_digest.sh <mode>
 Cron (UTC, weekdays + Sunday):
 
 ```
+12:50  finance   (Tue–Sat only, before the US open, covering the prior session's close)
 13:00  tech
 13:15  news
 13:45  science
-21:30  finance   (Mon–Fri only, after the US close so volume is full-day)
 ```
 
 ---

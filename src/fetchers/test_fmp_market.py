@@ -1,4 +1,6 @@
-from fmp_market import daily_vol, rank_movers, short_name, useful_news
+from datetime import date, datetime, timezone
+
+from fmp_market import daily_vol, rank_movers, short_name, upcoming_session, useful_news
 
 if __name__ == "__main__":
     # alternating ±1% days → ~1% daily vol
@@ -18,4 +20,10 @@ if __name__ == "__main__":
     assert short_name("Kinder Morgan, Inc.") == "Kinder Morgan"
     assert short_name("Enterprise Products Partners L.P.") == "Enterprise Products Partners"
     assert short_name("Inc") == "Inc"
+    utc = lambda *a: datetime(*a, tzinfo=timezone.utc)
+    assert upcoming_session(utc(2026, 10, 21, 12, 50)) == date(2026, 10, 21)  # Wed pre-open → same day
+    assert upcoming_session(utc(2026, 10, 21, 20, 0)) == date(2026, 10, 22)   # EDT close (16:00 ET) → Thu
+    assert upcoming_session(utc(2026, 12, 2, 20, 30)) == date(2026, 12, 2)    # EST, 15:30 ET still open
+    assert upcoming_session(utc(2026, 10, 23, 21, 30)) == date(2026, 10, 26)  # Fri after close → Mon
+    assert upcoming_session(utc(2026, 10, 24, 12, 50)) == date(2026, 10, 26)  # Sat → Mon
     print("ok")

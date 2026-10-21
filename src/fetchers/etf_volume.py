@@ -188,13 +188,13 @@ def main():
         if args.sort == "volume":
             output.append({
                 "title": f"{ticker} ({name}) — {today_vol:,} shares",
-                "summary": f"{desc_prefix}Traded {today_vol:,} shares today (avg: {avg_vol:,}, ratio: {ratio:.1f}x).",
+                "summary": f"{desc_prefix}Traded {today_vol:,} shares last session (avg: {avg_vol:,}, ratio: {ratio:.1f}x).",
                 "url": f"https://finance.yahoo.com/quote/{ticker}",
                 "source": "ETF Volume",
                 "category": "finance",
                 "engagement": today_vol,
                 "engagement_raw": today_vol,
-                "engagement_label": "shares today",
+                "engagement_label": "shares last session",
                 "fetched_at": now,
                 "published_at": now,
             })
