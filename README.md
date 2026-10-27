@@ -61,11 +61,11 @@ Each mode picks a different fetcher mix and interest profile.
 | Papers | `arxiv_ngram_burst.py` | n-gram burst detection across arXiv taxonomy |
 | Papers | `biorxiv.py` | bioRxiv recent |
 | Papers | `openalex.py` / `openalex_early_signal.py` | OpenAlex concept-share early-signal sweep |
-| Papers | `semantic_scholar.py` | Highly-cited recent papers |
-| Papers | `altmetric.py` | High-attention papers |
+| Papers | `semantic_scholar.py` | Papers gaining citations fastest this week |
+| Papers | `altmetric.py` | Crossref papers gaining citations fastest this week |
 | AI | `hf_papers.py` / `hf_models.py` | HuggingFace daily papers + trending models |
 | Finance | `etf_volume.py` | Unusual ETF volume relative to 30d baseline |
-| Markets | `polymarket.py` | Recent prediction-market probability moves |
+| Markets | `polymarket.py` | Events with 24h volume far above their own daily average |
 
 ### Two output classes
 

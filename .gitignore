@@ -5,6 +5,7 @@ __pycache__/
 data/engagement_stats.json
 data/seen_items.json
 data/youtube_cache.json
+data/citation_history.json
 data/global_trends/
 
 # Symlink to /home/ubuntu/.env - never track this

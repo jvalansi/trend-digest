@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Semantic Scholar fetcher — recent AI/ML papers ranked by citation count.
-Recent papers with high citations are by definition accruing them fast.
+Semantic Scholar fetcher — papers from the last year ranked by citations gained
+over the last week (see citation_velocity.py), not by total citations.
 
 Usage:
   python fetchers/semantic_scholar.py [--limit N] [--days N]
@@ -18,10 +18,10 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-from stats import score_items
+from citation_velocity import rank_by_gain
 
 BASE_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
-FIELDS = "title,abstract,citationCount,influentialCitationCount,publicationDate,externalIds,authors"
+FIELDS = "title,abstract,citationCount,publicationDate,externalIds,authors"
 QUERIES = {
     "tech": ["artificial intelligence", "machine learning", "large language model", "deep learning"],
     "science": ["biology", "physics", "neuroscience", "climate science", "quantum computing", "genomics"],
@@ -37,13 +37,11 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
     items = []
 
     for query in QUERIES.get(mode, QUERIES["tech"]):
-        if len(items) >= limit * 2:
-            break
         url = (
             f"{BASE_URL}?query={urllib.parse.quote(query)}"
             f"&fields={FIELDS}"
             f"&publicationDateOrYear={date_range}"
-            f"&limit=50"
+            f"&limit=100"
             f"&sort=citationCount:desc"
         )
         req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
@@ -84,10 +82,6 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
             if len(authors) > 3:
                 author_str += " et al."
 
-            influential = paper.get("influentialCitationCount") or 0
-            if influential == 0:
-                continue
-
             items.append({
                 "title": paper.get("title", "").strip(),
                 "summary": (paper.get("abstract") or "")[:400].strip(),
@@ -95,7 +89,7 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
                 "source": "Semantic Scholar",
                 "category": "tech",
                 "authors": author_str,
-                "citations": influential,
+                "paper_id": paper_id,
                 "total_citations": paper.get("citationCount") or 0,
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": paper.get("publicationDate"),
@@ -120,7 +114,8 @@ def main():
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    items = score_items(items, "Semantic Scholar", "citations", "citations")
+    # Rank by citations gained this week, not total, so the same papers don't win daily
+    items = rank_by_gain(items, "Semantic Scholar", "paper_id", "total_citations")
     items = sorted(items, key=lambda x: x["engagement"], reverse=True)
     items = items[:args.limit]
 

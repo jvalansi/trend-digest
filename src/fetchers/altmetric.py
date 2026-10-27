@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-CrossRef highly-cited recent papers fetcher — top science papers by citation count.
+CrossRef rising papers fetcher — science papers gaining citations fastest.
 
-Uses the CrossRef REST API (no key required) to find recently published papers
-with the highest citation counts, filtered to science/medicine subjects.
+Uses the CrossRef REST API (no key required) to pull the most-cited papers
+registered in the last N days, then ranks them by citations gained over the
+last week (see citation_velocity.py) rather than by total.
 
 Usage:
   python fetchers/altmetric.py [--limit N] [--days N]
@@ -19,7 +20,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-from stats import score_items
+from citation_velocity import rank_by_gain
 
 BASE_URL = "https://api.crossref.org/works"
 # Science-focused queries to filter for relevant papers
@@ -40,14 +41,13 @@ def fetch_top_papers(limit: int, days: int) -> list[dict]:
     items = []
 
     for query in SCIENCE_QUERIES:
-        if len(items) >= limit * 2:
-            break
         params = urllib.parse.urlencode({
             "query": query,
             "sort": "is-referenced-by-count",
             "order": "desc",
-            "filter": f"from-pub-date:{since},type:journal-article",
-            "rows": max(10, limit // len(SCIENCE_QUERIES) + 5),
+            # created = DOI registration; "published" can be a future print-issue date
+            "filter": f"from-created-date:{since},type:journal-article",
+            "rows": 100,
             "select": "title,author,DOI,URL,is-referenced-by-count,published,abstract",
             "mailto": MAILTO,
         })
@@ -93,6 +93,7 @@ def fetch_top_papers(limit: int, days: int) -> list[dict]:
                 "title": title.strip(),
                 "summary": summary,
                 "url": paper_url,
+                "doi": doi,
                 "source": "Altmetric",
                 "category": "science",
                 "authors": author_str,
@@ -109,7 +110,7 @@ def fetch_top_papers(limit: int, days: int) -> list[dict]:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=20, help="Number of papers (default: 20)")
-    parser.add_argument("--days", type=int, default=30, help="Days to look back (default: 30)")
+    parser.add_argument("--days", type=int, default=365, help="Days to look back (default: 365)")
     args = parser.parse_args()
 
     print("  Fetching top science papers via CrossRef...", file=sys.stderr)
@@ -119,7 +120,7 @@ def main():
         print(f"  ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    items = score_items(items, "Altmetric", "score", "citations")
+    items = rank_by_gain(items, "Altmetric", "doi", "score")
     items = sorted(items, key=lambda x: x["engagement"], reverse=True)[:args.limit]
     print(f"  {len(items)} papers fetched", file=sys.stderr)
     print(json.dumps(items, ensure_ascii=False))
