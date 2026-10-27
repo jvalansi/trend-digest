@@ -497,7 +497,7 @@ def main():
             items = [{
                 "title":        "arXiv burst sweep — paused (weekend)",
                 "summary":      f"Sweep runs on weekdays only. {total} arXiv categories partitioned across {total_days} working days of {current_quarter}.",
-                "url":          "https://arxiv.org/category_taxonomy",
+                "url":          f"https://arxiv.org/category_taxonomy#{today.isoformat()}",  # one item per day, not a repeat
                 "source":       "arXiv n-gram Burst",
                 "category":     "science",
                 "engagement":   0.1,
@@ -606,7 +606,7 @@ def main():
         ),
         "url":          (
             f"https://arxiv.org/list/{categories[0]}/recent"
-            if categories else "https://arxiv.org/category_taxonomy"
+            if categories else f"https://arxiv.org/category_taxonomy#{today.isoformat()}"
         ),
         "source":       "arXiv n-gram Burst",
         "category":     "science",

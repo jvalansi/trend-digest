@@ -199,7 +199,7 @@ def main():
         items = [{
             "title":        f"Early signal sweep — paused (weekend)",
             "summary":      f"Sweep runs on weekdays only. {total:,} concepts partitioned across {total_days} working days of {current_quarter}.",
-            "url":          "https://openalex.org/concepts",
+            "url":          f"https://openalex.org/concepts#{today.isoformat()}",  # one item per day, not a repeat
             "source":       "OpenAlex Early Signal",
             "category":     "science",
             "engagement":   0.1,
@@ -248,7 +248,7 @@ def main():
     items.append({
         "title":        f"Early signal sweep — day {day_idx + 1}/{total_days} of {current_quarter}",
         "summary":      f"{summary_text}. Scanned concepts {start_concept:,}–{end_concept - 1:,} of {total:,} (threshold: ≥{MIN_PAPERS_RECENT} papers in trailing 12 months, {MIN_RATIO:.0f}–{MAX_RATIO:.0f}× share-of-corpus growth vs same window 5 years prior; corpus grew {corpus_growth:.2f}×).",
-        "url":          "https://openalex.org/concepts",
+        "url":          f"https://openalex.org/concepts#{today.isoformat()}",  # one item per day, not a repeat
         "source":       "OpenAlex Early Signal",
         "category":     "science",
         "engagement":   0.1,

@@ -19,7 +19,7 @@ import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 SLACK_CHANNEL = os.environ.get("TREND_DIGEST_CHANNEL", "proj-trend-digest")
 SCIENCE_CHANNEL = os.environ.get("SCIENCE_DIGEST_CHANNEL", SLACK_CHANNEL)
@@ -45,17 +45,28 @@ def load_seen_items() -> dict:
 
 
 def save_seen_items(seen: dict) -> None:
-    with open(_SEEN_ITEMS_PATH, "w") as f:
+    tmp = _SEEN_ITEMS_PATH + ".tmp"
+    with open(tmp, "w") as f:
         json.dump(seen, f, indent=2)
+    os.replace(tmp, _SEEN_ITEMS_PATH)
+
+
+def seen_days(entry: dict) -> int:
+    """Distinct days a URL appeared. Entries from before "days" existed only have a
+    per-run count (several modes run per day), so cap it by their date span."""
+    if "days" in entry:
+        return entry["days"]
+    span = (date.fromisoformat(entry["last_seen"]) - date.fromisoformat(entry["first_seen"])).days + 1
+    return min(entry.get("count", 0), span)
 
 
 def annotate_seen(items: list[dict], seen: dict) -> None:
     for item in items:
         url = item.get("url", "")
         if url in seen:
-            count = seen[url].get("count", 0)
-            if count > 1:
-                item["days_appeared"] = count
+            days = seen_days(seen[url])
+            if days > 1:
+                item["days_appeared"] = days
 
 
 def update_seen(items: list[dict], seen: dict) -> None:
@@ -65,10 +76,39 @@ def update_seen(items: list[dict], seen: dict) -> None:
         if not url:
             continue
         if url in seen:
-            seen[url]["count"] += 1
-            seen[url]["last_seen"] = today
+            entry = seen[url]
+            entry["days"] = seen_days(entry) + (entry["last_seen"] != today)
+            entry["count"] += 1
+            entry["last_seen"] = today
         else:
-            seen[url] = {"first_seen": today, "last_seen": today, "count": 1}
+            seen[url] = {"first_seen": today, "last_seen": today, "count": 1, "days": 1}
+
+
+STALE_MIN_DAYS = 5     # an item is stale once it has appeared on this many days
+STALE_MIN_SHARE = 0.5  # a section is flagged when more than this share is stale
+STALE_MIN_ITEMS = 2    # ignore sections too small to judge
+
+
+def stale_sections(groups: dict[str, list[dict]], seen: dict) -> list[tuple[str, float]]:
+    """Sections whose items mostly repeat across days, i.e. the source's ranking
+    signal barely changes. Call after update_seen."""
+    flagged = []
+    for name, items in groups.items():
+        urls = {i["url"] for i in items if i.get("url")}
+        if len(urls) < STALE_MIN_ITEMS:
+            continue
+        stale = sum(1 for u in urls if u in seen and seen_days(seen[u]) >= STALE_MIN_DAYS)
+        share = stale / len(urls)
+        if share > STALE_MIN_SHARE:
+            flagged.append((name, share))
+    return flagged
+
+
+def stale_footer(flagged: list[tuple[str, float]]) -> str:
+    if not flagged:
+        return ""
+    parts = ", ".join(f"{name} {share:.0%}" for name, share in flagged)
+    return f"⚠ Stale sections (items repeating {STALE_MIN_DAYS}+ days), candidates for improvement: {parts}"
 
 REDDIT_SUBREDDITS = {
     "tech": ["artificial", "MachineLearning", "programming", "technology"],
@@ -705,7 +745,11 @@ def main():
     seen = load_seen_items()
     update_seen(all_items, seen)
     annotate_seen(all_items, seen)
-    save_seen_items(seen)
+    if not args.dry_run:
+        save_seen_items(seen)
+    footer = stale_footer(stale_sections({"Top stories": rss_items, **sections}, seen))
+    if footer:
+        print(footer, file=sys.stderr)
 
     print("Generating descriptions...", file=sys.stderr)
     descriptions = generate_descriptions(all_items, args.mode)
@@ -743,6 +787,8 @@ def main():
             print("\n---\n" + msg)
         for msg, _ in section_messages:
             print("\n---\n" + msg)
+        if footer:
+            print("\n---\n" + footer)
         return
 
     if args.telegram:
@@ -755,6 +801,8 @@ def main():
             for item in items:
                 tg_parts.append(format_item_telegram(item, section_descs[desc_idx]))
                 desc_idx += 1
+        if footer:
+            tg_parts.append(footer)
         post_to_telegram("\n\n".join(tg_parts))
         print(f"Posted {total_items} items via cc-connect", file=sys.stderr)
     elif args.discord:
@@ -790,6 +838,8 @@ def main():
                 seen_str = f" · ↩ {days}d" if days else ""
                 post_to_discord(f"**[{title}](<{url}>)**{desc_str}\n  _{source_str}{engagement_str}{prob_str}{seen_str}_", token, thread_id)
                 desc_idx += 1
+        if footer:
+            post_to_discord(footer, token, thread_id)
         print(f"Posted {total_items} items to Discord #{discord_channel} (thread)", file=sys.stderr)
     else:
         token = os.environ.get("SLACK_BOT_TOKEN")
@@ -803,6 +853,8 @@ def main():
             post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=not bool(attachments), attachments=attachments)
         for msg, attachments in section_messages:
             post_to_slack(msg, token, channel, thread_ts=thread_ts, unfurl=attachments is None, attachments=attachments)
+        if footer:
+            post_to_slack(footer, token, channel, thread_ts=thread_ts)
         print(f"Posted {total_items} items to #{channel}", file=sys.stderr)
 
     if args.publish:

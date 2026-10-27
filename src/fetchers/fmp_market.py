@@ -122,7 +122,7 @@ def snapshot(key: str) -> list[dict]:
         "title": f"Market close {session}: " + ", ".join(parts[:3]),
         "summary": "; ".join(parts),
         "description": "; ".join(parts[3:]),  # shown verbatim, not rewritten by Claude
-        "url": "https://finance.yahoo.com/quote/%5EGSPC/",
+        "url": f"https://finance.yahoo.com/quote/%5EGSPC/#{session}",  # one item per session, not a repeat
         "source": "FMP Market",
         "category": "finance",
         "engagement": 1.0,
@@ -231,7 +231,7 @@ def calendar(key: str, limit: int) -> list[dict]:
         "title": f"Coming up {day}: " + (", ".join(e["symbol"] for e in earnings[:5]) or mc[0]),
         "summary": " — ".join(parts),
         "description": " — ".join(parts),  # shown verbatim, not rewritten by Claude
-        "url": "https://financialmodelingprep.com/economic-calendar",
+        "url": f"https://financialmodelingprep.com/economic-calendar#{day}",  # one item per session, not a repeat
         "source": "FMP Calendar",
         "category": "finance",
         "engagement": 1.0,
