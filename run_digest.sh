@@ -17,6 +17,8 @@ set -a
 source /home/ubuntu/.env 2>/dev/null || true
 source "$SCRIPT_DIR/.env" 2>/dev/null || true
 set +a
+# op:// values in .env are 1Password references: each $PYTHON step runs under op run, which resolves them
+PYTHON="/home/ubuntu/bin/with-secrets -- $PYTHON"
 
 echo "[$(date)] Starting $MODE digest..."
 

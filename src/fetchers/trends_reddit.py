@@ -29,6 +29,8 @@ BASE_POPULAR = "https://www.reddit.com/r/popular.json?limit={limit}"
 
 
 def load_proxy() -> str | None:
+    if os.environ.get("REDDIT_PROXY_URL"):  # run_digest.sh exports it, resolved from 1Password
+        return os.environ["REDDIT_PROXY_URL"]
     env_path = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
     try:
         with open(env_path) as f:
