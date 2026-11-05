@@ -147,7 +147,8 @@ Publishers live in `src/publishers/`: `medium.py`, `bluesky.py`, `linkedin.py`, 
 ## Setup
 
 ```bash
-pip install feedparser deep-translator langdetect
+pip install feedparser deep-translator langdetect playwright
+playwright install chromium   # Google Trends fetchers
 ```
 
 Environment (in `~/.env` or repo-level `.env`):

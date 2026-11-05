@@ -72,14 +72,8 @@ COUNTRIES = [
 PER_COUNTRY = 25
 
 
-def fetch_country(code: str) -> list[dict]:
-    try:
-        rows = fetch_trending(code)
-    except Exception:
-        return []
-    rows = [r for r in rows if r and r[0]]
-    rows.sort(key=lambda r: r[6] or 0, reverse=True)
-    return [{"title": r[0].strip(), "traffic": float(r[6] or 0)} for r in rows[:PER_COUNTRY]]
+def top_rows(rows: list[dict]) -> list[dict]:
+    return [{"title": r["query"], "traffic": r["volume"]} for r in rows[:PER_COUNTRY]]
 
 
 def translate_to_english(title: str) -> str:
@@ -116,21 +110,11 @@ def fetch_headline(query: str) -> tuple[str, str]:
 
 def fetch_global(limit: int) -> list[dict]:
     raw_results: list[tuple[str, list[dict]]] = []
-
-    def fetch_one(code, name):
-        try:
-            items = fetch_country(code)
-            print(f"  {name} ({code}): {len(items)} items", file=sys.stderr, flush=True)
-            return name, items
-        except Exception as e:
-            print(f"  {name} ({code}): ERROR {e}", file=sys.stderr, flush=True)
-            return name, []
-
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        futures = {pool.submit(fetch_one, code, name): (code, name) for code, name in COUNTRIES}
-        for future in as_completed(futures):
-            country_name, items = future.result()
-            raw_results.append((country_name, items))
+    trending = fetch_trending([code for code, _ in COUNTRIES])
+    for code, name in COUNTRIES:
+        items = top_rows(trending.get(code, []))
+        print(f"  {name} ({code}): {len(items)} items", file=sys.stderr, flush=True)
+        raw_results.append((name, items))
 
     # Collect all unique titles and translate to English for deduplication
     all_titles = {item["title"] for _, items in raw_results for item in items}
