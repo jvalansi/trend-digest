@@ -480,7 +480,8 @@ def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
             "(e.g. what the company does, what the index measures). "
             "For a stock move, give the likely cause using only the headlines in its summary; "
             "if none of them explains the move, say the cause is unclear rather than guessing. Be specific and factual. "
-            "Return ONLY a JSON array of objects with 'index' and 'description' fields."
+            "Return ONLY a JSON array of objects with 'index', 'description' and 'unexplained' fields; "
+            "'unexplained' is true when the item reports a price or volume move whose cause the given text does not state."
         )
     else:
         instruction = (
@@ -505,7 +506,95 @@ def generate_descriptions(items: list[dict], mode: str = "tech") -> list[str]:
     except Exception as e:
         print(f"  DESC PARSE FAIL {e!r} stdout={result.stdout[:800]!r}", file=sys.stderr)
         return [""] * len(items)
+    for i in unexplained_indices(descs, len(items)):
+        items[i]["cause_unclear"] = True
     return [desc_map.get(i, "") for i in range(len(items))]
+
+
+def unexplained_indices(descs: list, n: int) -> set[int]:
+    """Indexes the model flagged as a move whose cause the given text doesn't state."""
+    return {d["index"] for d in descs
+            if isinstance(d, dict) and d.get("unexplained") is True
+            and isinstance(d.get("index"), int) and 0 <= d["index"] < n}
+
+
+def url_resolves(url: str, timeout: float = 6.0) -> bool:
+    """False for links that 404/410 or don't connect; paywalls that refuse bots (401/403) still count."""
+    if not url.startswith(("http://", "https://")):
+        return False
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout):
+            return True
+    except urllib.error.HTTPError as e:
+        return e.code not in (404, 410)
+    except Exception:
+        return False
+
+
+def apply_research(items: list[dict], descriptions: list[str], findings: list, resolves=url_resolves) -> list[str]:
+    """Swap in researched descriptions; link the title to the article that states the cause."""
+    descriptions = list(descriptions)
+    for f in findings if isinstance(findings, list) else []:
+        if not isinstance(f, dict):
+            continue
+        i = f.get("index")
+        if not isinstance(i, int) or not 0 <= i < len(items) or not items[i].get("cause_unclear"):
+            continue
+        if not isinstance(f.get("description"), str) or not f["description"]:
+            continue
+        descriptions[i] = f["description"]
+        url = f.get("url")
+        if isinstance(url, str) and resolves(url):
+            items[i]["url"] = url
+    return descriptions
+
+
+def research_causes(items: list[dict], descriptions: list[str]) -> list[str]:
+    """Web-search the cause of moves the headlines don't explain (items flagged cause_unclear)."""
+    todo = [
+        {
+            "index": i,
+            "title": item.get("title_en") or item["title"],
+            "summary": (item.get("summary_en") or item.get("summary", ""))[:300],
+            "current_description": descriptions[i],
+        }
+        # Items with their own description are shown verbatim, so researching them is wasted
+        for i, item in enumerate(items) if item.get("cause_unclear") and not item.get("description")
+    ]
+    if not todo:
+        return descriptions
+    print(f"Researching {len(todo)} unexplained moves...", file=sys.stderr)
+    prompt = (
+        "Each item below is a stock, ETF or market move whose cause the headlines don't explain. "
+        f"Digest date: {datetime.now(timezone.utc).date().isoformat()}; the moves are from the latest US trading "
+        "session before it unless the title says otherwise. "
+        "Use web search to find what caused each move. For a leveraged or single-stock ETF, "
+        "look at news on its underlying; for a volume spike, look for flows, rebalancing or news on its holdings. "
+        "Write one plain-text sentence (max 35 words) saying what the item is and what caused the move. "
+        "Only state a cause a source reports; if you find none, say no cause was reported, and mark a "
+        "cause you inferred rather than read as likely. "
+        "Return ONLY a JSON array of objects with 'index', 'description' and 'url' (the article stating the cause, or null).\n\n"
+        + json.dumps(todo, ensure_ascii=False)
+    )
+    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+    # Headlines and fetched pages are untrusted, so the agent gets web tools only - no shell or files
+    try:
+        result = subprocess.run(
+            [CLAUDE_PATH, "-p", prompt, "--output-format", "json",
+             "--tools", "WebSearch,WebFetch", "--allowedTools", "WebSearch,WebFetch"],
+            input="", capture_output=True, text=True, env=env, timeout=600,
+        )
+        if result.returncode != 0:
+            print(f"  RESEARCH FAIL rc={result.returncode} stderr={result.stderr[-500:]!r} "
+                  f"stdout={result.stdout[:500]!r}", file=sys.stderr)
+            return descriptions
+        response_text = json.loads(result.stdout).get("result", "")
+        findings, _ = json.JSONDecoder().raw_decode(response_text[response_text.find("["):])
+        return apply_research(items, descriptions, findings)
+    except Exception as e:
+        print(f"  RESEARCH FAIL {e!r}", file=sys.stderr)
+        return descriptions
 
 
 def _format_number(v: float) -> str:
@@ -768,6 +857,8 @@ def main():
 
     print("Generating descriptions...", file=sys.stderr)
     descriptions = generate_descriptions(all_items, args.mode)
+    if args.mode == "finance":
+        descriptions = research_causes(all_items, descriptions)
     # Items carrying their own description (e.g. market numbers) are shown verbatim
     descriptions = [item.get("description") or d for item, d in zip(all_items, descriptions)]
     rss_descs = descriptions[:len(rss_items)]
