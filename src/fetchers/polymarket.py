@@ -31,15 +31,18 @@ SKIP_TAGS = {"games", "recurring"}  # matches (all volume on game day), rolling 
 MAX_END_DATES = 10        # date ladders ("on...?", "by...?") shift volume to the expiring rung daily
 
 
+PAGE_SIZE = 50  # pages above 50 are served gzip-only (406 without Accept-Encoding: gzip)
+
+
 def fetch_events(limit: int) -> list[dict]:
     events = []
-    for offset in range(0, limit, 100):  # the API returns at most 100 per page
-        url = f"{API_URL}?limit=100&offset={offset}&order=volume24hr&ascending=false&active=true&closed=false"
+    for offset in range(0, limit, PAGE_SIZE):
+        url = f"{API_URL}?limit={PAGE_SIZE}&offset={offset}&order=volume24hr&ascending=false&active=true&closed=false"
         req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
         with urllib.request.urlopen(req, timeout=15) as resp:
             page = json.loads(resp.read())
         events += page
-        if len(page) < 100:
+        if len(page) < PAGE_SIZE:
             break
     # ranks shift between pages, so an event can appear on both
     return list({e.get("id"): e for e in events}.values())[:limit]
