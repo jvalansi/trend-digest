@@ -11,6 +11,8 @@ Output: JSON array of normalized items to stdout.
 
 import argparse
 import json
+import os
+import random
 import sys
 import time
 import urllib.error
@@ -26,6 +28,11 @@ QUERIES = {
     "tech": ["artificial intelligence", "machine learning", "large language model", "deep learning"],
     "science": ["biology", "physics", "neuroscience", "climate science", "quantum computing", "genomics"],
 }
+# The keyless pool is shared by every unauthenticated client, so 429s come in long bursts
+API_KEY = os.environ.get("S2_API_KEY", "")
+MAX_ATTEMPTS = 8
+MAX_WAIT = 60
+BUDGET_SECS = 600  # stop retrying once the whole fetch has run this long
 
 
 def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
@@ -35,8 +42,11 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
 
     seen_ids = set()
     items = []
+    deadline = time.monotonic() + BUDGET_SECS
+    queries = QUERIES.get(mode, QUERIES["tech"])
+    failed = 0
 
-    for query in QUERIES.get(mode, QUERIES["tech"]):
+    for query in queries:
         url = (
             f"{BASE_URL}?query={urllib.parse.quote(query)}"
             f"&fields={FIELDS}"
@@ -44,17 +54,23 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
             f"&limit=100"
             f"&sort=citationCount:desc"
         )
-        req = urllib.request.Request(url, headers={"User-Agent": "trend-digest/1.0"})
+        headers = {"User-Agent": "trend-digest/1.0"}
+        if API_KEY:
+            headers["x-api-key"] = API_KEY
+        req = urllib.request.Request(url, headers=headers)
         data = None
-        for attempt in range(4):
+        for attempt in range(MAX_ATTEMPTS):
             try:
                 with urllib.request.urlopen(req, timeout=15) as r:
                     data = json.loads(r.read())
                 break
             except urllib.error.HTTPError as e:
                 if e.code == 429:
-                    wait = 2 ** attempt * 5
-                    print(f"  WARNING: rate limited on '{query}', waiting {wait}s (attempt {attempt+1})", file=sys.stderr)
+                    wait = min(2 ** attempt * 5, MAX_WAIT) + random.uniform(0, 5)
+                    if attempt == MAX_ATTEMPTS - 1 or time.monotonic() + wait > deadline:
+                        print(f"  WARNING: rate limited on '{query}', giving up", file=sys.stderr)
+                        break
+                    print(f"  WARNING: rate limited on '{query}', waiting {wait:.0f}s (attempt {attempt+1})", file=sys.stderr)
                     time.sleep(wait)
                 else:
                     print(f"  WARNING: query '{query}' failed: {e}", file=sys.stderr)
@@ -63,6 +79,7 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
                 print(f"  WARNING: query '{query}' failed: {e}", file=sys.stderr)
                 break
         if data is None:
+            failed += 1
             time.sleep(1)
             continue
 
@@ -97,6 +114,8 @@ def fetch_papers(days: int, limit: int, mode: str) -> list[dict]:
 
         time.sleep(1)  # respect 1 req/sec unauthenticated limit
 
+    if failed == len(queries):
+        raise RuntimeError(f"all {failed} queries failed")
     return items
 
 

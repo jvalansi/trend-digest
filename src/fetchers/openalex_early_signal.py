@@ -37,15 +37,21 @@ from datetime import datetime, date, timedelta, timezone
 DATA_DIR       = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data")
 CONCEPTS_CACHE = os.path.join(DATA_DIR, "openalex_concepts_l3.json")
 
-BASE   = "https://api.openalex.org"
-MAILTO = "jvalansi1@gmail.com"
+BASE    = "https://api.openalex.org"
+MAILTO  = "jvalansi1@gmail.com"
+# Without a key, requests share one small daily budget per IP; once spent, OpenAlex answers 401
+API_KEY = os.environ.get("OPENALEX_API_KEY", "")
 
 MIN_PAPERS_RECENT = 200
 MIN_RATIO         = 5.0
 MAX_RATIO         = 50.0   # above this is likely a bulk tag-reassignment artifact
 
+count_failures: list[str] = []  # concept ids whose count request failed (list.append is thread-safe)
+
 
 def fetch_json(url: str, retries: int = 3) -> dict:
+    if API_KEY:
+        url += "&" + urllib.parse.urlencode({"api_key": API_KEY})
     req = urllib.request.Request(url, headers={"User-Agent": f"trend-digest/1.0 (mailto:{MAILTO})"})
     for attempt in range(retries):
         try:
@@ -59,14 +65,26 @@ def fetch_json(url: str, retries: int = 3) -> dict:
 
 
 def load_or_refresh_concepts() -> list[dict]:
+    cached = None
     if os.path.exists(CONCEPTS_CACHE):
         age_days = (time.time() - os.path.getmtime(CONCEPTS_CACHE)) / 86400
+        with open(CONCEPTS_CACHE) as f:
+            cached = json.load(f)
+        print(f"  Loaded {len(cached)} cached concepts ({age_days:.0f}d old)", file=sys.stderr)
         if age_days < 30:
-            with open(CONCEPTS_CACHE) as f:
-                concepts = json.load(f)
-            print(f"  Loaded {len(concepts)} cached concepts ({age_days:.0f}d old)", file=sys.stderr)
-            return concepts
+            return cached
 
+    try:
+        return fetch_all_concepts()
+    except Exception as e:
+        if cached is None:
+            raise
+        print(f"  WARNING: concept refresh failed ({e}), using stale cache", file=sys.stderr)
+        os.utime(CONCEPTS_CACHE)  # retry the refresh in 30 days, not on every run
+        return cached
+
+
+def fetch_all_concepts() -> list[dict]:
     print("  Fetching all level-3 concepts from OpenAlex...", file=sys.stderr)
     concepts = []
     cursor = "*"
@@ -85,8 +103,10 @@ def load_or_refresh_concepts() -> list[dict]:
         print(f"  ... {len(concepts)} concepts fetched", file=sys.stderr)
         time.sleep(0.1)
 
-    with open(CONCEPTS_CACHE, "w") as f:
+    tmp = CONCEPTS_CACHE + ".tmp"
+    with open(tmp, "w") as f:
         json.dump(concepts, f)
+    os.replace(tmp, CONCEPTS_CACHE)
     print(f"  Cached {len(concepts)} level-3 concepts", file=sys.stderr)
     return concepts
 
@@ -102,6 +122,7 @@ def count_papers(concept_id: str, from_date: date, to_date: date) -> int:
         data = fetch_json(f"{BASE}/works?{params}")
         return int(data["meta"]["count"])
     except Exception:
+        count_failures.append(concept_id)
         return -1
 
 
@@ -233,6 +254,11 @@ def main():
                 hits.append(result)
     hits.sort(key=lambda h: h["ratio"], reverse=True)
 
+    if len(count_failures) > len(batch) // 2:
+        # Mostly failed requests would otherwise read as "No signals found"
+        print(f"  ERROR: {len(count_failures)} count requests failed for {len(batch)} concepts", file=sys.stderr)
+        sys.exit(1)
+
     print(f"  {len(hits)} signals in day {day_idx + 1}/{total_days}", file=sys.stderr)
 
     items = []
@@ -244,6 +270,9 @@ def main():
             summary_text += f" (+{len(hits) - 3} more)"
     else:
         summary_text = "No signals found"
+
+    if count_failures:
+        summary_text += f" ({len(count_failures)} of {len(batch):,} concepts could not be checked)"
 
     items.append({
         "title":        f"Early signal sweep — day {day_idx + 1}/{total_days} of {current_quarter}",

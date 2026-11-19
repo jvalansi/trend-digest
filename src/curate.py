@@ -119,7 +119,7 @@ def main():
         rss = curate_batch(rss, args.mode)
         rss = sorted(rss, key=lambda x: x.get("score", 0), reverse=True)
         print(f"  Curation done.", file=sys.stderr)
-        output_data = {"rss": rss, "sections": data.get("sections", {})}
+        output_data = {**data, "rss": rss}
     else:
         # Legacy flat list
         items = sorted(data, key=lambda x: x.get("score", 0), reverse=True)[:args.top]

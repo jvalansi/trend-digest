@@ -144,6 +144,16 @@ SOURCE_URLS = {
 }
 
 
+def missing_footer(missing: list[dict], empty_feeds: list[str]) -> str:
+    """Name the sections and RSS feeds that ran but contributed nothing today."""
+    parts = []
+    if missing:
+        parts.append(", ".join(f"{m['section']} ({m['reason']})" for m in missing))
+    if empty_feeds:
+        parts.append("RSS feeds with no items: " + ", ".join(empty_feeds))
+    return "ℹ Missing today: " + "; ".join(parts) if parts else ""
+
+
 def _youtube_thumbnail(url: str) -> str | None:
     m = re.search(r'(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})', url)
     if m:
@@ -730,9 +740,11 @@ def main():
     if isinstance(data, dict) and "rss" in data:
         rss_items = data["rss"]
         sections = data.get("sections", {})
+        missing, empty_feeds = data.get("missing_sections", []), data.get("empty_feeds", [])
     else:
         rss_items = data
         sections = {}
+        missing, empty_feeds = [], []
 
     # Flatten all items for description generation
     section_items = [(name, item) for name, items in sections.items() for item in items]
@@ -747,7 +759,10 @@ def main():
     annotate_seen(all_items, seen)
     if not args.dry_run:
         save_seen_items(seen)
-    footer = stale_footer(stale_sections({"Top stories": rss_items, **sections}, seen))
+    footer = "\n".join(f for f in (
+        stale_footer(stale_sections({"Top stories": rss_items, **sections}, seen)),
+        missing_footer(missing, empty_feeds),
+    ) if f)
     if footer:
         print(footer, file=sys.stderr)
 

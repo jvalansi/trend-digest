@@ -138,7 +138,11 @@ FETCHERS = {
 }
 
 
-def run_fetcher(cmd: list[str]) -> list[dict]:
+RSS_SECTION = "Top stories (RSS)"  # name used only for reporting a failed rss.py run
+
+
+def run_fetcher(cmd: list[str]) -> tuple[list[dict], bool]:
+    """Run one fetcher; returns (items, ok) where ok is False if it exited non-zero."""
     result = subprocess.run(
         [PYTHON if c == "python" else c for c in cmd],
         capture_output=True, text=True, cwd=os.path.join(os.path.dirname(__file__), "..")
@@ -148,8 +152,28 @@ def run_fetcher(cmd: list[str]) -> list[dict]:
             print(f"  {line}", file=sys.stderr)
     if result.returncode != 0:
         print(f"  ERROR running {cmd[1]}: {result.stderr[-200:]}", file=sys.stderr)
+        return [], False
+    return json.loads(result.stdout), True
+
+
+def rss_feed_names(cmd: list[str]) -> list[str]:
+    """Feed sources an rss.py command will fetch, read from its DEFAULT_FEEDS and --category."""
+    fetchers_dir = os.path.join(os.path.dirname(__file__), "fetchers")
+    if fetchers_dir not in sys.path:
+        sys.path.append(fetchers_dir)
+    try:
+        from rss import DEFAULT_FEEDS
+    except Exception as e:  # the report is best-effort; never let it stop the digest
+        print(f"  WARNING: could not read RSS feed list: {e}", file=sys.stderr)
         return []
-    return json.loads(result.stdout)
+    category = cmd[cmd.index("--category") + 1] if "--category" in cmd else None
+    return [f["source"] for f in DEFAULT_FEEDS if category is None or f.get("category") == category]
+
+
+def missing_sections(section_pools: dict[str, list[dict]], failed: set[str]) -> list[dict]:
+    """Sections that will not appear in the digest, with why."""
+    return [{"section": name, "reason": "fetcher failed" if name in failed else "no items"}
+            for name, pool in section_pools.items() if not pool]
 
 
 def title_words(title: str) -> set[str]:
@@ -255,20 +279,31 @@ def main():
     section_pools: dict[str, list[dict]] = {}
 
     section_limits: dict[str, int] = {}
+    failed_sections: set[str] = set()
+    expected_feeds: list[str] = []
     for fetcher in fetchers:
         cmd = fetcher["cmd"]
         print(f"\n[{cmd[1]}]", file=sys.stderr)
-        items = run_fetcher(cmd)
+        items, ok = run_fetcher(cmd)
 
         if fetcher.get("is_rss"):
+            if ok:
+                expected_feeds += rss_feed_names(cmd)
+            else:
+                failed_sections.add(RSS_SECTION)
+                section_pools.setdefault(RSS_SECTION, [])
             rss_items.extend(items)
             print(f"  RSS subtotal: {len(rss_items)} items", file=sys.stderr)
         else:
             section = fetcher["section"]
             section_pools.setdefault(section, []).extend(items)
+            if not ok:
+                failed_sections.add(section)
             if "section_limit" in fetcher:
                 section_limits[section] = fetcher["section_limit"]
             print(f"  {section}: +{len(items)} items", file=sys.stderr)
+
+    rss_sources = {i.get("source") for i in rss_items}
 
     for section, pool in section_pools.items():
         # Dedup by URL first to drop exact-link repeats, then by title similarity
@@ -294,7 +329,13 @@ def main():
     rss_top = rss_ranked[:args.limit]
     print(f"RSS after merge: {len(rss_merged)} unique → top {len(rss_top)}", file=sys.stderr)
 
-    output_data = {"rss": rss_top, "sections": sections}
+    missing = missing_sections(section_pools, failed_sections)
+    empty_feeds = [f for f in expected_feeds if f not in rss_sources]
+    if missing or empty_feeds:
+        print(f"Missing sections: {missing}; empty RSS feeds: {empty_feeds}", file=sys.stderr)
+
+    output_data = {"rss": rss_top, "sections": sections,
+                   "missing_sections": missing, "empty_feeds": empty_feeds}
     output = json.dumps(output_data, indent=2, ensure_ascii=False)
 
     if args.output:
