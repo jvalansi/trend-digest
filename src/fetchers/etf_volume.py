@@ -4,6 +4,8 @@ ETF volume anomaly fetcher — detects ETFs trading at unusually high volume vs.
 
 Uses FMP /v3/quotes/etf (one API call, all ETFs, includes volume + avgVolume).
 Filters to US-listed ETFs. Reports anomalies where volume/avgVolume exceeds threshold.
+The quote's avgVolume is wrong for some tickers (LITX: 27,700 vs ~3M/day in FMP's own
+history), so the top candidates are re-scored against a baseline from daily history.
 
 Usage:
   python fetchers/etf_volume.py [--limit N] [--min-ratio F] [--sort ratio|volume]
@@ -14,7 +16,9 @@ import json
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 try:
     import requests
@@ -24,6 +28,9 @@ except ImportError:
 
 US_EXCHANGES = {"AMEX", "NASDAQ", "NYSE", "BATS", "NYSEArca"}
 FMP_BASE = "https://financialmodelingprep.com/api"
+BASELINE_DAYS = 20
+MIN_AVG_VOLUME = 10_000  # thinner ETFs "spike" on a single block trade
+MAX_RECHECKS = 60  # one history call each
 CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "etf_descriptions.json")
 
 
@@ -39,6 +46,38 @@ def fresh_quotes(quotes: list[dict], max_age_days: int = 4) -> list[dict]:
     huge anomaly. Age is measured from the newest quote, so weekends don't matter."""
     newest = max((q.get("timestamp") or 0 for q in quotes), default=0)
     return [q for q in quotes if (q.get("timestamp") or 0) >= newest - max_age_days * 86400]
+
+
+def baseline_volume(hist: list[dict], before: str, days: int = BASELINE_DAYS) -> float | None:
+    """Mean daily volume of the `days` sessions strictly before `before` (YYYY-MM-DD),
+    or None with under 5 sessions of history (too new to call anything a spike)."""
+    vols = [h["volume"] for h in hist if h["date"] < before and h.get("volume")][:days]
+    return sum(vols) / len(vols) if len(vols) >= 5 else None
+
+
+def fetch_baseline(ticker: str, before: str, fmp_key: str) -> float | None:
+    try:
+        resp = requests.get(f"{FMP_BASE}/v3/historical-price-full/{ticker}",
+                            params={"timeseries": BASELINE_DAYS + 5, "apikey": fmp_key}, timeout=15)
+        resp.raise_for_status()
+        return baseline_volume(resp.json().get("historical", []), before)
+    except Exception:
+        return None
+
+
+def rescore(candidates: list[dict], fetch) -> list[dict]:
+    """Replace FMP's avgVolume with the history baseline from fetch(candidate); drop tickers
+    without one or too thin."""
+    with ThreadPoolExecutor(8) as pool:
+        baselines = list(pool.map(fetch, candidates))
+    missing = sum(1 for b in baselines if b is None)
+    if missing:
+        print(f"  WARNING: no usable history for {missing}/{len(candidates)} candidates", file=sys.stderr)
+    out = []
+    for c, base in zip(candidates, baselines):
+        if base and base >= MIN_AVG_VOLUME:
+            out.append({**c, "avg_volume": int(base), "ratio": round(c["today_volume"] / base, 2)})
+    return out
 
 
 def fetch_etf_description(ticker: str, fmp_key: str) -> str:
@@ -131,7 +170,7 @@ def main():
     for q in us_quotes:
         vol = q.get("volume") or 0
         avg_vol = q.get("avgVolume") or 0
-        if avg_vol < 10_000 or vol <= 0:
+        if avg_vol < MIN_AVG_VOLUME or vol <= 0:
             continue
         ratios.append({
             "ticker": q["symbol"],
@@ -139,14 +178,20 @@ def main():
             "today_volume": int(vol),
             "avg_volume": int(avg_vol),
             "ratio": round(vol / avg_vol, 2),
+            # ET, so an after-hours quote (past midnight UTC) still dates to its session
+            "session": datetime.fromtimestamp(q["timestamp"], ZoneInfo("America/New_York")).date().isoformat(),
         })
 
     if args.sort == "volume":
         ranked = sorted(ratios, key=lambda x: x["today_volume"], reverse=True)[:args.limit]
     else:
-        anomalies = [r for r in ratios if r["ratio"] >= args.min_ratio]
-        ranked = sorted(anomalies, key=lambda x: x["ratio"], reverse=True)[:args.limit]
+        anomalies = sorted((r for r in ratios if r["ratio"] >= args.min_ratio), key=lambda x: x["ratio"], reverse=True)
         print(f"  Found {len(anomalies)} ETFs with ratio >= {args.min_ratio}x", file=sys.stderr)
+        rescored = [r for r in rescore(anomalies[:MAX_RECHECKS],
+                                             lambda c: fetch_baseline(c["ticker"], c["session"], fmp_key)) if r["ratio"] >= args.min_ratio]
+        print(f"  {len(rescored)}/{min(len(anomalies), MAX_RECHECKS)} still >= {args.min_ratio}x "
+              f"against {BASELINE_DAYS}-day history", file=sys.stderr)
+        ranked = sorted(rescored, key=lambda x: x["ratio"], reverse=True)[:args.limit]
 
     cache = load_desc_cache()
     need_lookup = [item for item in ranked if item["ticker"] not in cache]

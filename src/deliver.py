@@ -550,6 +550,12 @@ def apply_research(items: list[dict], descriptions: list[str], findings: list, r
     return descriptions
 
 
+def market_context(items: list[dict]) -> str:
+    """The session's index, rate and commodity moves from the Market Close item, or ""."""
+    return next((i.get("summary", "") for i in items
+                 if i.get("source") == "FMP Market" and i.get("title", "").startswith("Market close")), "")
+
+
 def research_causes(items: list[dict], descriptions: list[str]) -> list[str]:
     """Web-search the cause of moves the headlines don't explain (items flagged cause_unclear)."""
     todo = [
@@ -565,12 +571,22 @@ def research_causes(items: list[dict], descriptions: list[str]) -> list[str]:
     if not todo:
         return descriptions
     print(f"Researching {len(todo)} unexplained moves...", file=sys.stderr)
+    market = market_context(items)
+    # A cause copied from a headline can contradict the tape (GS "fell on hot inflation data pushing
+    # back Fed cuts" on a day the 2Y fell 13bp), so give the agent the numbers to check against.
+    market_check = (
+        f"Market that session: {market}. A cause must be consistent with these numbers - e.g. do not "
+        "say rate-cut expectations were pushed back if yields fell. If a stock moved roughly in line with "
+        "a broad selloff or rally (allowing for its beta) and no source gives a specific cause, say it likely "
+        "tracked the market move. "
+        if market else "")
     prompt = (
         "Each item below is a stock, ETF or market move whose cause the headlines don't explain. "
         f"Digest date: {datetime.now(timezone.utc).date().isoformat()}; the moves are from the latest US trading "
         "session before it unless the title says otherwise. "
         "Use web search to find what caused each move. For a leveraged or single-stock ETF, "
         "look at news on its underlying; for a volume spike, look for flows, rebalancing or news on its holdings. "
+        + market_check +
         "Write one plain-text sentence (max 35 words) saying what the item is and what caused the move. "
         "Only state a cause a source reports; if you find none, say no cause was reported, and mark a "
         "cause you inferred rather than read as likely. "
