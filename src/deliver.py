@@ -544,10 +544,21 @@ def apply_research(items: list[dict], descriptions: list[str], findings: list, r
         if not isinstance(f.get("description"), str) or not f["description"]:
             continue
         descriptions[i] = f["description"]
+        items[i]["cause_found"] = f.get("cause_found") is True
         url = f.get("url")
-        if isinstance(url, str) and resolves(url):
+        if f.get("cause_found") is not False and isinstance(url, str) and resolves(url):
             items[i]["url"] = url
     return descriptions
+
+
+def add_tape_notes(items: list[dict], descriptions: list[str]) -> list[str]:
+    """Where no cause was found for a volume spike, append what its intraday bars show."""
+    out = []
+    for item, desc in zip(items, descriptions):
+        if "tape" in item and item.get("cause_unclear") and not item.get("cause_found"):
+            desc = f"{desc} {item['tape'] or 'No cause was reported.'}".strip()
+        out.append(desc)
+    return out
 
 
 def market_context(items: list[dict]) -> str:
@@ -589,8 +600,10 @@ def research_causes(items: list[dict], descriptions: list[str]) -> list[str]:
         + market_check +
         "Write one plain-text sentence (max 35 words) saying what the item is and what caused the move. "
         "Only state a cause a source reports; if you find none, say no cause was reported, and mark a "
-        "cause you inferred rather than read as likely. "
-        "Return ONLY a JSON array of objects with 'index', 'description' and 'url' (the article stating the cause, or null).\n\n"
+        "cause you inferred rather than read as likely. For an ETF volume spike with no cause found, describe "
+        "only the fund and leave the cause out. "
+        "Return ONLY a JSON array of objects with 'index', 'description', 'cause_found' (false if no source reports "
+        "a cause and you inferred none) and 'url' (the article stating the cause, or null).\n\n"
         + json.dumps(todo, ensure_ascii=False)
     )
     env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
@@ -874,7 +887,7 @@ def main():
     print("Generating descriptions...", file=sys.stderr)
     descriptions = generate_descriptions(all_items, args.mode)
     if args.mode == "finance":
-        descriptions = research_causes(all_items, descriptions)
+        descriptions = add_tape_notes(all_items, research_causes(all_items, descriptions))
     # Items carrying their own description (e.g. market numbers) are shown verbatim
     descriptions = [item.get("description") or d for item, d in zip(all_items, descriptions)]
     rss_descs = descriptions[:len(rss_items)]

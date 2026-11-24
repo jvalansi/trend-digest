@@ -257,7 +257,9 @@ def dedup_section(items: list[dict]) -> list[dict]:
     """Merge near-duplicate section items by title similarity. Keeps the
     highest-engagement representative per group; no re-scoring."""
     translate_items(items)
-    groups = _group_by_title(items)
+    # ETF names share issuer words ("State Street SPDR Bloomberg ..."), and each is its own ticker
+    etfs = [i for i in items if i.get("source") == "ETF Volume"]
+    groups = _group_by_title([i for i in items if i.get("source") != "ETF Volume"]) + [[i] for i in etfs]
     return [
         max(g, key=lambda x: x.get("engagement", x.get("score", 0)) or 0)
         for g in groups

@@ -6,6 +6,7 @@ Uses FMP /v3/quotes/etf (one API call, all ETFs, includes volume + avgVolume).
 Filters to US-listed ETFs. Reports anomalies where volume/avgVolume exceeds threshold.
 The quote's avgVolume is wrong for some tickers (LITX: 27,700 vs ~3M/day in FMP's own
 history), so the top candidates are re-scored against a baseline from daily history.
+Only ETFs trading $50M+ on a normal day count: thin funds spike on one block trade nobody reports on.
 
 Usage:
   python fetchers/etf_volume.py [--limit N] [--min-ratio F] [--sort ratio|volume]
@@ -29,7 +30,7 @@ except ImportError:
 US_EXCHANGES = {"AMEX", "NASDAQ", "NYSE", "BATS", "NYSEArca"}
 FMP_BASE = "https://financialmodelingprep.com/api"
 BASELINE_DAYS = 20
-MIN_AVG_VOLUME = 10_000  # thinner ETFs "spike" on a single block trade
+MIN_AVG_DOLLARS = 50_000_000  # thinner ETFs "spike" on a single block trade
 MAX_RECHECKS = 60  # one history call each
 CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "etf_descriptions.json")
 
@@ -75,9 +76,40 @@ def rescore(candidates: list[dict], fetch) -> list[dict]:
         print(f"  WARNING: no usable history for {missing}/{len(candidates)} candidates", file=sys.stderr)
     out = []
     for c, base in zip(candidates, baselines):
-        if base and base >= MIN_AVG_VOLUME:
+        if base and base * c["price"] >= MIN_AVG_DOLLARS:
             out.append({**c, "avg_volume": int(base), "ratio": round(c["today_volume"] / base, 2)})
     return out
+
+
+def tape_note(bars: list[dict], session: str, day_volume: int) -> str:
+    """What the session's 5-minute bars show about a spike, or "" if nothing stands out."""
+    bars = [b for b in bars if b["date"].startswith(session)]
+    total = sum(b.get("volume") or 0 for b in bars)
+    # FMP's bars sometimes hold several times the day's reported volume (BYLD 2026-11-17: 811%)
+    if not total or day_volume <= 0 or total > 1.2 * day_volume:
+        return ""
+    if total < day_volume / 2:
+        return (f"Only {total / day_volume:.0%} of the day's volume shows in regular-session 5-minute bars; "
+                "the rest may be auction, off-exchange or extended-hours trades, or a data gap.")
+    top = max(bars, key=lambda b: b.get("volume") or 0)
+    share = min(top["volume"] / day_volume, 1)
+    # The opening and closing bars are heavy on any day (closing is 12:55 on half days)
+    if share >= 0.5 and top["date"][11:16] != "09:30" and top["date"] != max(b["date"] for b in bars):
+        return f"{share:.0%} of the day's volume came in one 5-minute bar, likely a block trade."
+    return ""
+
+
+def fetch_tape_note(item: dict, fmp_key: str) -> str:
+    try:
+        day = item["session"]
+        resp = requests.get(f"{FMP_BASE}/v3/historical-chart/5min/{item['ticker']}",
+                            params={"from": day, "to": day, "apikey": fmp_key}, timeout=15)
+        resp.raise_for_status()
+        return tape_note(resp.json(), day, item["today_volume"])
+    except Exception as e:
+        # not str(e): HTTPError text carries the URL with the API key
+        print(f"  WARNING: no intraday bars for {item['ticker']}: {type(e).__name__}", file=sys.stderr)
+        return ""
 
 
 def fetch_etf_description(ticker: str, fmp_key: str) -> str:
@@ -170,11 +202,14 @@ def main():
     for q in us_quotes:
         vol = q.get("volume") or 0
         avg_vol = q.get("avgVolume") or 0
-        if avg_vol < MIN_AVG_VOLUME or vol <= 0:
+        price = q.get("price") or 0
+        # Baseline $ isn't known yet, but a real spike over the floor trades at least this much
+        if avg_vol <= 0 or vol * price < max(args.min_ratio, 1) * MIN_AVG_DOLLARS:
             continue
         ratios.append({
             "ticker": q["symbol"],
             "name": q.get("name", q["symbol"]),
+            "price": price,
             "today_volume": int(vol),
             "avg_volume": int(avg_vol),
             "ratio": round(vol / avg_vol, 2),
@@ -256,6 +291,7 @@ def main():
                 "engagement": round(ratio, 2),
                 "engagement_raw": ratio,
                 "engagement_label": "× normal volume",
+                "tape": fetch_tape_note(item, fmp_key),
                 "fetched_at": now,
                 "published_at": now,
             })

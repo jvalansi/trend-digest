@@ -1,4 +1,4 @@
-from deliver import apply_research, market_context, unexplained_indices
+from deliver import add_tape_notes, apply_research, market_context, unexplained_indices
 
 if __name__ == "__main__":
     flags = [{"index": 0, "unexplained": True}, {"index": 1, "unexplained": False},
@@ -24,4 +24,14 @@ if __name__ == "__main__":
              "summary": "S&P 500 -3.7%; 2Y 4.63% (-13bp)"}
     assert market_context([{"source": "FMP Movers", "title": "GS -6.7%"}, close]) == close["summary"]
     assert market_context([{"source": "FMP Market", "title": "Coming up: CPI"}]) == ""
+
+    spikes = [{"url": u, "cause_unclear": True, "tape": "96% in one bar."} for u in "abc"]
+    spikes += [{"url": "d", "tape": "96% in one bar."}, {"url": "e", "cause_unclear": True, "tape": ""}]
+    found = [{"index": 0, "description": "Bond ETF.", "cause_found": False, "url": "https://x.com/fund"},
+             {"index": 1, "description": "NVDA ETF rose on Huang.", "cause_found": True, "url": None}]
+    descs = apply_research(spikes, ["A", "B", "Unclear.", "D", "E"], found, resolves=lambda u: True)
+    assert spikes[0]["url"] == "a"  # no cause: not linked to a background page
+    # index 2 was never researched (failed call), so it gets the tape too
+    assert add_tape_notes(spikes, descs) == ["Bond ETF. 96% in one bar.", "NVDA ETF rose on Huang.",
+                                             "Unclear. 96% in one bar.", "D", "E No cause was reported."]
     print("ok")

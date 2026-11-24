@@ -64,7 +64,7 @@ Each mode picks a different fetcher mix and interest profile.
 | Papers | `semantic_scholar.py` | Papers gaining citations fastest this week |
 | Papers | `altmetric.py` | Crossref papers gaining citations fastest this week |
 | AI | `hf_papers.py` / `hf_models.py` | HuggingFace daily papers + trending models |
-| Finance | `etf_volume.py` | Unusual ETF volume relative to 30d baseline |
+| Finance | `etf_volume.py` | Unusual ETF volume vs 20-session baseline ($50M+/day funds) |
 | Markets | `polymarket.py` | Events with 24h volume far above their own daily average |
 
 ### Two output classes
